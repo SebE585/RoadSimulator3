@@ -4,6 +4,17 @@
 
 ---
 
+## ✅ Version v0.9-alpha validée
+
+✅ Structure modulaire fonctionnelle  
+✅ Simulation inertielle à 10 Hz + événements  
+✅ Fichiers inutiles identifiés  
+✅ Refactor `generation.py` / `detection.py` effectué  
+✅ Injection inertielle centralisée & réaliste  
+✅ Tag prêt à être posé : `v0.9-alpha`
+
+---
+
 ## 🧹 1. Nettoyage fichiers / dossiers
 
 - [ ] Supprimer `__pycache__/`, `.DS_Store`, `.ipynb_checkpoints/`
@@ -23,9 +34,9 @@
 
 ## 🧠 3. Suppression ou fusion de fonctions inutiles
 
-- [ ] Revoir `simulator/events/generation.py` pour identifier les fonctions redondantes
+- [x] Revoir `simulator/events/generation.py` pour identifier les fonctions redondantes
 - [ ] Revoir `core/gyroscope.py` et fusionner dans `generate_gyroscope_signals()`
-- [ ] Supprimer ou marquer `@deprecated` les fonctions non utilisées
+- [x] Supprimer ou marquer `@deprecated` les fonctions non utilisées
   - [x] Supprimer `detect_spatio_temporal_anomalies()`, `check_post_simulation()` et `get_log_path` dans `check/check_realism.py`
   - [x] Supprimer ou marquer `@deprecated` les fonctions non utilisées détectées par `vulture` :
     → Liste générée automatiquement depuis `logs/vulture_unused.txt`
@@ -79,9 +90,9 @@
 
 ## 📝 4. Complétion des docstrings
 
-- [ ] Compléter les docstrings des fonctions critiques :
+- [x] Compléter les docstrings des fonctions critiques :
   - [ ] `simulate_route_via_osrm()`
-  - [ ] Fonctions `generate_` et `detect_`
+  - [x] Fonctions `generate_` et `detect_`
   - [ ] Fonctions d’export (CSV, JSON)
 - [ ] Respecter format Google ou NumPy pour les docstrings
 
@@ -100,11 +111,11 @@
 ## 🧱 6. Refactor fichiers & structure
 
 - [ ] Centraliser toute la config inertielle dans `config/events.yaml`
-- [ ] Nettoyer les hard-codes dans les scripts (`simulate_and_check.py`)
-- [ ] Réorganiser :
-  - [ ] `core/gyroscope.py`
-  - [ ] `simulator/events/generation.py`
-  - [ ] `simulator/events/detection.py`
+- [x] Nettoyer les hard-codes dans les scripts (`simulate_and_check.py`)
+- [x] Réorganiser :
+  - [x] `core/gyroscope.py`
+  - [x] `simulator/events/generation.py`
+  - [x] `simulator/events/detection.py`
   - [ ] `simulator/plot_utils.py`
 
 ---

@@ -49,8 +49,10 @@ def apply_progressive_acceleration_after_stop_wait(df, hz=10, target_speed_kmh=3
 
 @deprecated
 def apply_stop_wait_at_positions(df, events_df, window_m=20):
+    # Ne pas injecter deux stops trop proches : espacement minimal de 800 points (≈80s à 10 Hz)
     df = df.copy()
     matched_indices = []
+    min_spacing_pts = 800
 
     for _, row in events_df.iterrows():
         lat0, lon0, label = row["lat"], row["lon"], row["event"]
@@ -58,6 +60,8 @@ def apply_stop_wait_at_positions(df, events_df, window_m=20):
         distances = df.apply(lambda r: geodesic((lat0, lon0), (r["lat"], r["lon"])).meters, axis=1)
         idx = distances.idxmin()
         if distances[idx] <= window_m:
+            if matched_indices and abs(idx - matched_indices[-1]) < min_spacing_pts:
+                continue  # trop proche du précédent
             if idx in matched_indices:
                 continue
             matched_indices.append(idx)

@@ -1,25 +1,49 @@
-# Dossiers à ignorer
+# === Dossiers à ignorer ===
 data/
 logs/
 outputs/
 docs/
 cache/
 
-# Backups ZIP
-*.zip
+# === Fichiers temporaires Python ===
+*.py[cod]
+__pycache__/
+*.pyo
+*.pyd
 
-# Données locales
-data/
+# === Environnements virtuels ===
+.env/
+.venv/
+env/
+venv/
+
+# === Archives et backups ===
 *.zip
 *.tar.gz
 *.rar
+*.7z
 
-# Fichiers temporaires
-*.pyc
-__pycache__/
+# === Données brutes ===
+*.csv
+*.tsv
+*.xls
+*.xlsx
+*.json
 
-# MacOS
-.DS_Store
+# === Systèmes d'exploitation ===
+.DS_Store         # macOS
+Thumbs.db         # Windows
 
-# Fichiers Word temporaires
-~$*
+# === Fichiers temporaires éditeurs ===
+~$*               # Word
+*.swp             # Vim
+*.swo             # Vim
+*.bak             # Backups
+
+# === Jupyter / IPython ===
+.ipynb_checkpoints/
+
+# === Autres outils ===
+.mypy_cache/
+pytest_cache/
+*.log
