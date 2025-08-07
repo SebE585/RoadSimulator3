@@ -3,6 +3,7 @@ import os
 import pandas as pd
 import json
 import glob
+from core.decorators import deprecated
 
 current_dir = os.path.dirname(__file__)
 root_dir = os.path.abspath(os.path.join(current_dir, '..'))
@@ -17,8 +18,7 @@ from geopy.distance import geodesic
 import sys
 import os
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from core.geo_utils import compute_heading
-from core.utils import get_log_path
+from core.geo_utils import compute_heading  # noqa: F401
 
 from core.geo_utils import haversine_distance
 
@@ -51,52 +51,6 @@ def detect_final_deceleration(df, hz=10):
     seg = df.iloc[-hz * 4:]
     return (seg.acc_x < -1.5).sum() >= 30 and seg.speed.min() < 1.0
 
-def detect_spatio_temporal_anomalies(df, tol_time=1e-3, tol_dist=5, tol_heading=10):
-    dt = df['timestamp'].diff().dropna().dt.total_seconds()
-    anomalies = []
-    for i in range(1, len(df)):
-        p1 = (df.loc[i-1, 'lat'], df.loc[i-1, 'lon'])
-        p2 = (df.loc[i, 'lat'], df.loc[i, 'lon'])
-        dist_m = geodesic(p1, p2).meters
-        speed_m_s = df.loc[i,'speed'] * 1000 / 3600
-        expected_dist = speed_m_s * dt.iloc[i-1]
-        if abs(dist_m - expected_dist) > tol_dist:
-            anomalies.append(i)
-    return anomalies
-
-def check_post_simulation(df):
-    """
-    Auto-vérification rapide de la simulation :
-    - présence de NaN
-    - cohérence GPS (écarts > 50m)
-    - incohérences heading > 20°
-    """
-    from geopy.distance import geodesic
-
-    issues = {
-        "nan_detected": df.isna().sum().to_dict(),
-        "gps_jumps": 0,
-        "heading_spikes": 0
-    }
-
-    for i in range(1, len(df)):
-        p1 = (df.iloc[i-1]['lat'], df.iloc[i-1]['lon'])
-        p2 = (df.iloc[i]['lat'], df.iloc[i]['lon'])
-        dist = geodesic(p1, p2).meters
-        if dist > 50:
-            issues['gps_jumps'] += 1
-
-        heading_diff = abs((df.iloc[i]['heading'] - df.iloc[i-1]['heading']) % 360)
-        heading_diff = min(heading_diff, 360 - heading_diff)
-        if heading_diff > 20:
-            issues['heading_spikes'] += 1
-
-    print(f"\n[CHECK] Auto-vérification post-simulation :")
-    print(f"- NaN détectés par colonne : {issues['nan_detected']}")
-    print(f"- Sauts GPS >50m : {issues['gps_jumps']}")
-    print(f"- Sauts de heading >20° : {issues['heading_spikes']}")
-
-    return issues
 
 
 
@@ -227,7 +181,9 @@ def check_spatio_temporal_coherence(df, tol_time=1e-3, tol_dist=5, tol_heading=1
 
     return is_consistent
 
+@deprecated
 def detect_spatio_temporal_anomalies(df, tol_dist=5, adaptive=True):
+    logger.warning("⚠️ Appel d'une fonction marquée @deprecated.")
     """
     Détecte les incohérences spatio-temporelles entre distance parcourue et vitesse.
 
@@ -308,31 +264,6 @@ def check_speed_plateaus_by_roadtype(path_csv: str) -> bool:
             print(f"[INFO] Tolérance acceptée : {earlier:.2f} < {later:.2f} (écart {later-earlier:.2f})")
     return True
 
-def check_stop_spacing(df, expected_count=10, duration_pts=50, min_spacing_pts=800):
-    stop_indices = df.index[df["event"] == "stop"].tolist()
-    if not stop_indices:
-        print("❌ Aucun stop détecté.")
-        return False
-
-    # Regrouper les paquets consécutifs
-    stop_groups = []
-    group = [stop_indices[0]]
-    for idx in stop_indices[1:]:
-        if idx - group[-1] <= 1:
-            group.append(idx)
-        else:
-            stop_groups.append(group)
-            group = [idx]
-    stop_groups.append(group)
-
-    # Analyse
-    nb_stops = len(stop_groups)
-    is_spacing_ok = all(
-        stop_groups[i + 1][0] - stop_groups[i][-1] > min_spacing_pts
-        for i in range(len(stop_groups) - 1)
-    )
-    print(f"✅ Stops = {nb_stops}, spacing ok = {is_spacing_ok}")
-    return is_spacing_ok
 
 def check_realism(df, timestamp=None, verbose=True):
     logs = {}
@@ -508,18 +439,9 @@ def detect_speed_anomalies(df, max_speed_change_kmh=20):
     return anomalies
 
 # Nouvelle fonction pour vérifier l'espacement des stops
-def check_stop_spacing(df, expected_count=10, duration_pts=50, min_spacing_pts=None):
+def check_stop_spacing(df, duration_pts=50, min_spacing_pts=None):
     import logging
     logger = logging.getLogger("check_realism")
-    # Adapter dynamiquement expected_count à la taille de cities_coords si possible
-    if "cities_coords" in df.attrs and isinstance(df.attrs["cities_coords"], list):
-        expected_count = len(df.attrs["cities_coords"])
-    elif "event" in df.columns:
-        # Si on peut compter le nombre de stops attendus via les événements (par exemple, stops uniques)
-        unique_stops = df['event'].eq('stop').sum()
-        if unique_stops > 0:
-            expected_count = unique_stops
-
     min_distance_between_stops = 4000  # points, équivaut à ~6m40s à 10 Hz
     min_spacing_pts = min_spacing_pts if min_spacing_pts is not None else min_distance_between_stops
     stop_indexes = df.index[df["event"] == "stop"].tolist()

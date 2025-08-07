@@ -7,7 +7,9 @@ from core.terrain.slope import compute_slope_from_altitude
 
 logger = logging.getLogger(__name__)
 
+@deprecated
 def enrich_terrain(df: pd.DataFrame, mnt_path: str = None) -> pd.DataFrame:
+    logger.warning("⚠️ Appel d'une fonction marquée @deprecated.")
     """
     Enrichit un DataFrame GPS avec les informations topographiques issues :
     - soit d'une API SRTM distante,

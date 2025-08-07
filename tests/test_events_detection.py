@@ -44,7 +44,9 @@ def create_empty_df(n_points=1000):
     return df
 
 # Version adoucie pour la détection d’accélération (test uniquement)
+@deprecated
 def detect_acceleration_test(acc_x, speed=None, threshold=0.7, min_duration=0.3, hz=10):
+    logger.warning("⚠️ Appel d'une fonction marquée @deprecated.")
     window_size = int(min_duration * hz)
     for i in range(len(acc_x) - window_size):
         window = acc_x[i:i+window_size]

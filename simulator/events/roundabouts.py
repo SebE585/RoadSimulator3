@@ -31,7 +31,9 @@ HZ = 10
 # et generate_inertial_signature_for_osrm_roundabouts seront placées ici
 
 # Exemple :
+@deprecated
 def inject_inertial_signature_for_turns(df, turn_infos, window_size=10, hz=HZ):
+    logger.warning("⚠️ Appel d'une fonction marquée @deprecated.")
     meters_per_degree_lat = 111320
 
     for turn in turn_infos:
@@ -64,7 +66,9 @@ def inject_inertial_signature_for_turns(df, turn_infos, window_size=10, hz=HZ):
 
     return df
 
+@deprecated
 def inject_inertial_signature_for_turns(df, turn_infos, window_size=10, hz=10):
+    logger.warning("⚠️ Appel d'une fonction marquée @deprecated.")
     """
     Injecte une signature inertielle et modifie lat/lon pour simuler un virage.
 
@@ -115,7 +119,9 @@ def inject_inertial_signature_for_turns(df, turn_infos, window_size=10, hz=10):
     return df
 
 
+@deprecated
 def generate_inertial_signature_for_osrm_roundabouts(df, osrm_roundabouts, window_size=20):
+    logger.warning("⚠️ Appel d'une fonction marquée @deprecated.")
     """
     Injecte la signature inertielle + modifie lat/lon pour simuler un rond-point circulaire.
 

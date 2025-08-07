@@ -2,10 +2,9 @@ import numpy as np
 import pandas as pd
 from scipy.interpolate import interp1d
 from core.kinematics import compute_cumulative_distance, compute_total_distance
+from core.decorators import deprecated
 
-
-
-
+@deprecated
 def spatial_reprojection(df, speed_target, dt=0.1):
     df = df.reset_index(drop=True).copy()
 
@@ -49,8 +48,7 @@ def spatial_reprojection(df, speed_target, dt=0.1):
     return new_df
 
 
-# core/reprojection.py
-
+@deprecated
 def resample_time(df: pd.DataFrame, freq_hz: int = 10) -> pd.DataFrame:
     """
     Rééchantillonne le DataFrame à une fréquence régulière (10 Hz par défaut)

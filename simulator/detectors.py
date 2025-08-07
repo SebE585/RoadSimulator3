@@ -1,6 +1,27 @@
 import pandas as pd
+
+"""
+Détecteurs inertiels pour les événements simulés dans RoadSimulator3.
+Chaque fonction analyse un DataFrame à 10 Hz pour repérer des signatures d'événements spécifiques :
+dos d'âne, freinage, accélération, trottoir, nid de poule, arrêt, attente, ouverture de porte, etc.
+"""
 G = 9.81
 def detect_dos_dane(df, acc_z_thresh=4.0, gyro_thresh=6.0, window_pts=8, refractory=20, config=None):
+    """
+    Détecte les dos d'âne en analysant les pics d'accélération verticale (acc_z) 
+    et les variations de vitesse angulaire autour de l'axe z (gyro_z).
+
+    Args:
+        df (pd.DataFrame): Données simulées à 10 Hz avec colonnes acc_z, gyro_z.
+        acc_z_thresh (float): Seuil de détection en m/s² pour acc_z.
+        gyro_thresh (float): Variation minimale gyro_z pour valider l’événement.
+        window_pts (int): Taille de la fenêtre glissante.
+        refractory (int): Délai de récupération après détection.
+        config (dict, optional): Configuration inertielle (remplace les seuils par défaut).
+
+    Returns:
+        Tuple[bool, List[int]]: Indicateur de détection, indices détectés.
+    """
     if config is not None:
         ev_cfg = config.get("dos_dane", {})
         acc_z_thresh = ev_cfg.get("acc_z_thresh", acc_z_thresh)
@@ -34,10 +55,23 @@ def detect_dos_dane(df, acc_z_thresh=4.0, gyro_thresh=6.0, window_pts=8, refract
     return False, []
 
 
-# Add detect_all_events to the module
 
-# Détection inertielle de nids de poule
 def detect_nid_de_poule(df, acc_z_thresh=5.0, gyro_thresh=3.0, window_pts=8, refractory=20, config=None):
+    """
+    Détecte les nids de poule par analyse des variations d'accélération verticale (acc_z)
+    et de la vitesse angulaire (généralement gyro_x).
+
+    Args:
+        df (pd.DataFrame): Données simulées à 10 Hz avec colonnes acc_z, gyro_x (ou autre axe).
+        acc_z_thresh (float): Seuil de détection en m/s² pour acc_z.
+        gyro_thresh (float): Variation minimale gyro pour valider l’événement.
+        window_pts (int): Taille de la fenêtre glissante.
+        refractory (int): Délai de récupération après détection.
+        config (dict, optional): Configuration inertielle (remplace les seuils par défaut, axe gyro).
+
+    Returns:
+        Tuple[bool, List[int]]: Indicateur de détection, indices détectés.
+    """
     if config is not None:
         ev_cfg = config.get("nid_de_poule", {})
         acc_z_thresh = ev_cfg.get("acc_z_thresh", acc_z_thresh)
@@ -68,8 +102,22 @@ def detect_nid_de_poule(df, acc_z_thresh=5.0, gyro_thresh=3.0, window_pts=8, ref
         print("[DETECT NID DE POULE] ❌ Aucun nid de poule détecté")
     return bool(detected_indices), detected_indices
 
-# Détection inertielle de trottoirs
 def detect_trottoir(df, acc_z_thresh=6.0, gyro_thresh=2.0, window_pts=6, refractory=20, config=None):
+    """
+    Détecte les chocs de trottoir via les pics d'accélération verticale (acc_z)
+    et les variations de vitesse angulaire sur plusieurs axes.
+
+    Args:
+        df (pd.DataFrame): Données simulées à 10 Hz avec colonnes acc_z et gyro_x/y/z.
+        acc_z_thresh (float): Seuil de détection en m/s² pour acc_z.
+        gyro_thresh (float): Variation minimale gyro pour valider l’événement.
+        window_pts (int): Taille de la fenêtre glissante.
+        refractory (int): Délai de récupération après détection.
+        config (dict, optional): Configuration inertielle (remplace les seuils/axes par défaut).
+
+    Returns:
+        Tuple[bool, List[int]]: Indicateur de détection, indices détectés.
+    """
     if config is not None:
         ev_cfg = config.get("trottoir", {})
         acc_z_thresh = ev_cfg.get("acc_z_thresh", acc_z_thresh)
@@ -105,8 +153,20 @@ def detect_trottoir(df, acc_z_thresh=6.0, gyro_thresh=2.0, window_pts=6, refract
         print("[DETECT TROTTOIR] ❌ Aucun choc trottoir détecté")
     return bool(detected_indices), detected_indices
 
-# Détection inertielle de freinage
 def detect_freinage(df, acc_x_thresh=-3.0, window_pts=6, refractory=20, config=None):
+    """
+    Détecte les épisodes de freinage en repérant une accélération longitudinale (acc_x) négative prolongée.
+
+    Args:
+        df (pd.DataFrame): Données simulées à 10 Hz avec colonne acc_x.
+        acc_x_thresh (float): Seuil de détection (accélération négative) en m/s².
+        window_pts (int): Taille de la fenêtre glissante.
+        refractory (int): Délai de récupération après détection.
+        config (dict, optional): Configuration inertielle (remplace les seuils par défaut).
+
+    Returns:
+        Tuple[bool, List[int]]: Indicateur de détection, indices détectés.
+    """
     if config is not None:
         ev_cfg = config.get("freinage", {})
         acc_x_thresh = ev_cfg.get("acc_x_thresh", acc_x_thresh)
@@ -129,8 +189,20 @@ def detect_freinage(df, acc_x_thresh=-3.0, window_pts=6, refractory=20, config=N
         print("[DETECT FREINAGE] ❌ Aucun freinage détecté")
     return bool(detected_indices), detected_indices
 
-# Détection inertielle d'accélération
 def detect_acceleration(df, acc_x_thresh=2.5, window_pts=6, refractory=20, config=None):
+    """
+    Détecte les accélérations franches via une accélération longitudinale (acc_x) positive prolongée.
+
+    Args:
+        df (pd.DataFrame): Données simulées à 10 Hz avec colonne acc_x.
+        acc_x_thresh (float): Seuil de détection (accélération positive) en m/s².
+        window_pts (int): Taille de la fenêtre glissante.
+        refractory (int): Délai de récupération après détection.
+        config (dict, optional): Configuration inertielle (remplace les seuils par défaut).
+
+    Returns:
+        Tuple[bool, List[int]]: Indicateur de détection, indices détectés.
+    """
     if config is not None:
         ev_cfg = config.get("acceleration", {})
         acc_x_thresh = ev_cfg.get("acc_x_thresh", acc_x_thresh)
@@ -162,7 +234,7 @@ def detect_all_events(df, config=None):
             summary[ev] = df["event"].eq(ev).any()
         return summary
 
-    from simulator.detectors import (
+    from simulator.s import (
         detect_dos_dane, detect_nid_de_poule, detect_trottoir,
         detect_freinage, detect_acceleration,
         detect_stop, detect_wait, detect_ouverture_porte,
@@ -183,6 +255,18 @@ def detect_all_events(df, config=None):
 
 # Détection de l'arrêt prolongé (stop)
 def detect_stop(df, duration_threshold_s=120, hz=10, config=None):
+    """
+    Détecte les arrêts prolongés (moteur coupé) en analysant les périodes où la vitesse est nulle.
+
+    Args:
+        df (pd.DataFrame): Données simulées à 10 Hz avec colonne 'speed'.
+        duration_threshold_s (float): Durée minimale de l’arrêt en secondes.
+        hz (int): Fréquence d’échantillonnage (Hz).
+        config (dict, optional): Paramètres personnalisés (clé 'stop').
+
+    Returns:
+        Tuple[bool, List[int]]: Détection binaire, indices de début d’arrêt détectés.
+    """
     if config is not None:
         ev_cfg = config.get("stop", {})
         duration_threshold_s = ev_cfg.get("min_duration_s", duration_threshold_s)
@@ -209,6 +293,19 @@ def detect_stop(df, duration_threshold_s=120, hz=10, config=None):
 
 # Détection de l'attente (wait)
 def detect_wait(df, min_duration_s=30, max_duration_s=120, hz=10, config=None):
+    """
+    Détecte les phases d'attente moteur allumé (30s < durée < 2min) en analysant les périodes à vitesse nulle.
+
+    Args:
+        df (pd.DataFrame): Données simulées à 10 Hz avec colonne 'speed'.
+        min_duration_s (float): Seuil bas de durée en secondes.
+        max_duration_s (float): Seuil haut de durée en secondes.
+        hz (int): Fréquence d’échantillonnage.
+        config (dict, optional): Paramètres personnalisés (clé 'wait').
+
+    Returns:
+        Tuple[bool, List[int]]: Détection binaire, indices de début d’attente détectés.
+    """
     if config is not None:
         ev_cfg = config.get("wait", {})
         min_duration_s = ev_cfg.get("min_duration_s", min_duration_s)
@@ -237,6 +334,19 @@ def detect_wait(df, min_duration_s=30, max_duration_s=120, hz=10, config=None):
 
 # Détection de l'ouverture de porte (ouverture)
 def detect_ouverture_porte(df, gyro_z_thresh=50.0, refractory=20, window_pts=6, config=None):
+    """
+    Détecte les ouvertures de porte par forte variation gyroscopique sur l'axe Z.
+
+    Args:
+        df (pd.DataFrame): Données simulées à 10 Hz avec colonne 'gyro_z'.
+        gyro_z_thresh (float): Seuil de variation pour détection.
+        refractory (int): Fenêtre d'attente après détection.
+        window_pts (int): Taille de la fenêtre d’analyse.
+        config (dict, optional): Paramètres personnalisés (clé 'ouverture').
+
+    Returns:
+        Tuple[bool, List[int]]: Détection binaire, indices détectés.
+    """
     if config is not None:
         ev_cfg = config.get("ouverture", {})
         gyro_z_thresh = ev_cfg.get("gyro_z_thresh", gyro_z_thresh)
@@ -261,6 +371,20 @@ def detect_ouverture_porte(df, gyro_z_thresh=50.0, refractory=20, window_pts=6, 
 
 # Détection de l'accélération initiale
 def detect_initial_acceleration(df, v_min_kmh=3.0, v_max_kmh=50.0, acc_x_min=1.0, hz=10, config=None):
+    """
+    Détecte l’accélération initiale dans les premières secondes du trajet.
+
+    Args:
+        df (pd.DataFrame): Données avec colonnes 'speed' et 'acc_x'.
+        v_min_kmh (float): Vitesse minimale en km/h.
+        v_max_kmh (float): Vitesse maximale en km/h.
+        acc_x_min (float): Seuil minimal d’accélération longitudinale.
+        hz (int): Fréquence d’échantillonnage.
+        config (dict, optional): Paramètres personnalisés.
+
+    Returns:
+        Tuple[bool, List[int]]: Détection binaire, index du début.
+    """
     if config is not None:
         ev_cfg = config.get("initial_acceleration", {})
         v_min_kmh = ev_cfg.get("v_min_kmh", v_min_kmh)
@@ -284,6 +408,20 @@ def detect_initial_acceleration(df, v_min_kmh=3.0, v_max_kmh=50.0, acc_x_min=1.0
 
 # Détection de la décélération finale
 def detect_final_deceleration(df, v_min_kmh=3.0, v_max_kmh=50.0, acc_x_max=-1.0, hz=10, config=None):
+    """
+    Détecte la décélération finale dans les dernières secondes du trajet.
+
+    Args:
+        df (pd.DataFrame): Données avec colonnes 'speed' et 'acc_x'.
+        v_min_kmh (float): Vitesse minimale en km/h.
+        v_max_kmh (float): Vitesse maximale en km/h.
+        acc_x_max (float): Seuil maximal d’accélération longitudinale (négatif).
+        hz (int): Fréquence d’échantillonnage.
+        config (dict, optional): Paramètres personnalisés.
+
+    Returns:
+        Tuple[bool, List[int]]: Détection binaire, index du début.
+    """
     if config is not None:
         ev_cfg = config.get("final_deceleration", {})
         v_min_kmh = ev_cfg.get("v_min_kmh", v_min_kmh)

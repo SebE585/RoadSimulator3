@@ -22,7 +22,9 @@ def make_output_dir():
     os.makedirs(out_dir, exist_ok=True)
     return out_dir
 
+@deprecated
 def circular_smooth_heading(heading_series, window=7):
+    logger.warning("⚠️ Appel d'une fonction marquée @deprecated.")
     rad = np.radians(heading_series)
     smoothed = rad.copy()
     half_win = window // 2

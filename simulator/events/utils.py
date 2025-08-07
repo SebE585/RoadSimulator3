@@ -9,8 +9,15 @@ import pandas as pd
 import numpy as np
 import logging
 
+try:
+    from core.decorators import deprecated
+except ImportError:
+    def deprecated(func):
+        return func
+
 logger = logging.getLogger(__name__)
 
+@deprecated
 def ensure_event_column_object(df):
     """
     Assure que la colonne 'event' est bien de type 'object' (string),
@@ -23,6 +30,7 @@ def ensure_event_column_object(df):
     return df
 
 
+@deprecated
 def clean_invalid_events(df):
     """
     Supprime les événements invalides (non string ou NaN dans des colonnes critiques).
@@ -41,6 +49,7 @@ def clean_invalid_events(df):
 
 
 
+@deprecated
 def marquer_livraisons(df, prefix="stop_", start_index=1):
     """
     Marque les points de livraison dans le DataFrame en ajoutant des événements de type 'stop_xxx'

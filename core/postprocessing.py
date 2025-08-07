@@ -5,6 +5,7 @@ from simulator.events.noise import inject_inertial_noise
 from core.geo_utils import compute_heading, compute_curvature, compute_sinuosity
 from simulator.events.gyro import recompute_inertial_acceleration
 from core.osmnx.mapping import HIGHWAY_TO_TYPE
+from core.decorators import deprecated
 
 def fill_heading(df):
     lat1 = df['lat'].values[:-1]
@@ -32,12 +33,14 @@ def fill_sinuosity(df, window):
     df['sinuosity'] = sinuosity
     return df
 
+@deprecated
 def smooth_signal(series, window=5):
     """
     Applique une moyenne glissante pour lisser un signal.
     """
     return series.rolling(window=window, center=True, min_periods=1).mean()
 
+@deprecated
 def finalize_trajectory(df, hz=10, smoothing_window=3, config=None):
     """
     Pipeline complet de post-traitement :

@@ -43,7 +43,9 @@ def haversine(coord1: Tuple[float, float], coord2: Tuple[float, float]) -> float
     return R * c
 
 
+@deprecated
 def _route_has_loop(route: List[Tuple[float, float]], threshold_m: float = 30.0) -> bool:
+    logger.warning("⚠️ Appel d'une fonction marquée @deprecated.")
     """
     Détecte une boucle dans une liste de points GPS si deux points sont trop proches.
 
@@ -62,7 +64,9 @@ def _route_has_loop(route: List[Tuple[float, float]], threshold_m: float = 30.0)
     return False
 
 
+@deprecated
 def generate_random_route_around(
+    logger.warning("⚠️ Appel d'une fonction marquée @deprecated.")
     base_location: Tuple[float, float],
     total_km: float,
     max_attempts: int = 20,

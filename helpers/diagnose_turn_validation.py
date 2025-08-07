@@ -10,6 +10,7 @@ from simulator.trajectory import inject_inertial_noise
 from core.sinuosity import apply_sinuosity_to_df
 from core.road_analysis import detect_turns_with_sinuosity, compute_acc_y_from_heading, validate_turns
 from core.geo_utils import compute_heading
+from core.decorators import deprecated
 
 def make_output_dir():
     now = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -44,6 +45,7 @@ def simulate_and_prepare_df():
     df = compute_acc_y_from_heading(df)
     return df
 
+@deprecated
 def diagnose_threshold(df, heading_threshold=10, window=5, acc_y_thresholds=None):
     if acc_y_thresholds is None:
         acc_y_thresholds = np.arange(0.05, 0.55, 0.05)
@@ -71,6 +73,7 @@ if __name__ == "__main__":
 
 import matplotlib.pyplot as plt
 
+@deprecated
 def diagnose_threshold_with_plot(df, heading_threshold=10, window=5, acc_y_thresholds=None):
     if acc_y_thresholds is None:
         acc_y_thresholds = np.arange(0.05, 0.55, 0.05)
@@ -107,4 +110,3 @@ if __name__ == "__main__":
     print("Simulation et préparation des données...")
     df = simulate_and_prepare_df()
     diagnose_threshold_with_plot(df)
-

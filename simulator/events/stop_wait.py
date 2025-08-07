@@ -2,6 +2,8 @@ import numpy as np
 import pandas as pd
 import logging
 from simulator.events.generation import generate_opening_door
+from geopy.distance import geodesic
+from core.decorators import deprecated
 
 logger = logging.getLogger(__name__)
 
@@ -45,20 +47,8 @@ def apply_progressive_acceleration_after_stop_wait(df, hz=10, target_speed_kmh=3
 
     return df
 
-from geopy.distance import geodesic
-
+@deprecated
 def apply_stop_wait_at_positions(df, events_df, window_m=20):
-    """
-    Injecte des événements 'stop' ou 'wait' dans df à proximité des positions fournies.
-
-    Args:
-        df (pd.DataFrame): Trajectoire simulée avec colonnes lat/lon.
-        events_df (pd.DataFrame): DataFrame avec colonnes lat, lon, event.
-        window_m (float): Distance maximale (en mètres) pour associer un point du trajet.
-
-    Returns:
-        pd.DataFrame: DataFrame enrichi.
-    """
     df = df.copy()
     matched_indices = []
 

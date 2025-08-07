@@ -6,16 +6,25 @@ import pandas as pd
 import numpy as np
 from geopy.distance import geodesic
 from datetime import timedelta
+import warnings
+
+def deprecated(func):
+    def wrapper(*args, **kwargs):
+        warnings.warn(f"Fonction obsolète : {func.__name__}", DeprecationWarning, stacklevel=2)
+        return func(*args, **kwargs)
+    return wrapper
 
 
+@deprecated
+@deprecated
 def interpolate_route(route, frequency_hz=10):
+    logger.warning("⚠️ Appel d'une fonction marquée @deprecated.")
     """
     Interpole un itinéraire sous forme de tuples (lat, lon) pour obtenir un point toutes les X ms.
     Ajoute la vitesse entre chaque point (en km/h) et un timestamp uniforme.
     """
     distance_per_step_m = 1.0  # interpolation à 1 mètre
     interpolated = []
-    total_time_s = 0
 
     for i in range(len(route) - 1):
         start = route[i]

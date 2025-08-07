@@ -1,5 +1,6 @@
 import sys
 import os
+from core.decorators import deprecated
 REINJECT_ALWAYS = True  # 🔁 Forçage de la réinjection pour debug
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
 
@@ -11,6 +12,7 @@ from simulator.events.generation import get_available_indices
 from core.config_loader import load_full_config
 from pathlib import Path
 
+@deprecated
 def test_detect_dos_dane_on_injected_data():
     """
     Teste la détection des dos d’âne sur des données simulées avec événements injectés.

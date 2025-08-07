@@ -6,8 +6,10 @@ import seaborn as sns
 from matplotlib.colors import LogNorm
 from core.kinematics import compute_distance
 from core.utils import ensure_csv_column_order
+from core.decorators import deprecated
 
 
+@deprecated
 def plot_profile(df, output_path):
     fig, ax1 = plt.subplots(figsize=(10, 5))
     ax1.plot(df['distance_m'], df['altitude'], 'b-', label='Altitude (m)')
@@ -27,6 +29,7 @@ def plot_profile(df, output_path):
     plt.close(fig)
 
 
+@deprecated
 def plot_event_histogram(df, output_path):
     if "event" not in df.columns or df["event"].dropna().empty:
         print("[WARNING] Aucun événement à tracer dans l’histogramme.")
@@ -44,6 +47,7 @@ def plot_event_histogram(df, output_path):
     plt.close()
 
 
+@deprecated
 def heatmap_acc_xy(df, bins=100, range_g=1.0, output_path=None):
     G = 9.81
     max_val = range_g * G
@@ -89,6 +93,7 @@ def heatmap_acc_xy(df, bins=100, range_g=1.0, output_path=None):
         plt.show()
 
 
+@deprecated
 def speed_analysis(df, output_path=None):
     print("=== Statistiques globales de la vitesse (km/h) ===")
     print(df['speed'].describe())
@@ -123,6 +128,7 @@ def speed_analysis(df, output_path=None):
         print("Colonne 'road_type' absente ou vide dans le DataFrame.")
 
 
+@deprecated
 def generate_reports(df, outdir):
     os.makedirs(outdir, exist_ok=True)
     plot_profile_path = os.path.join(outdir, 'profile_altitude_pente.png')

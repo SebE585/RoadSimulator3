@@ -3,6 +3,8 @@ route_generator.py
 Génération d’itinéraires via villes + OSRM
 """
 
+from core.decorators import deprecated
+
 import random
 from core.osrm_utils import get_route_from_coords, interpolate_route_points
 
@@ -21,6 +23,7 @@ towns_around_romilly = [
     ("Sotteville-lès-Rouen", 49.4083, 1.0999),
 ]
 
+@deprecated
 def generate_route_via_towns(n_points=6):
     selected = random.sample(towns_around_romilly, n_points)
     print("Villes sélectionnées :")
@@ -29,6 +32,7 @@ def generate_route_via_towns(n_points=6):
     coords = [(lat, lon) for _, lat, lon in selected]
     return coords
 
+@deprecated
 def simulate_route_from_towns(n_points=6):
     """
     Simule un itinéraire en sélectionnant n_points villes aléatoires parmi une liste prédéfinie.

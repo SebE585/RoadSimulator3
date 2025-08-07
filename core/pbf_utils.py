@@ -54,6 +54,8 @@ class LocalOSMIndex:
         return df
 
 
+@deprecated
 def enrich_road_type_pbf(df, pbf_index: LocalOSMIndex, buffer_m=10):
+    logger.warning("⚠️ Appel d'une fonction marquée @deprecated.")
     print("[INFO] Attribution des types de routes via fichier PBF local...")
     return pbf_index.annotate_dataframe(df, buffer_m=buffer_m)

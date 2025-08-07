@@ -60,7 +60,9 @@ def get_osm_highway_from_node(G, node_id):
     return "unknown"
 
 @app.route('/nearest_road_batch_stream/start', methods=['POST'])
+@deprecated
 def start_stream():
+    logger.warning("⚠️ Appel d'une fonction marquée @deprecated.")
     data = request.json
     if not data or 'lat' not in data or 'lon' not in data:
         return {"error": "Missing 'lat' or 'lon'"}, 400
@@ -73,7 +75,9 @@ def start_stream():
     return {"stream_id": stream_id}, 200
 
 @app.route('/nearest_road_batch_stream/stream/<stream_id>')
+@deprecated
 def stream_results(stream_id):
+    logger.warning("⚠️ Appel d'une fonction marquée @deprecated.")
     if stream_id not in active_streams:
         return {"error": "Invalid stream_id"}, 404
 

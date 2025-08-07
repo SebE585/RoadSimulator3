@@ -1,6 +1,8 @@
+from core.decorators import deprecated
 import pandas as pd
 import numpy as np
 
+@deprecated
 def recompute_inertial_acceleration(df, hz=10):
     """
     Recalcule acc_x (accélération longitudinale) et acc_y (latérale) à partir de la vitesse et du heading.

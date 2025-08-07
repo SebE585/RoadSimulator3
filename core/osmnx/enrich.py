@@ -3,7 +3,9 @@ from .client import stream_osmnx_batch
 from .mapping import get_edge_type_nearest
 
 
+@deprecated
 def enrich_road_type(df: pd.DataFrame) -> pd.DataFrame:
+    logger.warning("⚠️ Appel d'une fonction marquée @deprecated.")
     """
     Enrichit un DataFrame avec les colonnes 'road_type' et 'osm_highway'
     en interrogeant l'API OSMnx locale via `stream_osmnx_batch`.

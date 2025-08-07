@@ -2,7 +2,9 @@ import geopandas as gpd
 import pandas as pd
 from shapely.geometry import Point
 
+@deprecated
 def load_osm_zones(filepath):
+    logger.warning("⚠️ Appel d'une fonction marquée @deprecated.")
     """
     Charge un fichier GeoJSON ou shapefile contenant les zones OSM annotées :
     Exemple de colonnes attendues : ['zone_type', 'name', 'geometry']
@@ -12,7 +14,9 @@ def load_osm_zones(filepath):
     return zones_gdf
 
 
+@deprecated
 def enrich_with_osm_zones(df, zones_gdf):
+    logger.warning("⚠️ Appel d'une fonction marquée @deprecated.")
     """
     Enrichit le DataFrame avec les types de zones OSM (urbain, zone industrielle, piéton, etc.)
     en associant chaque point GPS à une zone par inclusion spatiale.

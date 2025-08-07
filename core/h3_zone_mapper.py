@@ -13,7 +13,9 @@ def load_zones():
             print(f"[WARNING] Impossible de charger {ZONES_GEOJSON} : {e}")
             ZONES_GDF = None
 
+@deprecated
 def enrich_with_h3_and_zones(df, config):
+    logger.warning("⚠️ Appel d'une fonction marquée @deprecated.")
     load_zones()
     if ZONES_GDF is None:
         print("[WARNING] Pas de données de zones, enrichissement ignoré.")

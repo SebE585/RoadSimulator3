@@ -60,7 +60,9 @@ def enrich_with_terrain(df: pd.DataFrame, config: dict) -> pd.DataFrame:
     return df
 
 @app.route('/enrich_terrain', methods=['POST'])
+@deprecated
 def enrich_terrain_api():
+    logger.warning("⚠️ Appel d'une fonction marquée @deprecated.")
     try:
         coords = request.get_json()
         if not coords or not isinstance(coords, list):

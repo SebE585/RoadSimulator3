@@ -54,7 +54,9 @@ def generate_stops(df):
     return df
 
 
+@deprecated
 def inject_stops_and_waits(df, max_events_per_type=5, hz=10, min_stop_duration=120, min_wait_duration=30):
+    logger.warning("⚠️ Appel d'une fonction marquée @deprecated.")
     logger.info("[INJECTION] Génération initiale des stops...")
     df = generate_stops(df, max_events=max_events_per_type, min_duration=min_stop_duration)
 

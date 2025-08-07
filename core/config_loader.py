@@ -1,5 +1,6 @@
 import os
 import yaml
+from core.decorators import deprecated
 
 # Chemin du fichier de configuration principal
 CONFIG_PATH = os.path.join(os.path.dirname(__file__), '..', 'config', 'config.yaml')
@@ -41,39 +42,11 @@ def load_simulation_config(config_path=None):
     return _cached_simulation_config
 
 # Fonctions spécifiques
-def get_heading_smooth_window():
-    cfg = load_config()
-    return cfg.get('general', {}).get('heading_smooth_window', 41)
-
-def get_speed_smooth_window():
-    cfg = load_config()
-    return cfg.get('general', {}).get('speed_smooth_window', 21)
-
+@deprecated
 def get_context_config():
+    logger.warning("⚠️ Appel d'une fonction marquée @deprecated.")
     cfg = load_config()
     return cfg.get('context', {})
-
-def get_context_sources():
-    return get_context_config().get('sources', {})
-
-def get_context_thresholds():
-    return get_context_config().get('thresholds', {})
-
-def resolve_mnt_path(config):
-    mnt_data = config.get('mnt_data', {})
-    folder = mnt_data.get('local_folder', '')
-    filenames = mnt_data.get('filenames', [])
-
-    if folder and filenames:
-        mnt_path = os.path.join(folder, filenames[0])
-        if os.path.exists(mnt_path):
-            print(f"[INFO] MNT résolu depuis la configuration : {mnt_path}")
-            return mnt_path
-        else:
-            print(f"[ERROR] Le fichier MNT spécifié est introuvable : {mnt_path}")
-    else:
-        print("[ERROR] Informations mnt_data incomplètes dans la configuration.")
-    return None
 
 def load_full_config():
     """

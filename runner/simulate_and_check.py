@@ -13,7 +13,6 @@ from core.utils import ensure_csv_column_order
 from core.reports import generate_reports
 from check.check_realism import check_realism
 from simulator.pipeline.pipeline import SimulationPipeline
-from core.kinematics_speed import apply_target_speed_by_road_type
 from simulator.cleaning import clean_simulation_errors
 
 # ↓↓↓ Supprime les logs de debug liés aux polices matplotlib
@@ -59,19 +58,17 @@ def simulate_and_enrich(csv_path: str = None, outdir: str = None) -> pd.DataFram
         cap_speed_to_target
     )
 
-    from simulator.events.gyro import recompute_inertial_acceleration
+    from simulator.events.gyro import generate_gyroscope_signals
 
     # Étapes complémentaires post-pipeline
     df = adjust_speed_progressively(df)
-    df = recompute_inertial_acceleration(df, hz=config["simulation"]["hz"])
     df = interpolate_target_speed_progressively(
         df,
         alpha=0.1,
         force=config["simulation"].get("force_target_speed", False)
     )
-    df = recompute_inertial_acceleration(df, hz=config["simulation"]["hz"])
     df = cap_speed_to_target(df, alpha=0.2)
-    df = recompute_inertial_acceleration(df, hz=config["simulation"]["hz"])
+    df = generate_gyroscope_signals(df)
 
     if outdir:
         os.makedirs(outdir, exist_ok=True)

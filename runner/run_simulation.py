@@ -1,13 +1,13 @@
+from deprecated import deprecated
 import os
-import sys
 from datetime import datetime
 import logging
 
 import numpy as np
 import pandas as pd
 
-# Ajout du répertoire parent pour les imports
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+from simulator.events.gyro import generate_gyroscope_signals
+
 
 """
 Script principal de simulation RoadSimulator3.
@@ -180,11 +180,7 @@ def run_simulation(input_csv=None, speed_target_kmh=30):
     tracker_post_resample.show(label="Après resample_time")
 
     # 🧮 13. Sécurisation des colonnes acc / gyro
-    for col in ['acc_x', 'acc_y', 'acc_z', 'gyro_x', 'gyro_y', 'gyro_z']:
-        if col not in df.columns:
-            df[col] = 0.0
-    if 'event' not in df.columns:
-        df['event'] = np.nan
+    df = generate_gyroscope_signals(df)
 
     # 📊 Suivi final des événements
     final_tracker = EventCounter()
@@ -246,4 +242,5 @@ def run_simulation(input_csv=None, speed_target_kmh=30):
 
 
 if __name__ == "__main__":
+    # Permet l'exécution en tant que module : python -m runner.run_simulation
     run_simulation(input_csv=None, speed_target_kmh=40.0)

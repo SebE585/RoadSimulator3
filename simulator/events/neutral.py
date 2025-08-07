@@ -1,7 +1,10 @@
 import numpy as np
 import pandas as pd
+from core.decorators import deprecated
 
+@deprecated
 def inject_neutral_phases(df, duration_s=2.0, speed_kmh=30.0, hz=10):
+    logger.warning("⚠️ Appel d'une fonction marquée @deprecated.")
     """
     Injecte des phases de roulage neutre (vitesse constante, bruit inertiel) entre les événements.
     Ces points ont event == NaN et simulent un roulage calme sans changement brutal.

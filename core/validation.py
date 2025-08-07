@@ -1,4 +1,5 @@
 import pandas as pd
+from core.decorators import deprecated
 
 def validate_timestamps(df):
     if not df['timestamp'].is_monotonic_increasing:
@@ -21,7 +22,9 @@ def compute_speed_stats(df):
         'speed_mean': df['speed'].mean()
     }
 
+@deprecated
 def is_regular_sampling(df, freq_hz=10):
+    logger.warning("⚠️ Appel d'une fonction marquée @deprecated.")
     """
     Vérifie si l'échantillonnage est régulier (fréquence cible en Hz).
     Retourne True si toutes les différences de timestamp sont proches de 1/freq_hz.

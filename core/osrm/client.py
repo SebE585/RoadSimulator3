@@ -8,6 +8,7 @@ avec gestion d’erreurs, tentatives multiples, et décodage de géométrie.
 import requests
 import time
 from typing import List, Tuple
+from core.decorators import deprecated
 
 # URL de l’instance OSRM locale (adapter si nécessaire)
 OSRM_URL = "http://localhost:5003"
@@ -52,7 +53,9 @@ def get_route_from_coords(coords: List[Tuple[float, float]]) -> Tuple[dict, List
     raise RuntimeError("[OSRM] Échec de la requête OSRM après 3 tentatives.")
 
 
+@deprecated
 def decode_polyline(encoded_polyline: str) -> List[Tuple[float, float]]:
+    logger.warning("⚠️ Appel d'une fonction marquée @deprecated.")
     """
     Décode une chaîne de polyline encodée en une liste de points (lat, lon).
 

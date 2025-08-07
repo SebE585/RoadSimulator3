@@ -2,14 +2,18 @@ import pandas as pd
 import numpy as np
 from datetime import datetime, timedelta
 
+@deprecated
 def load_meteo_data(filepath):
+    logger.warning("⚠️ Appel d'une fonction marquée @deprecated.")
     """
     Charge un fichier CSV de données météo contenant :
     timestamp, lat, lon, temperature, humidity, wind_speed, precipitation
     """
     return pd.read_csv(filepath, parse_dates=['timestamp'])
 
+@deprecated
 def enrich_with_meteo(df, meteo_df):
+    logger.warning("⚠️ Appel d'une fonction marquée @deprecated.")
     """
     Enrichit le DataFrame df avec les colonnes météo par interpolation temporelle et spatiale.
     Colonnes ajoutées : temperature, humidity, wind_speed, precipitation
@@ -44,7 +48,9 @@ def enrich_with_meteo(df, meteo_df):
 
     return df
 
+@deprecated
 def enrich_with_meteo_dummy(df):
+    logger.warning("⚠️ Appel d'une fonction marquée @deprecated.")
     """
     Version fallback : remplit les colonnes météo avec des valeurs réalistes simulées.
     """

@@ -32,13 +32,12 @@ from core.terrain.client import enrich_terrain_via_api
 # Injection bruit et gyroscope
 from simulator.events.noise import inject_inertial_noise
 from simulator.events.gyro import simulate_gyroscope_from_heading, inject_gyroscope_from_events
-from simulator.events.stop_wait import apply_progressive_acceleration_after_stop_wait
 
 # Événements inertiels
 from simulator.events.generation import apply_final_deceleration, apply_initial_acceleration
 
 # Détection événements
-from simulator.detectors import detect_all_events
+from simulator.s import detect_all_events
 
 
 logger = logging.getLogger(__name__)
@@ -135,8 +134,6 @@ class SimulationPipeline:
         df = apply_initial_acceleration(df, self.full_config)
         df = inject_all_events(df, self.full_config)
         assert_dataframe_integrity(df, "inject_all_events")
-        # Étape déjà appliquée dans inject_all_events → pas besoin de répéter
-        # df = apply_progressive_acceleration_after_stop_wait(df, hz=hz)
         df = apply_final_deceleration(df, self.full_config)
 
         # Post-traitement inertiel

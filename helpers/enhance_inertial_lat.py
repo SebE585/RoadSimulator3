@@ -20,6 +20,7 @@ from core.road_analysis import (
 )
 from core.geo_utils import compute_heading
 from helpers.roundabout_utils import compare_roundabout_detections
+from core.decorators import deprecated
 
 import matplotlib.pyplot as plt
 
@@ -31,6 +32,7 @@ def make_output_dir():
     return out_dir
 
 
+@deprecated
 def simulate_dummy_route():
     interpolated_points, geometry = simulate_route_from_towns(n_points=6)
     n_points = len(interpolated_points)
@@ -57,6 +59,7 @@ def simulate_dummy_route():
     return df
 
 
+@deprecated
 def enhance_and_compare():
     print("Villes sélectionnées :")
     df = simulate_dummy_route()

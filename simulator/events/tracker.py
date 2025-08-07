@@ -1,5 +1,6 @@
 from collections import defaultdict
 import pandas as pd
+from core.decorators import deprecated
 
 
 class EventCounter:
@@ -48,13 +49,17 @@ class EventCounter:
         """
         return sum(self.counts.values())
 
+    @deprecated
     def reset(self) -> None:
+        logger.warning("⚠️ Appel d'une fonction marquée @deprecated.")
         """
         Réinitialise complètement le compteur.
         """
         self.counts.clear()
 
+    @deprecated
     def as_dict(self) -> dict:
+        logger.warning("⚠️ Appel d'une fonction marquée @deprecated.")
         """
         Exporte les données de comptage sous forme de dictionnaire.
 

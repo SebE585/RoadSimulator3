@@ -6,6 +6,17 @@ Utilitaires génériques pour la validation et l'export CSV dans RoadSimulator3
 import pandas as pd
 import numpy as np
 import os
+import warnings
+def deprecated(func):
+    """
+    Décorateur pour marquer une fonction comme obsolète.
+    Affiche un avertissement à l'exécution.
+    """
+    def wrapper(*args, **kwargs):
+        warnings.warn(f"[DEPRECATED] La fonction '{func.__name__}' est obsolète.", DeprecationWarning, stacklevel=2)
+        return func(*args, **kwargs)
+    return wrapper
+
 
 def ensure_event_column_object(df):
     """
@@ -17,7 +28,9 @@ def ensure_event_column_object(df):
         df['event'] = df['event'].astype('object')
     return df
 
+@deprecated
 def find_latest_trace(base_dir='data/simulations'):
+    logger.warning("⚠️ Appel d'une fonction marquée @deprecated.")
     """
     Recherche le dernier fichier trace.csv dans le répertoire spécifié.
 
@@ -71,7 +84,10 @@ def load_trace(csv_path):
     df = pd.read_csv(csv_path, parse_dates=['timestamp'])
     return df
 
+@deprecated
+@deprecated
 def get_log_path(log_type, timestamp, base_dir='data/simulations'):
+    logger.warning("⚠️ Appel d'une fonction marquée @deprecated.")
     """
     Génère le chemin du fichier de log pour un type donné.
 
@@ -85,6 +101,9 @@ def get_log_path(log_type, timestamp, base_dir='data/simulations'):
     """
     folder = os.path.join(base_dir, f'simulated_{timestamp}')
     os.makedirs(folder, exist_ok=True)
+    import logging
+    logger = logging.getLogger(__name__)
+    logger.warning("[DEPRECATED] Utilisation de get_log_path")
     return os.path.join(folder, f'{log_type}.log')
 
 def ensure_strictly_increasing_timestamps(df, col="timestamp"):

@@ -9,6 +9,7 @@ from datetime import datetime, timedelta
 import pandas as pd
 from typing import List, Tuple, Optional
 from .client import get_route_from_coords
+from core.decorators import deprecated
 
 def simulate_route_via_osrm(cities_coords: List[Tuple[float, float]], hz: int = 10, start_time: Optional[datetime] = None) -> pd.DataFrame:
     """
@@ -90,7 +91,9 @@ def simulate_route_via_osrm(cities_coords: List[Tuple[float, float]], hz: int = 
 
 
 # Nouvelle fonction : simulation à partir des événements
+@deprecated
 def simulate_route_via_osrm_from_events(df: pd.DataFrame, hz: int = 10, start_time: Optional[datetime] = None) -> pd.DataFrame:
+    logger.warning("⚠️ Appel d'une fonction marquée @deprecated.")
     """
     Reconstruit un trajet complet via OSRM en utilisant les points marqués par des événements,
     puis utilise les points bruts OSRM à fréquence fixe.

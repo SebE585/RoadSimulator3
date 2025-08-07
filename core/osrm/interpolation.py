@@ -40,11 +40,11 @@ def interpolate_route_at_fixed_step(coords: List[Tuple[float, float]], step_m: f
         start = coords[i]
         end = coords[i + 1]
         dist = geodesic(start, end).meters
-        steps = max(int(dist / step_m), 1)
+        steps = max(int(round(dist / step_m)), 1)
         for j in range(steps):
-            lat = start[0] + (end[0] - start[0]) * j / steps
-            lon = start[1] + (end[1] - start[1]) * j / steps
+            ratio = j / steps
+            lat = start[0] + (end[0] - start[0]) * ratio
+            lon = start[1] + (end[1] - start[1]) * ratio
             new_coords.append((lat, lon))
-
     new_coords.append(coords[-1])
     return new_coords

@@ -7,3 +7,19 @@ cache/
 
 # Backups ZIP
 *.zip
+
+# Données locales
+data/
+*.zip
+*.tar.gz
+*.rar
+
+# Fichiers temporaires
+*.pyc
+__pycache__/
+
+# MacOS
+.DS_Store
+
+# Fichiers Word temporaires
+~$*

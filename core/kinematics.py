@@ -1,5 +1,13 @@
 import pandas as pd
 import numpy as np
+import warnings
+
+# Deprecation decorator
+def deprecated(func):
+    def wrapper(*args, **kwargs):
+        warnings.warn(f"{func.__name__} is deprecated and may be removed in future versions.", DeprecationWarning, stacklevel=2)
+        return func(*args, **kwargs)
+    return wrapper
 from geopy.distance import geodesic
 from core.config_loader import load_full_config
 from core.geo_utils import haversine_distance
@@ -264,21 +272,6 @@ def reproject_trajectory_from_target_speed(df, hz=10):
     df["lon"] = new_lons
     return df
 
-def enrich_inertial_coupling(df, gyro_weight=0.05):
-    df = df.copy()
-    if "heading" not in df.columns:
-        df = fill_heading(df)
-
-    heading_rad = np.radians(df["heading"])
-    delta_heading = np.gradient(heading_rad)
-    acc_y_from_heading = np.gradient(delta_heading)
-
-    if "acc_y" in df.columns:
-        df["acc_y"] += gyro_weight * acc_y_from_heading
-    else:
-        df["acc_y"] = gyro_weight * acc_y_from_heading
-
-    return df
 
 def compute_kinematic_metrics(df, hz=10, resample=True):
     """
@@ -337,42 +330,13 @@ def compute_total_distance(df):
 # Ajout : Fonction de visualisation des vitesses cibles par type de route pour chaque portion (10%)
 import matplotlib.pyplot as plt
 
-def plot_target_speed_by_road_type_per_portion(df, output_path=None):
-    """
-    Affiche les vitesses moyennes par type de route pour chaque portion (10%) du trajet.
-    Optionnellement, sauvegarde le graphique si output_path est spécifié.
-    """
-    nb_parts = 10
-    road_types = df["road_type"].dropna().unique()
-    road_types = sorted(road_types, key=lambda x: x.lower())
-    portion_data = {rt: [] for rt in road_types}
-
-    for i in range(nb_parts):
-        start = int(i * len(df) / nb_parts)
-        end = int((i + 1) * len(df) / nb_parts)
-        sub_df = df.iloc[start:end]
-        grouped = sub_df.groupby("road_type")["target_speed"].mean()
-        for rt in road_types:
-            portion_data[rt].append(grouped.get(rt, np.nan))
-
-    plt.figure(figsize=(12, 6))
-    for rt, values in portion_data.items():
-        plt.plot(range(1, nb_parts + 1), values, label=rt)
-
-    plt.xlabel("Portion du trajet (1 à 10)")
-    plt.ylabel("Vitesse moyenne (km/h)")
-    plt.title("Vitesse moyenne par type de route (par portion)")
-    plt.legend()
-    plt.grid(True)
-    if output_path:
-        plt.savefig(output_path)
-    else:
-        plt.show()
 
 import pandas as pd
 import numpy as np
 
+@deprecated
 def check_speed_plateaux(df, speed_cfg):
+    logger.warning("⚠️ Appel d'une fonction marquée @deprecated.")
     """
     Vérifie que chaque type de route possède au moins un plateau de vitesse réaliste,
     selon les seuils définis dans speed.yaml.
@@ -434,37 +398,6 @@ def check_speed_plateaux(df, speed_cfg):
 
     return results
 
-def detect_speed_plateaux(df, config=None, threshold_kmh=None, min_duration_s=None):
-    """
-    Wrapper pour check_speed_plateaux depuis speed.yaml avec possibilité de surcharge.
-
-    Args:
-        df (pd.DataFrame): DataFrame contenant 'road_type' et 'speed'
-        config (dict): Dictionnaire de configuration chargé via load_yaml_config()
-        threshold_kmh (float, optional): Seuil de stabilité de vitesse (km/h)
-        min_duration_s (float, optional): Durée minimale pour considérer un plateau (s)
-
-    Returns:
-        dict: Résultat des vérifications des plateaux
-    """
-    if config is None:
-        from core.config_loader import load_full_config as load_yaml_config
-        config = load_yaml_config()
-
-    # Sécurité : s'assurer que "plateau_detection" existe dans config
-    if "plateau_detection" not in config:
-        config["plateau_detection"] = {}
-    config["plateau_detection"].setdefault("hz", 10)
-    config["plateau_detection"].setdefault("rolling_window", 5)
-    config["plateau_detection"].setdefault("threshold_kmh", 2.0)
-    config["plateau_detection"].setdefault("min_duration_default_s", 10)
-
-    if threshold_kmh is not None:
-        config["plateau_detection"]["threshold_kmh"] = threshold_kmh
-    if min_duration_s is not None:
-        config["plateau_detection"]["min_duration_default_s"] = min_duration_s
-
-    return check_speed_plateaux(df, config)
 # If recompute_inertial_acceleration is needed here, import it from imu_utils:
 from core.imu_utils import recompute_inertial_acceleration
 

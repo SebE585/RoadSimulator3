@@ -14,7 +14,9 @@ class RoadGraphHandler(osmium.SimpleHandler):
         super().__init__()
         self.G = nx.DiGraph()
 
+    @deprecated
     def way(self, w):
+        logger.warning("⚠️ Appel d'une fonction marquée @deprecated.")
         highway = w.tags.get("highway")
         maxspeed = w.tags.get("maxspeed")
         name = w.tags.get("name")

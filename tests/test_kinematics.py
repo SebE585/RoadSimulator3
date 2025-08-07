@@ -66,7 +66,9 @@ class TestKinematics(unittest.TestCase):
         # longitudes doivent être presque constantes
         self.assertTrue(np.allclose(np.diff(df_new['lon']), 0, atol=1e-6))
 
+@deprecated
 def clean_and_recompute(df, dt=0.1):
+    logger.warning("⚠️ Appel d'une fonction marquée @deprecated.")
     """
     Détecte anomalies GPS et vitesse, nettoie les points, puis
     recalcul :

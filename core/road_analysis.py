@@ -3,7 +3,9 @@ import requests
 
 OSRM_URL = "http://localhost:5001"
 
+@deprecated
 def get_osrm_roundabouts(coords):
+    logger.warning("⚠️ Appel d'une fonction marquée @deprecated.")
     """
     Interroge OSRM pour détecter les ronds-points le long du parcours.
 

@@ -1,6 +1,7 @@
 # core/geo_utils.py
 import numpy as np
 import pandas as pd
+from core.decorators import deprecated
 
 def compute_heading(lat1, lon1, lat2, lon2):
     """
@@ -81,6 +82,7 @@ def haversine_np(lat1, lon1, lat2, lon2):
 
     return R * c
 
+@deprecated
 def recompute_speed(df, config=None):
     """
     Recalcule la vitesse (km/h) à partir des positions GPS et timestamps, méthode vectorisée.

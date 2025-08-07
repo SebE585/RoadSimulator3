@@ -108,7 +108,6 @@ def adjust_speed_progressively(df, max_acc_kmh_per_s=10, hz=10, config=None):
     df = df.copy()
     if config is None:
         config = load_config()
-    target_speeds = config.get("simulation", {}).get("target_speed_by_road_type", {})
     if config is not None:
         simulation_config = config.get("simulation") if isinstance(config, dict) else None
         if simulation_config is not None:
@@ -203,17 +202,6 @@ def cap_speed_to_target(df, alpha=0.2):
             speed[i] = speed[i]
 
     df["speed"] = speed
-    return df
-
-def cap_global_speed_delta(df, max_delta_kmh=15.0):
-    df = df.copy()
-    speed = df["speed"].values
-    capped_speed = speed.copy()
-    delta = np.diff(speed, prepend=speed[0])
-    for i in range(1, len(speed)):
-        if abs(delta[i]) > max_delta_kmh:
-            capped_speed[i] = capped_speed[i-1] + np.sign(delta[i]) * max_delta_kmh
-    df["speed"] = capped_speed
     return df
 
 def simulate_variable_speed(df: pd.DataFrame, full_config: dict) -> pd.DataFrame:

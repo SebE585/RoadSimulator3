@@ -6,7 +6,6 @@ from simulator.events.tracker import EventCounter
 
 from core.utils import ensure_strictly_increasing_timestamps
 from simulator.events.generation import (
-    generate_opening_door,
     generate_dos_dane,
     generate_nid_de_poule,
     generate_trottoir,
@@ -69,10 +68,7 @@ def inject_all_events(df, config):
         if not config.get("injection", {}).get(name, {}).get("enabled", True):
             return df
         df_before = df.copy()
-        if name == "ouverture_porte":
-            df_after = func(df, config)
-        else:
-            df_after = func(df, config=config)
+        df_after = func(df, config=config)
         n_added = (
             df_after["event"].fillna("").str.contains(name).sum()
             - df_before["event"].fillna("").str.contains(name).sum()
@@ -86,10 +82,6 @@ def inject_all_events(df, config):
         df, hz=10, target_speed_kmh=30, duration_s=5
     )
     debugger.save(df, label="02_after_progressive_acceleration")
-
-    # Événement "ouverture_porte" optionnel
-    if config.get("injection", {}).get("ouverture_porte", {}).get("enabled", False):
-        df = maybe_inject("ouverture_porte", generate_opening_door)
 
     # Événements inertiels standards
     for name, func in [
@@ -114,7 +106,7 @@ def inject_all_events(df, config):
     # Renforcer le nettoyage : appel une seconde fois pour supprimer les répétitions espacées par un NaN
     df = deduplicate_event_labels(df)
     # 🔒 Sécurité finale : garantir que les événements ponctuels sont uniques par position
-    ponctuels = ["acceleration", "freinage", "dos_dane", "trottoir", "nid_de_poule", "ouverture_porte"]
+    ponctuels = ["acceleration", "freinage", "dos_dane", "trottoir", "nid_de_poule"]
     for event_name in ponctuels:
         idx = df.index[df["event"] == event_name].tolist()
         for i in range(1, len(idx)):

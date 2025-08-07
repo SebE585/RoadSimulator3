@@ -3,19 +3,19 @@ import numpy as np
 import pandas as pd
 from core.gps_utils import compute_heading
 
-def simulate_gyroscope_from_heading(df: pd.DataFrame, hz: int = 10) -> pd.DataFrame:
+def generate_gyroscope_signals(df: pd.DataFrame, hz: int = 10) -> pd.DataFrame:
     """
-    Simule les données gyroscopiques (gyro_x, gyro_y, gyro_z) à partir de la trajectoire.
+    Génère les signaux gyroscopiques (gyro_x, gyro_y, gyro_z) à partir de la trajectoire et des événements.
 
     - gyro_z : taux de rotation autour de l'axe vertical (cap), estimé à partir du heading.
-    - gyro_x, gyro_y : placeholders (0 ou bruit), ou enrichis dans les événements spécifiques.
+    - gyro_x, gyro_y : bruit léger par défaut, enrichi selon les événements spécifiques.
 
     Args:
-        df (pd.DataFrame): Doit contenir une colonne 'heading' en radians.
+        df (pd.DataFrame): Doit contenir une colonne 'heading' en radians et éventuellement 'event'.
         hz (int): Fréquence d'échantillonnage (10 Hz par défaut).
 
     Returns:
-        pd.DataFrame: avec colonnes gyro_x, gyro_y, gyro_z ajoutées.
+        pd.DataFrame: avec colonnes gyro_x, gyro_y, gyro_z ajoutées ou modifiées.
     """
     df = df.copy()
 
@@ -24,31 +24,13 @@ def simulate_gyroscope_from_heading(df: pd.DataFrame, hz: int = 10) -> pd.DataFr
     delta_heading = np.unwrap(np.gradient(heading))  # évite les discontinuités ±pi
     df["gyro_z"] = delta_heading * hz
 
-    # gyro_x/y : bruit faible par défaut, événements spécifiques les enrichiront
+    # gyro_x/y : bruit faible par défaut
     np.random.seed(42)  # reproductibilité
     df["gyro_x"] = np.random.normal(0.01, 0.02, size=len(df))  # tangage faible
     df["gyro_y"] = np.random.normal(0.01, 0.02, size=len(df))  # roulis faible
 
-    return df
-
-def inject_gyroscope_from_events(df: pd.DataFrame, hz: int = 10) -> pd.DataFrame:
-    """
-    Applique des signatures gyroscopiques à partir de la colonne 'event'.
-
-    Args:
-        df (pd.DataFrame): DataFrame contenant les colonnes gyro_x/y/z et event.
-        hz (int): Fréquence d'échantillonnage (10 Hz).
-
-    Returns:
-        pd.DataFrame: enrichi avec gyro simulé sur les segments d'événements.
-    """
-    df = df.copy()
-    # Ensure gyro_x, gyro_y, gyro_z columns exist
-    for axis in ["gyro_x", "gyro_y", "gyro_z"]:
-        if axis not in df.columns:
-            df[axis] = 0.0
+    # Appliquer les signatures gyroscopiques des événements
     n = len(df)
-
     for i, row in df.iterrows():
         evt = row.get("event", None)
         if pd.isna(evt):
@@ -120,7 +102,6 @@ def recompute_inertial_acceleration(df: pd.DataFrame, hz: int = 10) -> pd.DataFr
 
 
 __all__ = [
-    "simulate_gyroscope_from_heading",
-    "inject_gyroscope_from_events",
+    "generate_gyroscope_signals",
     "recompute_inertial_acceleration",
 ]
