@@ -1,0 +1,41 @@
+services:
+  
+  # osrm Service
+  osrm-server:
+    image: ghcr.io/project-osrm/osrm-backend:v6.0.0
+    platform: linux/arm64/v8
+    container_name: osrm-server
+    command: osrm-routed --algorithm mld --port 5003 /data/haute-normandie-latest.osrm
+    volumes:
+      - ../data/osrm:/data
+      - ../logs/osrm:/var/log/osrm
+    ports:
+      - "5003:5003"
+    restart: unless-stopped
+
+
+  # OSMnx Service (API Flask)
+  osmnx-service:
+    build: ./osmnx-service
+    container_name: osmnx-service
+    volumes:
+      - ../data/osmnx:/data
+    ports:
+      - "5002:5002"
+    environment:
+      - FLASK_APP=app.py
+    restart: unless-stopped
+
+
+  # SRTM Enrichment Service
+  srtm-service:
+    build: ./srtm-service
+    container_name: srtm-service
+    volumes:
+      - ../data/srtm:/data/srtm
+      - ../logs/srtm:/app/logs
+    environment:
+      - MNT_PATH=/data/srtm/normandy_l93.tif
+    ports:
+      - "5004:5004"
+    restart: unless-stopped

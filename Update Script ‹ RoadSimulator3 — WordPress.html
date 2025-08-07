@@ -1,0 +1,648 @@
+<!DOCTYPE html>
+<html class="wp-toolbar"
+	lang="fr-FR">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+	<title>Update Script &lsaquo; RoadSimulator3 &#8212; WordPress</title>
+<script type="text/javascript">
+addLoadEvent = function(func){if(typeof jQuery!=='undefined')jQuery(function(){func();});else if(typeof wpOnload!=='function'){wpOnload=func;}else{var oldonload=wpOnload;wpOnload=function(){oldonload();func();}}};
+var ajaxurl = '/wp-admin/admin-ajax.php',
+	pagenow = 'admin_page_hfcm-update',
+	typenow = '',
+	adminpage = 'admin_page_hfcm-update',
+	thousandsSeparator = ' ',
+	decimalPoint = ',',
+	isRtl = 0;
+</script>
+<link rel='stylesheet' href='https://roadsimulator3.fr/wp-admin/load-styles.php?c=0&amp;dir=ltr&amp;load%5Bchunk_0%5D=dashicons,admin-bar,common,forms,admin-menu,dashboard,list-tables,edit,revisions,media,themes,about,nav-menus,wp-pointer,widgets&amp;load%5Bchunk_1%5D=,site-icon,l10n,buttons,wp-auth-check,code-editor&amp;ver=6.8.2' media='all' />
+<style>
+@media print { #wpadminbar { display:none; } }
+</style>
+<link rel='stylesheet' id='hfcm_general_admin_assets-css' href='https://roadsimulator3.fr/wp-content/plugins/header-footer-code-manager/css/style-general-admin.css?ver=6.8.2' media='all' />
+<link rel='stylesheet' id='hfcm_assets-css' href='https://roadsimulator3.fr/wp-content/plugins/header-footer-code-manager/css/style-admin.css?ver=6.8.2' media='all' />
+<link rel='stylesheet' id='selectize-css-css' href='https://roadsimulator3.fr/wp-content/plugins/header-footer-code-manager/css/selectize.bootstrap3.css?ver=6.8.2' media='all' />
+<link rel='stylesheet' id='wp-codemirror-css' href='https://roadsimulator3.fr/wp-includes/js/codemirror/codemirror.min.css?ver=5.29.1-alpha-ee20357' media='all' />
+<link rel='stylesheet' id='yoast-seo-admin-global-css' href='https://roadsimulator3.fr/wp-content/plugins/wordpress-seo/css/dist/admin-global-2560.css' media='all' />
+<style id='yoast-seo-admin-global-inline-css'>
+ul.wp-submenu span.yoast-premium-badge::after, #wpadminbar span.yoast-premium-badge::after { content:"Premium"}
+</style>
+<link rel='stylesheet' id='yoast-seo-dismissible-css' href='https://roadsimulator3.fr/wp-content/plugins/wordpress-seo/css/dist/wpseo-dismissible-2560.css' media='all' />
+<link rel='stylesheet' id='yoast-seo-adminbar-css' href='https://roadsimulator3.fr/wp-content/plugins/wordpress-seo/css/dist/adminbar-2560.css' media='all' />
+<style id='wp-emoji-styles-inline-css'>
+
+	img.wp-smiley, img.emoji {
+		display: inline !important;
+		border: none !important;
+		box-shadow: none !important;
+		height: 1em !important;
+		width: 1em !important;
+		margin: 0 0.07em !important;
+		vertical-align: -0.1em !important;
+		background: none !important;
+		padding: 0 !important;
+	}
+</style>
+<style class='wp-fonts-local'>
+@font-face{font-family:Beiruti;font-style:normal;font-weight:200 900;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/beiruti/Beiruti-VariableFont_wght.woff2') format('woff2');}
+@font-face{font-family:Literata;font-style:normal;font-weight:200;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/literata/Literata72pt-ExtraLight.woff2') format('woff2');}
+@font-face{font-family:Literata;font-style:italic;font-weight:200;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/literata/Literata72pt-ExtraLightItalic.woff2') format('woff2');}
+@font-face{font-family:Literata;font-style:normal;font-weight:300;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/literata/Literata72pt-Light.woff2') format('woff2');}
+@font-face{font-family:Literata;font-style:italic;font-weight:300;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/literata/Literata72pt-LightItalic.woff2') format('woff2');}
+@font-face{font-family:Literata;font-style:normal;font-weight:400;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/literata/Literata72pt-Regular.woff2') format('woff2');}
+@font-face{font-family:Literata;font-style:italic;font-weight:400;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/literata/Literata72pt-RegularItalic.woff2') format('woff2');}
+@font-face{font-family:Literata;font-style:normal;font-weight:500;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/literata/Literata72pt-Medium.woff2') format('woff2');}
+@font-face{font-family:Literata;font-style:italic;font-weight:500;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/literata/Literata72pt-MediumItalic.woff2') format('woff2');}
+@font-face{font-family:Literata;font-style:normal;font-weight:600;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/literata/Literata72pt-SemiBold.woff2') format('woff2');}
+@font-face{font-family:Literata;font-style:italic;font-weight:600;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/literata/Literata72pt-SemiBoldItalic.woff2') format('woff2');}
+@font-face{font-family:Literata;font-style:normal;font-weight:700;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/literata/Literata72pt-Bold.woff2') format('woff2');}
+@font-face{font-family:Literata;font-style:italic;font-weight:700;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/literata/Literata72pt-BoldItalic.woff2') format('woff2');}
+@font-face{font-family:Literata;font-style:normal;font-weight:800;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/literata/Literata72pt-ExtraBold.woff2') format('woff2');}
+@font-face{font-family:Literata;font-style:italic;font-weight:800;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/literata/Literata72pt-ExtraBoldItalic.woff2') format('woff2');}
+@font-face{font-family:Literata;font-style:normal;font-weight:900;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/literata/Literata72pt-Black.woff2') format('woff2');}
+@font-face{font-family:Literata;font-style:italic;font-weight:900;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/literata/Literata72pt-BlackItalic.woff2') format('woff2');}
+</style>
+<style class='wp-fonts-local'>
+@font-face{font-family:Beiruti;font-style:normal;font-weight:200 900;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/beiruti/Beiruti-VariableFont_wght.woff2') format('woff2');}
+@font-face{font-family:Literata;font-style:normal;font-weight:200;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/literata/Literata72pt-ExtraLight.woff2') format('woff2');}
+@font-face{font-family:Literata;font-style:italic;font-weight:200;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/literata/Literata72pt-ExtraLightItalic.woff2') format('woff2');}
+@font-face{font-family:Literata;font-style:normal;font-weight:300;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/literata/Literata72pt-Light.woff2') format('woff2');}
+@font-face{font-family:Literata;font-style:italic;font-weight:300;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/literata/Literata72pt-LightItalic.woff2') format('woff2');}
+@font-face{font-family:Literata;font-style:normal;font-weight:400;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/literata/Literata72pt-Regular.woff2') format('woff2');}
+@font-face{font-family:Literata;font-style:italic;font-weight:400;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/literata/Literata72pt-RegularItalic.woff2') format('woff2');}
+@font-face{font-family:Literata;font-style:normal;font-weight:500;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/literata/Literata72pt-Medium.woff2') format('woff2');}
+@font-face{font-family:Literata;font-style:italic;font-weight:500;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/literata/Literata72pt-MediumItalic.woff2') format('woff2');}
+@font-face{font-family:Literata;font-style:normal;font-weight:600;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/literata/Literata72pt-SemiBold.woff2') format('woff2');}
+@font-face{font-family:Literata;font-style:italic;font-weight:600;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/literata/Literata72pt-SemiBoldItalic.woff2') format('woff2');}
+@font-face{font-family:Literata;font-style:normal;font-weight:700;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/literata/Literata72pt-Bold.woff2') format('woff2');}
+@font-face{font-family:Literata;font-style:italic;font-weight:700;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/literata/Literata72pt-BoldItalic.woff2') format('woff2');}
+@font-face{font-family:Literata;font-style:normal;font-weight:800;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/literata/Literata72pt-ExtraBold.woff2') format('woff2');}
+@font-face{font-family:Literata;font-style:italic;font-weight:800;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/literata/Literata72pt-ExtraBoldItalic.woff2') format('woff2');}
+@font-face{font-family:Literata;font-style:normal;font-weight:900;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/literata/Literata72pt-Black.woff2') format('woff2');}
+@font-face{font-family:Literata;font-style:italic;font-weight:900;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/literata/Literata72pt-BlackItalic.woff2') format('woff2');}
+@font-face{font-family:Vollkorn;font-style:italic;font-weight:400 900;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/vollkorn/Vollkorn-Italic-VariableFont_wght.woff2') format('woff2');}
+@font-face{font-family:Vollkorn;font-style:normal;font-weight:400 900;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/vollkorn/Vollkorn-VariableFont_wght.woff2') format('woff2');}
+@font-face{font-family:"Fira Code";font-style:normal;font-weight:300 700;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/fira-code/FiraCode-VariableFont_wght.woff2') format('woff2');}
+@font-face{font-family:Platypi;font-style:normal;font-weight:300 800;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/platypi/Platypi-VariableFont_wght.woff2') format('woff2');}
+@font-face{font-family:Platypi;font-style:italic;font-weight:300 800;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/platypi/Platypi-Italic-VariableFont_wght.woff2') format('woff2');}
+@font-face{font-family:"Ysabeau Office";font-style:normal;font-weight:100 900;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/ysabeau-office/YsabeauOffice-VariableFont_wght.woff2') format('woff2');}
+@font-face{font-family:"Ysabeau Office";font-style:italic;font-weight:100 900;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/ysabeau-office/YsabeauOffice-Italic-VariableFont_wght.woff2') format('woff2');}
+@font-face{font-family:"Roboto Slab";font-style:normal;font-weight:100 900;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/roboto-slab/RobotoSlab-VariableFont_wght.woff2') format('woff2');}
+@font-face{font-family:Manrope;font-style:normal;font-weight:200 800;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/manrope/Manrope-VariableFont_wght.woff2') format('woff2');}
+@font-face{font-family:Literata;font-style:normal;font-weight:200;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/literata/Literata72pt-ExtraLight.woff2') format('woff2');}
+@font-face{font-family:Literata;font-style:italic;font-weight:200;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/literata/Literata72pt-ExtraLightItalic.woff2') format('woff2');}
+@font-face{font-family:Literata;font-style:normal;font-weight:300;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/literata/Literata72pt-Light.woff2') format('woff2');}
+@font-face{font-family:Literata;font-style:italic;font-weight:300;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/literata/Literata72pt-LightItalic.woff2') format('woff2');}
+@font-face{font-family:Literata;font-style:normal;font-weight:400;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/literata/Literata72pt-Regular.woff2') format('woff2');}
+@font-face{font-family:Literata;font-style:italic;font-weight:400;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/literata/Literata72pt-RegularItalic.woff2') format('woff2');}
+@font-face{font-family:Literata;font-style:normal;font-weight:500;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/literata/Literata72pt-Medium.woff2') format('woff2');}
+@font-face{font-family:Literata;font-style:italic;font-weight:500;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/literata/Literata72pt-MediumItalic.woff2') format('woff2');}
+@font-face{font-family:Literata;font-style:normal;font-weight:600;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/literata/Literata72pt-SemiBold.woff2') format('woff2');}
+@font-face{font-family:Literata;font-style:italic;font-weight:600;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/literata/Literata72pt-SemiBoldItalic.woff2') format('woff2');}
+@font-face{font-family:Literata;font-style:normal;font-weight:700;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/literata/Literata72pt-Bold.woff2') format('woff2');}
+@font-face{font-family:Literata;font-style:italic;font-weight:700;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/literata/Literata72pt-BoldItalic.woff2') format('woff2');}
+@font-face{font-family:Literata;font-style:normal;font-weight:800;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/literata/Literata72pt-ExtraBold.woff2') format('woff2');}
+@font-face{font-family:Literata;font-style:italic;font-weight:800;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/literata/Literata72pt-ExtraBoldItalic.woff2') format('woff2');}
+@font-face{font-family:Literata;font-style:normal;font-weight:900;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/literata/Literata72pt-Black.woff2') format('woff2');}
+@font-face{font-family:Literata;font-style:italic;font-weight:900;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/literata/Literata72pt-BlackItalic.woff2') format('woff2');}
+@font-face{font-family:"Ysabeau Office";font-style:normal;font-weight:100 900;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/ysabeau-office/YsabeauOffice-VariableFont_wght.woff2') format('woff2');}
+@font-face{font-family:"Ysabeau Office";font-style:italic;font-weight:100 900;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/ysabeau-office/YsabeauOffice-Italic-VariableFont_wght.woff2') format('woff2');}
+@font-face{font-family:Platypi;font-style:normal;font-weight:300 800;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/platypi/Platypi-VariableFont_wght.woff2') format('woff2');}
+@font-face{font-family:Platypi;font-style:italic;font-weight:300 800;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/platypi/Platypi-Italic-VariableFont_wght.woff2') format('woff2');}
+@font-face{font-family:Literata;font-style:normal;font-weight:200;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/literata/Literata72pt-ExtraLight.woff2') format('woff2');}
+@font-face{font-family:Literata;font-style:italic;font-weight:200;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/literata/Literata72pt-ExtraLightItalic.woff2') format('woff2');}
+@font-face{font-family:Literata;font-style:normal;font-weight:300;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/literata/Literata72pt-Light.woff2') format('woff2');}
+@font-face{font-family:Literata;font-style:italic;font-weight:300;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/literata/Literata72pt-LightItalic.woff2') format('woff2');}
+@font-face{font-family:Literata;font-style:normal;font-weight:400;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/literata/Literata72pt-Regular.woff2') format('woff2');}
+@font-face{font-family:Literata;font-style:italic;font-weight:400;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/literata/Literata72pt-RegularItalic.woff2') format('woff2');}
+@font-face{font-family:Literata;font-style:normal;font-weight:500;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/literata/Literata72pt-Medium.woff2') format('woff2');}
+@font-face{font-family:Literata;font-style:italic;font-weight:500;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/literata/Literata72pt-MediumItalic.woff2') format('woff2');}
+@font-face{font-family:Literata;font-style:normal;font-weight:600;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/literata/Literata72pt-SemiBold.woff2') format('woff2');}
+@font-face{font-family:Literata;font-style:italic;font-weight:600;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/literata/Literata72pt-SemiBoldItalic.woff2') format('woff2');}
+@font-face{font-family:Literata;font-style:normal;font-weight:700;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/literata/Literata72pt-Bold.woff2') format('woff2');}
+@font-face{font-family:Literata;font-style:italic;font-weight:700;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/literata/Literata72pt-BoldItalic.woff2') format('woff2');}
+@font-face{font-family:Literata;font-style:normal;font-weight:800;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/literata/Literata72pt-ExtraBold.woff2') format('woff2');}
+@font-face{font-family:Literata;font-style:italic;font-weight:800;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/literata/Literata72pt-ExtraBoldItalic.woff2') format('woff2');}
+@font-face{font-family:Literata;font-style:normal;font-weight:900;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/literata/Literata72pt-Black.woff2') format('woff2');}
+@font-face{font-family:Literata;font-style:italic;font-weight:900;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/literata/Literata72pt-BlackItalic.woff2') format('woff2');}
+@font-face{font-family:Literata;font-style:normal;font-weight:200;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/literata/Literata72pt-ExtraLight.woff2') format('woff2');}
+@font-face{font-family:Literata;font-style:italic;font-weight:200;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/literata/Literata72pt-ExtraLightItalic.woff2') format('woff2');}
+@font-face{font-family:Literata;font-style:normal;font-weight:300;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/literata/Literata72pt-Light.woff2') format('woff2');}
+@font-face{font-family:Literata;font-style:italic;font-weight:300;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/literata/Literata72pt-LightItalic.woff2') format('woff2');}
+@font-face{font-family:Literata;font-style:normal;font-weight:400;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/literata/Literata72pt-Regular.woff2') format('woff2');}
+@font-face{font-family:Literata;font-style:italic;font-weight:400;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/literata/Literata72pt-RegularItalic.woff2') format('woff2');}
+@font-face{font-family:Literata;font-style:normal;font-weight:500;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/literata/Literata72pt-Medium.woff2') format('woff2');}
+@font-face{font-family:Literata;font-style:italic;font-weight:500;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/literata/Literata72pt-MediumItalic.woff2') format('woff2');}
+@font-face{font-family:Literata;font-style:normal;font-weight:600;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/literata/Literata72pt-SemiBold.woff2') format('woff2');}
+@font-face{font-family:Literata;font-style:italic;font-weight:600;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/literata/Literata72pt-SemiBoldItalic.woff2') format('woff2');}
+@font-face{font-family:Literata;font-style:normal;font-weight:700;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/literata/Literata72pt-Bold.woff2') format('woff2');}
+@font-face{font-family:Literata;font-style:italic;font-weight:700;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/literata/Literata72pt-BoldItalic.woff2') format('woff2');}
+@font-face{font-family:Literata;font-style:normal;font-weight:800;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/literata/Literata72pt-ExtraBold.woff2') format('woff2');}
+@font-face{font-family:Literata;font-style:italic;font-weight:800;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/literata/Literata72pt-ExtraBoldItalic.woff2') format('woff2');}
+@font-face{font-family:Literata;font-style:normal;font-weight:900;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/literata/Literata72pt-Black.woff2') format('woff2');}
+@font-face{font-family:Literata;font-style:italic;font-weight:900;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/literata/Literata72pt-BlackItalic.woff2') format('woff2');}
+@font-face{font-family:"Fira Sans";font-style:normal;font-weight:100;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/fira-sans/FiraSans-Thin.woff2') format('woff2');}
+@font-face{font-family:"Fira Sans";font-style:italic;font-weight:100;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/fira-sans/FiraSans-ThinItalic.woff2') format('woff2');}
+@font-face{font-family:"Fira Sans";font-style:normal;font-weight:200;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/fira-sans/FiraSans-ExtraLight.woff2') format('woff2');}
+@font-face{font-family:"Fira Sans";font-style:italic;font-weight:200;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/fira-sans/FiraSans-ExtraLightItalic.woff2') format('woff2');}
+@font-face{font-family:"Fira Sans";font-style:normal;font-weight:300;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/fira-sans/FiraSans-Light.woff2') format('woff2');}
+@font-face{font-family:"Fira Sans";font-style:italic;font-weight:300;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/fira-sans/FiraSans-LightItalic.woff2') format('woff2');}
+@font-face{font-family:"Fira Sans";font-style:italic;font-weight:400;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/fira-sans/FiraSans-Italic.woff2') format('woff2');}
+@font-face{font-family:"Fira Sans";font-style:normal;font-weight:400;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/fira-sans/FiraSans-Regular.woff2') format('woff2');}
+@font-face{font-family:"Fira Sans";font-style:normal;font-weight:500;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/fira-sans/FiraSans-Medium.woff2') format('woff2');}
+@font-face{font-family:"Fira Sans";font-style:italic;font-weight:500;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/fira-sans/FiraSans-MediumItalic.woff2') format('woff2');}
+@font-face{font-family:"Fira Sans";font-style:normal;font-weight:600;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/fira-sans/FiraSans-SemiBold.woff2') format('woff2');}
+@font-face{font-family:"Fira Sans";font-style:italic;font-weight:600;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/fira-sans/FiraSans-SemiBoldItalic.woff2') format('woff2');}
+@font-face{font-family:"Fira Sans";font-style:normal;font-weight:700;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/fira-sans/FiraSans-Bold.woff2') format('woff2');}
+@font-face{font-family:"Fira Sans";font-style:italic;font-weight:700;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/fira-sans/FiraSans-BoldItalic.woff2') format('woff2');}
+@font-face{font-family:"Fira Sans";font-style:normal;font-weight:800;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/fira-sans/FiraSans-ExtraBold.woff2') format('woff2');}
+@font-face{font-family:"Fira Sans";font-style:italic;font-weight:800;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/fira-sans/FiraSans-ExtraBoldItalic.woff2') format('woff2');}
+@font-face{font-family:"Fira Sans";font-style:normal;font-weight:900;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/fira-sans/FiraSans-Black.woff2') format('woff2');}
+@font-face{font-family:"Fira Sans";font-style:italic;font-weight:900;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/fira-sans/FiraSans-BlackItalic.woff2') format('woff2');}
+@font-face{font-family:Beiruti;font-style:normal;font-weight:200 900;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/beiruti/Beiruti-VariableFont_wght.woff2') format('woff2');}
+@font-face{font-family:Literata;font-style:normal;font-weight:200;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/literata/Literata72pt-ExtraLight.woff2') format('woff2');}
+@font-face{font-family:Literata;font-style:italic;font-weight:200;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/literata/Literata72pt-ExtraLightItalic.woff2') format('woff2');}
+@font-face{font-family:Literata;font-style:normal;font-weight:300;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/literata/Literata72pt-Light.woff2') format('woff2');}
+@font-face{font-family:Literata;font-style:italic;font-weight:300;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/literata/Literata72pt-LightItalic.woff2') format('woff2');}
+@font-face{font-family:Literata;font-style:normal;font-weight:400;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/literata/Literata72pt-Regular.woff2') format('woff2');}
+@font-face{font-family:Literata;font-style:italic;font-weight:400;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/literata/Literata72pt-RegularItalic.woff2') format('woff2');}
+@font-face{font-family:Literata;font-style:normal;font-weight:500;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/literata/Literata72pt-Medium.woff2') format('woff2');}
+@font-face{font-family:Literata;font-style:italic;font-weight:500;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/literata/Literata72pt-MediumItalic.woff2') format('woff2');}
+@font-face{font-family:Literata;font-style:normal;font-weight:600;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/literata/Literata72pt-SemiBold.woff2') format('woff2');}
+@font-face{font-family:Literata;font-style:italic;font-weight:600;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/literata/Literata72pt-SemiBoldItalic.woff2') format('woff2');}
+@font-face{font-family:Literata;font-style:normal;font-weight:700;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/literata/Literata72pt-Bold.woff2') format('woff2');}
+@font-face{font-family:Literata;font-style:italic;font-weight:700;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/literata/Literata72pt-BoldItalic.woff2') format('woff2');}
+@font-face{font-family:Literata;font-style:normal;font-weight:800;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/literata/Literata72pt-ExtraBold.woff2') format('woff2');}
+@font-face{font-family:Literata;font-style:italic;font-weight:800;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/literata/Literata72pt-ExtraBoldItalic.woff2') format('woff2');}
+@font-face{font-family:Literata;font-style:normal;font-weight:900;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/literata/Literata72pt-Black.woff2') format('woff2');}
+@font-face{font-family:Literata;font-style:italic;font-weight:900;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/literata/Literata72pt-BlackItalic.woff2') format('woff2');}
+@font-face{font-family:Vollkorn;font-style:italic;font-weight:400 900;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/vollkorn/Vollkorn-Italic-VariableFont_wght.woff2') format('woff2');}
+@font-face{font-family:Vollkorn;font-style:normal;font-weight:400 900;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/vollkorn/Vollkorn-VariableFont_wght.woff2') format('woff2');}
+@font-face{font-family:"Fira Code";font-style:normal;font-weight:300 700;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/fira-code/FiraCode-VariableFont_wght.woff2') format('woff2');}
+@font-face{font-family:Platypi;font-style:normal;font-weight:300 800;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/platypi/Platypi-VariableFont_wght.woff2') format('woff2');}
+@font-face{font-family:Platypi;font-style:italic;font-weight:300 800;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/platypi/Platypi-Italic-VariableFont_wght.woff2') format('woff2');}
+@font-face{font-family:"Ysabeau Office";font-style:normal;font-weight:100 900;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/ysabeau-office/YsabeauOffice-VariableFont_wght.woff2') format('woff2');}
+@font-face{font-family:"Ysabeau Office";font-style:italic;font-weight:100 900;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/ysabeau-office/YsabeauOffice-Italic-VariableFont_wght.woff2') format('woff2');}
+@font-face{font-family:"Roboto Slab";font-style:normal;font-weight:100 900;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/roboto-slab/RobotoSlab-VariableFont_wght.woff2') format('woff2');}
+@font-face{font-family:Manrope;font-style:normal;font-weight:200 800;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/manrope/Manrope-VariableFont_wght.woff2') format('woff2');}
+@font-face{font-family:Literata;font-style:normal;font-weight:200;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/literata/Literata72pt-ExtraLight.woff2') format('woff2');}
+@font-face{font-family:Literata;font-style:italic;font-weight:200;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/literata/Literata72pt-ExtraLightItalic.woff2') format('woff2');}
+@font-face{font-family:Literata;font-style:normal;font-weight:300;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/literata/Literata72pt-Light.woff2') format('woff2');}
+@font-face{font-family:Literata;font-style:italic;font-weight:300;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/literata/Literata72pt-LightItalic.woff2') format('woff2');}
+@font-face{font-family:Literata;font-style:normal;font-weight:400;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/literata/Literata72pt-Regular.woff2') format('woff2');}
+@font-face{font-family:Literata;font-style:italic;font-weight:400;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/literata/Literata72pt-RegularItalic.woff2') format('woff2');}
+@font-face{font-family:Literata;font-style:normal;font-weight:500;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/literata/Literata72pt-Medium.woff2') format('woff2');}
+@font-face{font-family:Literata;font-style:italic;font-weight:500;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/literata/Literata72pt-MediumItalic.woff2') format('woff2');}
+@font-face{font-family:Literata;font-style:normal;font-weight:600;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/literata/Literata72pt-SemiBold.woff2') format('woff2');}
+@font-face{font-family:Literata;font-style:italic;font-weight:600;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/literata/Literata72pt-SemiBoldItalic.woff2') format('woff2');}
+@font-face{font-family:Literata;font-style:normal;font-weight:700;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/literata/Literata72pt-Bold.woff2') format('woff2');}
+@font-face{font-family:Literata;font-style:italic;font-weight:700;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/literata/Literata72pt-BoldItalic.woff2') format('woff2');}
+@font-face{font-family:Literata;font-style:normal;font-weight:800;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/literata/Literata72pt-ExtraBold.woff2') format('woff2');}
+@font-face{font-family:Literata;font-style:italic;font-weight:800;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/literata/Literata72pt-ExtraBoldItalic.woff2') format('woff2');}
+@font-face{font-family:Literata;font-style:normal;font-weight:900;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/literata/Literata72pt-Black.woff2') format('woff2');}
+@font-face{font-family:Literata;font-style:italic;font-weight:900;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/literata/Literata72pt-BlackItalic.woff2') format('woff2');}
+@font-face{font-family:"Ysabeau Office";font-style:normal;font-weight:100 900;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/ysabeau-office/YsabeauOffice-VariableFont_wght.woff2') format('woff2');}
+@font-face{font-family:"Ysabeau Office";font-style:italic;font-weight:100 900;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/ysabeau-office/YsabeauOffice-Italic-VariableFont_wght.woff2') format('woff2');}
+@font-face{font-family:Platypi;font-style:normal;font-weight:300 800;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/platypi/Platypi-VariableFont_wght.woff2') format('woff2');}
+@font-face{font-family:Platypi;font-style:italic;font-weight:300 800;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/platypi/Platypi-Italic-VariableFont_wght.woff2') format('woff2');}
+@font-face{font-family:Literata;font-style:normal;font-weight:200;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/literata/Literata72pt-ExtraLight.woff2') format('woff2');}
+@font-face{font-family:Literata;font-style:italic;font-weight:200;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/literata/Literata72pt-ExtraLightItalic.woff2') format('woff2');}
+@font-face{font-family:Literata;font-style:normal;font-weight:300;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/literata/Literata72pt-Light.woff2') format('woff2');}
+@font-face{font-family:Literata;font-style:italic;font-weight:300;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/literata/Literata72pt-LightItalic.woff2') format('woff2');}
+@font-face{font-family:Literata;font-style:normal;font-weight:400;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/literata/Literata72pt-Regular.woff2') format('woff2');}
+@font-face{font-family:Literata;font-style:italic;font-weight:400;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/literata/Literata72pt-RegularItalic.woff2') format('woff2');}
+@font-face{font-family:Literata;font-style:normal;font-weight:500;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/literata/Literata72pt-Medium.woff2') format('woff2');}
+@font-face{font-family:Literata;font-style:italic;font-weight:500;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/literata/Literata72pt-MediumItalic.woff2') format('woff2');}
+@font-face{font-family:Literata;font-style:normal;font-weight:600;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/literata/Literata72pt-SemiBold.woff2') format('woff2');}
+@font-face{font-family:Literata;font-style:italic;font-weight:600;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/literata/Literata72pt-SemiBoldItalic.woff2') format('woff2');}
+@font-face{font-family:Literata;font-style:normal;font-weight:700;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/literata/Literata72pt-Bold.woff2') format('woff2');}
+@font-face{font-family:Literata;font-style:italic;font-weight:700;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/literata/Literata72pt-BoldItalic.woff2') format('woff2');}
+@font-face{font-family:Literata;font-style:normal;font-weight:800;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/literata/Literata72pt-ExtraBold.woff2') format('woff2');}
+@font-face{font-family:Literata;font-style:italic;font-weight:800;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/literata/Literata72pt-ExtraBoldItalic.woff2') format('woff2');}
+@font-face{font-family:Literata;font-style:normal;font-weight:900;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/literata/Literata72pt-Black.woff2') format('woff2');}
+@font-face{font-family:Literata;font-style:italic;font-weight:900;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/literata/Literata72pt-BlackItalic.woff2') format('woff2');}
+@font-face{font-family:Literata;font-style:normal;font-weight:200;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/literata/Literata72pt-ExtraLight.woff2') format('woff2');}
+@font-face{font-family:Literata;font-style:italic;font-weight:200;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/literata/Literata72pt-ExtraLightItalic.woff2') format('woff2');}
+@font-face{font-family:Literata;font-style:normal;font-weight:300;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/literata/Literata72pt-Light.woff2') format('woff2');}
+@font-face{font-family:Literata;font-style:italic;font-weight:300;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/literata/Literata72pt-LightItalic.woff2') format('woff2');}
+@font-face{font-family:Literata;font-style:normal;font-weight:400;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/literata/Literata72pt-Regular.woff2') format('woff2');}
+@font-face{font-family:Literata;font-style:italic;font-weight:400;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/literata/Literata72pt-RegularItalic.woff2') format('woff2');}
+@font-face{font-family:Literata;font-style:normal;font-weight:500;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/literata/Literata72pt-Medium.woff2') format('woff2');}
+@font-face{font-family:Literata;font-style:italic;font-weight:500;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/literata/Literata72pt-MediumItalic.woff2') format('woff2');}
+@font-face{font-family:Literata;font-style:normal;font-weight:600;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/literata/Literata72pt-SemiBold.woff2') format('woff2');}
+@font-face{font-family:Literata;font-style:italic;font-weight:600;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/literata/Literata72pt-SemiBoldItalic.woff2') format('woff2');}
+@font-face{font-family:Literata;font-style:normal;font-weight:700;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/literata/Literata72pt-Bold.woff2') format('woff2');}
+@font-face{font-family:Literata;font-style:italic;font-weight:700;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/literata/Literata72pt-BoldItalic.woff2') format('woff2');}
+@font-face{font-family:Literata;font-style:normal;font-weight:800;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/literata/Literata72pt-ExtraBold.woff2') format('woff2');}
+@font-face{font-family:Literata;font-style:italic;font-weight:800;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/literata/Literata72pt-ExtraBoldItalic.woff2') format('woff2');}
+@font-face{font-family:Literata;font-style:normal;font-weight:900;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/literata/Literata72pt-Black.woff2') format('woff2');}
+@font-face{font-family:Literata;font-style:italic;font-weight:900;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/literata/Literata72pt-BlackItalic.woff2') format('woff2');}
+@font-face{font-family:"Fira Sans";font-style:normal;font-weight:100;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/fira-sans/FiraSans-Thin.woff2') format('woff2');}
+@font-face{font-family:"Fira Sans";font-style:italic;font-weight:100;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/fira-sans/FiraSans-ThinItalic.woff2') format('woff2');}
+@font-face{font-family:"Fira Sans";font-style:normal;font-weight:200;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/fira-sans/FiraSans-ExtraLight.woff2') format('woff2');}
+@font-face{font-family:"Fira Sans";font-style:italic;font-weight:200;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/fira-sans/FiraSans-ExtraLightItalic.woff2') format('woff2');}
+@font-face{font-family:"Fira Sans";font-style:normal;font-weight:300;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/fira-sans/FiraSans-Light.woff2') format('woff2');}
+@font-face{font-family:"Fira Sans";font-style:italic;font-weight:300;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/fira-sans/FiraSans-LightItalic.woff2') format('woff2');}
+@font-face{font-family:"Fira Sans";font-style:italic;font-weight:400;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/fira-sans/FiraSans-Italic.woff2') format('woff2');}
+@font-face{font-family:"Fira Sans";font-style:normal;font-weight:400;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/fira-sans/FiraSans-Regular.woff2') format('woff2');}
+@font-face{font-family:"Fira Sans";font-style:normal;font-weight:500;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/fira-sans/FiraSans-Medium.woff2') format('woff2');}
+@font-face{font-family:"Fira Sans";font-style:italic;font-weight:500;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/fira-sans/FiraSans-MediumItalic.woff2') format('woff2');}
+@font-face{font-family:"Fira Sans";font-style:normal;font-weight:600;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/fira-sans/FiraSans-SemiBold.woff2') format('woff2');}
+@font-face{font-family:"Fira Sans";font-style:italic;font-weight:600;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/fira-sans/FiraSans-SemiBoldItalic.woff2') format('woff2');}
+@font-face{font-family:"Fira Sans";font-style:normal;font-weight:700;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/fira-sans/FiraSans-Bold.woff2') format('woff2');}
+@font-face{font-family:"Fira Sans";font-style:italic;font-weight:700;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/fira-sans/FiraSans-BoldItalic.woff2') format('woff2');}
+@font-face{font-family:"Fira Sans";font-style:normal;font-weight:800;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/fira-sans/FiraSans-ExtraBold.woff2') format('woff2');}
+@font-face{font-family:"Fira Sans";font-style:italic;font-weight:800;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/fira-sans/FiraSans-ExtraBoldItalic.woff2') format('woff2');}
+@font-face{font-family:"Fira Sans";font-style:normal;font-weight:900;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/fira-sans/FiraSans-Black.woff2') format('woff2');}
+@font-face{font-family:"Fira Sans";font-style:italic;font-weight:900;font-display:fallback;src:url('https://roadsimulator3.fr/wp-content/themes/twentytwentyfive/assets/fonts/fira-sans/FiraSans-BlackItalic.woff2') format('woff2');}
+</style>
+<script>
+window._wpemojiSettings = {"baseUrl":"https:\/\/s.w.org\/images\/core\/emoji\/16.0.1\/72x72\/","ext":".png","svgUrl":"https:\/\/s.w.org\/images\/core\/emoji\/16.0.1\/svg\/","svgExt":".svg","source":{"concatemoji":"https:\/\/roadsimulator3.fr\/wp-includes\/js\/wp-emoji-release.min.js?ver=6.8.2"}};
+/*! This file is auto-generated */
+!function(s,n){var o,i,e;function c(e){try{var t={supportTests:e,timestamp:(new Date).valueOf()};sessionStorage.setItem(o,JSON.stringify(t))}catch(e){}}function p(e,t,n){e.clearRect(0,0,e.canvas.width,e.canvas.height),e.fillText(t,0,0);var t=new Uint32Array(e.getImageData(0,0,e.canvas.width,e.canvas.height).data),a=(e.clearRect(0,0,e.canvas.width,e.canvas.height),e.fillText(n,0,0),new Uint32Array(e.getImageData(0,0,e.canvas.width,e.canvas.height).data));return t.every(function(e,t){return e===a[t]})}function u(e,t){e.clearRect(0,0,e.canvas.width,e.canvas.height),e.fillText(t,0,0);for(var n=e.getImageData(16,16,1,1),a=0;a<n.data.length;a++)if(0!==n.data[a])return!1;return!0}function f(e,t,n,a){switch(t){case"flag":return n(e,"\ud83c\udff3\ufe0f\u200d\u26a7\ufe0f","\ud83c\udff3\ufe0f\u200b\u26a7\ufe0f")?!1:!n(e,"\ud83c\udde8\ud83c\uddf6","\ud83c\udde8\u200b\ud83c\uddf6")&&!n(e,"\ud83c\udff4\udb40\udc67\udb40\udc62\udb40\udc65\udb40\udc6e\udb40\udc67\udb40\udc7f","\ud83c\udff4\u200b\udb40\udc67\u200b\udb40\udc62\u200b\udb40\udc65\u200b\udb40\udc6e\u200b\udb40\udc67\u200b\udb40\udc7f");case"emoji":return!a(e,"\ud83e\udedf")}return!1}function g(e,t,n,a){var r="undefined"!=typeof WorkerGlobalScope&&self instanceof WorkerGlobalScope?new OffscreenCanvas(300,150):s.createElement("canvas"),o=r.getContext("2d",{willReadFrequently:!0}),i=(o.textBaseline="top",o.font="600 32px Arial",{});return e.forEach(function(e){i[e]=t(o,e,n,a)}),i}function t(e){var t=s.createElement("script");t.src=e,t.defer=!0,s.head.appendChild(t)}"undefined"!=typeof Promise&&(o="wpEmojiSettingsSupports",i=["flag","emoji"],n.supports={everything:!0,everythingExceptFlag:!0},e=new Promise(function(e){s.addEventListener("DOMContentLoaded",e,{once:!0})}),new Promise(function(t){var n=function(){try{var e=JSON.parse(sessionStorage.getItem(o));if("object"==typeof e&&"number"==typeof e.timestamp&&(new Date).valueOf()<e.timestamp+604800&&"object"==typeof e.supportTests)return e.supportTests}catch(e){}return null}();if(!n){if("undefined"!=typeof Worker&&"undefined"!=typeof OffscreenCanvas&&"undefined"!=typeof URL&&URL.createObjectURL&&"undefined"!=typeof Blob)try{var e="postMessage("+g.toString()+"("+[JSON.stringify(i),f.toString(),p.toString(),u.toString()].join(",")+"));",a=new Blob([e],{type:"text/javascript"}),r=new Worker(URL.createObjectURL(a),{name:"wpTestEmojiSupports"});return void(r.onmessage=function(e){c(n=e.data),r.terminate(),t(n)})}catch(e){}c(n=g(i,f,p,u))}t(n)}).then(function(e){for(var t in e)n.supports[t]=e[t],n.supports.everything=n.supports.everything&&n.supports[t],"flag"!==t&&(n.supports.everythingExceptFlag=n.supports.everythingExceptFlag&&n.supports[t]);n.supports.everythingExceptFlag=n.supports.everythingExceptFlag&&!n.supports.flag,n.DOMReady=!1,n.readyCallback=function(){n.DOMReady=!0}}).then(function(){return e}).then(function(){var e;n.supports.everything||(n.readyCallback(),(e=n.source||{}).concatemoji?t(e.concatemoji):e.wpemoji&&e.twemoji&&(t(e.twemoji),t(e.wpemoji)))}))}((window,document),window._wpemojiSettings);
+</script>
+
+<script>
+/* <![CDATA[ */
+var userSettings = {"url":"\/","uid":"1","time":"1754075012","secure":"1"};/* ]]> */
+</script>
+<script src='https://roadsimulator3.fr/wp-admin/load-scripts.php?c=0&amp;load%5Bchunk_0%5D=jquery-core,jquery-migrate,utils,wp-codemirror,underscore&amp;ver=6.8.2'></script>
+<script src="https://roadsimulator3.fr/wp-content/plugins/header-footer-code-manager/js/selectize.min.js?ver=6.8.2" id="selectize-js-js"></script>
+<script src="https://roadsimulator3.fr/wp-admin/js/code-editor.min.js?ver=6.8.2" id="code-editor-js"></script>
+<script id="code-editor-js-after">
+jQuery.extend( wp.codeEditor.defaultSettings, {"codemirror":{"indentUnit":4,"indentWithTabs":true,"inputStyle":"contenteditable","lineNumbers":true,"lineWrapping":true,"styleActiveLine":true,"continueComments":true,"extraKeys":{"Ctrl-Space":"autocomplete","Ctrl-\/":"toggleComment","Cmd-\/":"toggleComment","Alt-F":"findPersistent","Ctrl-F":"findPersistent","Cmd-F":"findPersistent"},"direction":"ltr","gutters":["CodeMirror-lint-markers"],"mode":"htmlmixed","lint":true,"autoCloseBrackets":true,"autoCloseTags":true,"matchTags":{"bothTags":true}},"csslint":{"errors":true,"box-model":true,"display-property-grouping":true,"duplicate-properties":true,"known-properties":true,"outline-none":true},"jshint":{"boss":true,"curly":true,"eqeqeq":true,"eqnull":true,"es3":true,"expr":true,"immed":true,"noarg":true,"nonbsp":true,"onevar":true,"quotmark":"single","trailing":true,"undef":true,"unused":true,"browser":true,"globals":{"_":false,"Backbone":false,"jQuery":false,"JSON":false,"wp":false}},"htmlhint":{"tagname-lowercase":true,"attr-lowercase":true,"attr-value-double-quotes":false,"doctype-first":false,"tag-pair":true,"spec-char-escape":true,"id-unique":true,"src-not-empty":true,"attr-no-duplication":true,"alt-require":true,"space-tab-mixed-disabled":"tab","attr-unsafe-chars":true}} );
+</script>
+<script src="https://roadsimulator3.fr/wp-includes/js/codemirror/htmlhint.js?ver=0.9.14-xwp" id="htmlhint-js"></script>
+<script src="https://roadsimulator3.fr/wp-includes/js/codemirror/csslint.js?ver=1.0.5" id="csslint-js"></script>
+<script src="https://roadsimulator3.fr/wp-includes/js/codemirror/esprima.js?ver=4.0.0" id="esprima-js"></script>
+<script src="https://roadsimulator3.fr/wp-includes/js/codemirror/fakejshint.js?ver=2.9.5" id="jshint-js"></script>
+<script src="https://roadsimulator3.fr/wp-includes/js/dist/vendor/wp-polyfill.min.js?ver=3.15.0" id="wp-polyfill-js"></script>
+<script id="yoast-seo-admin-global-js-extra">
+var wpseoAdminGlobalL10n = {"isRtl":"","variable_warning":"Avertissement\u00a0: la variable <code>%s<\/code> ne peut pas \u00eatre utilis\u00e9e dans ce mod\u00e8le. Consultez le centre d\u2019aide HelpScout beacon pour plus d\u2019informations.","help_video_iframe_title":"Tutoriel vid\u00e9o de Yoast SEO","scrollable_table_hint":"Faire d\u00e9filer pour voir le contenu du tableau.","wincher_is_logged_in":"","links.wincher.login":"https:\/\/app.wincher.com\/login?utm_medium=plugin&utm_source=yoast&referer=yoast&partner=yoast","links.wincher.about":"https:\/\/yoa.st\/dashboard-about-wincher?php_version=8.4&platform=wordpress&platform_version=6.8.2&software=free&software_version=25.6&days_active=3&user_language=fr_FR&screen=hfcm-update","links.wincher.pricing":"https:\/\/yoa.st\/wincher-popup-pricing?php_version=8.4&platform=wordpress&platform_version=6.8.2&software=free&software_version=25.6&days_active=3&user_language=fr_FR&screen=hfcm-update","links.wincher.website":"https:\/\/yoa.st\/wincher-popup?php_version=8.4&platform=wordpress&platform_version=6.8.2&software=free&software_version=25.6&days_active=3&user_language=fr_FR&screen=hfcm-update","links.wincher.upgrade":"https:\/\/yoa.st\/wincher-upgrade?php_version=8.4&platform=wordpress&platform_version=6.8.2&software=free&software_version=25.6&days_active=3&user_language=fr_FR&screen=hfcm-update"};
+</script>
+<script src="https://roadsimulator3.fr/wp-content/plugins/wordpress-seo/js/dist/admin-global.js?ver=ee3745f3fdc45e43fb51" id="yoast-seo-admin-global-js"></script>
+<script type="text/javascript">var _wpColorScheme = {"icons":{"base":"#a7aaad","focus":"#72aee6","current":"#fff"}};</script>
+	<link id="wp-admin-canonical" rel="canonical" href="https://roadsimulator3.fr/wp-admin/admin.php?page=hfcm-update&#038;action=edit&#038;id=12&#038;_wpnonce=19d786c559" />
+	<script>
+		if ( window.history.replaceState ) {
+			window.history.replaceState( null, null, document.getElementById( 'wp-admin-canonical' ).href + window.location.hash );
+		}
+	</script>
+	<meta name="viewport" content="width=device-width,initial-scale=1.0"></head>
+<body class="wp-admin wp-core-ui no-js admin_page_hfcm-update auto-fold admin-bar branch-6-8 version-6-8-2 admin-color-fresh locale-fr-fr no-customize-support svg wp-theme-twentytwentyfive">
+<script type="text/javascript">
+	document.body.className = document.body.className.replace('no-js','js');
+</script>
+
+<script>
+		(function() {
+			var request, b = document.body, c = 'className', cs = 'customize-support', rcs = new RegExp('(^|\\s+)(no-)?'+cs+'(\\s+|$)');
+
+				request = true;
+	
+			b[c] = b[c].replace( rcs, ' ' );
+			// The customizer requires postMessage and CORS (if the site is cross domain).
+			b[c] += ( window.postMessage && request ? ' ' : ' no-' ) + cs;
+		}());
+	
+</script>
+
+<div id="wpwrap">
+
+<div id="adminmenumain" role="navigation" aria-label="Menu principal">
+<a href="#wpbody-content" class="screen-reader-shortcut">Aller au contenu principal</a>
+<a href="#wp-toolbar" class="screen-reader-shortcut">Aller à la barre d’outils</a>
+<div id="adminmenuback"></div>
+<div id="adminmenuwrap">
+<ul id="adminmenu">
+
+
+	<li class="wp-first-item wp-has-submenu wp-not-current-submenu menu-top menu-top-first menu-icon-dashboard menu-top-last" id="menu-dashboard">
+	<a href='index.php' class="wp-first-item wp-has-submenu wp-not-current-submenu menu-top menu-top-first menu-icon-dashboard menu-top-last" data-ariahaspopup><div class='wp-menu-image dashicons-before dashicons-dashboard' aria-hidden='true'><br /></div><div class='wp-menu-name'>Tableau de bord</div></a>
+	<ul class='wp-submenu wp-submenu-wrap'><li class='wp-submenu-head' aria-hidden='true'>Tableau de bord</li><li class="wp-first-item"><a href='index.php' class="wp-first-item">Accueil</a></li><li><a href='update-core.php'>Mises à jour <span class="update-plugins count-0"><span class="update-count">0</span></span></a></li></ul></li>
+	<li class="wp-not-current-submenu wp-menu-separator" aria-hidden="true"><div class="separator"></div></li>
+	<li class="wp-has-submenu wp-not-current-submenu menu-top menu-icon-post open-if-no-js menu-top-first" id="menu-posts">
+	<a href='edit.php' class="wp-has-submenu wp-not-current-submenu menu-top menu-icon-post open-if-no-js menu-top-first" data-ariahaspopup><div class='wp-menu-image dashicons-before dashicons-admin-post' aria-hidden='true'><br /></div><div class='wp-menu-name'>Articles</div></a>
+	<ul class='wp-submenu wp-submenu-wrap'><li class='wp-submenu-head' aria-hidden='true'>Articles</li><li class="wp-first-item"><a href='edit.php' class="wp-first-item">Tous les articles</a></li><li><a href='post-new.php'>Ajouter un article</a></li><li><a href='edit-tags.php?taxonomy=category'>Catégories</a></li><li><a href='edit-tags.php?taxonomy=post_tag'>Étiquettes</a></li></ul></li>
+	<li class="wp-has-submenu wp-not-current-submenu menu-top menu-icon-media" id="menu-media">
+	<a href='upload.php' class="wp-has-submenu wp-not-current-submenu menu-top menu-icon-media" data-ariahaspopup><div class='wp-menu-image dashicons-before dashicons-admin-media' aria-hidden='true'><br /></div><div class='wp-menu-name'>Médias</div></a>
+	<ul class='wp-submenu wp-submenu-wrap'><li class='wp-submenu-head' aria-hidden='true'>Médias</li><li class="wp-first-item"><a href='upload.php' class="wp-first-item">Médiathèque</a></li><li><a href='media-new.php'>Ajouter un fichier média</a></li></ul></li>
+	<li class="wp-has-submenu wp-not-current-submenu menu-top menu-icon-page" id="menu-pages">
+	<a href='edit.php?post_type=page' class="wp-has-submenu wp-not-current-submenu menu-top menu-icon-page" data-ariahaspopup><div class='wp-menu-image dashicons-before dashicons-admin-page' aria-hidden='true'><br /></div><div class='wp-menu-name'>Pages</div></a>
+	<ul class='wp-submenu wp-submenu-wrap'><li class='wp-submenu-head' aria-hidden='true'>Pages</li><li class="wp-first-item"><a href='edit.php?post_type=page' class="wp-first-item">Toutes les pages</a></li><li><a href='post-new.php?post_type=page'>Ajouter une page</a></li></ul></li>
+	<li class="wp-not-current-submenu menu-top menu-icon-comments menu-top-last" id="menu-comments">
+	<a href='edit-comments.php' class="wp-not-current-submenu menu-top menu-icon-comments menu-top-last" ><div class='wp-menu-image dashicons-before dashicons-admin-comments' aria-hidden='true'><br /></div><div class='wp-menu-name'>Commentaires <span class="awaiting-mod count-0"><span class="pending-count" aria-hidden="true">0</span><span class="comments-in-moderation-text screen-reader-text">0 commentaire en modération</span></span></div></a></li>
+	<li class="wp-not-current-submenu wp-menu-separator" aria-hidden="true"><div class="separator"></div></li>
+	<li class="wp-has-submenu wp-not-current-submenu menu-top menu-icon-appearance menu-top-first" id="menu-appearance">
+	<a href='themes.php' class="wp-has-submenu wp-not-current-submenu menu-top menu-icon-appearance menu-top-first" data-ariahaspopup><div class='wp-menu-image dashicons-before dashicons-admin-appearance' aria-hidden='true'><br /></div><div class='wp-menu-name'>Apparence</div></a>
+	<ul class='wp-submenu wp-submenu-wrap'><li class='wp-submenu-head' aria-hidden='true'>Apparence</li><li class="wp-first-item"><a href='themes.php' class="wp-first-item">Thèmes <span class="update-plugins count-0"><span class="theme-count">0</span></span></a></li><li><a href='site-editor.php'>Éditeur</a></li></ul></li>
+	<li class="wp-has-submenu wp-not-current-submenu menu-top menu-icon-plugins" id="menu-plugins">
+	<a href='plugins.php' class="wp-has-submenu wp-not-current-submenu menu-top menu-icon-plugins" data-ariahaspopup><div class='wp-menu-image dashicons-before dashicons-admin-plugins' aria-hidden='true'><br /></div><div class='wp-menu-name'>Extensions <span class="update-plugins count-0"><span class="plugin-count">0</span></span></div></a>
+	<ul class='wp-submenu wp-submenu-wrap'><li class='wp-submenu-head' aria-hidden='true'>Extensions <span class="update-plugins count-0"><span class="plugin-count">0</span></span></li><li class="wp-first-item"><a href='plugins.php' class="wp-first-item">Extensions installées</a></li><li><a href='plugin-install.php'>Ajouter une extension</a></li></ul></li>
+	<li class="wp-has-submenu wp-not-current-submenu menu-top menu-icon-users" id="menu-users">
+	<a href='users.php' class="wp-has-submenu wp-not-current-submenu menu-top menu-icon-users" data-ariahaspopup><div class='wp-menu-image dashicons-before dashicons-admin-users' aria-hidden='true'><br /></div><div class='wp-menu-name'>Comptes</div></a>
+	<ul class='wp-submenu wp-submenu-wrap'><li class='wp-submenu-head' aria-hidden='true'>Comptes</li><li class="wp-first-item"><a href='users.php' class="wp-first-item">Tous les comptes</a></li><li><a href='user-new.php'>Ajouter un compte</a></li><li><a href='profile.php'>Profil</a></li></ul></li>
+	<li class="wp-has-submenu wp-not-current-submenu menu-top menu-icon-tools" id="menu-tools">
+	<a href='tools.php' class="wp-has-submenu wp-not-current-submenu menu-top menu-icon-tools" data-ariahaspopup><div class='wp-menu-image dashicons-before dashicons-admin-tools' aria-hidden='true'><br /></div><div class='wp-menu-name'>Outils</div></a>
+	<ul class='wp-submenu wp-submenu-wrap'><li class='wp-submenu-head' aria-hidden='true'>Outils</li><li class="wp-first-item"><a href='tools.php' class="wp-first-item">Outils disponibles</a></li><li><a href='import.php'>Importer</a></li><li><a href='export.php'>Exporter</a></li><li><a href='site-health.php'>Santé du site <span class="menu-counter site-health-counter count-0"><span class="count">0</span></span></a></li><li><a href='export-personal-data.php'>Exporter les données</a></li><li><a href='erase-personal-data.php'>Effacer les données</a></li><li><a href='theme-editor.php'>Éditeur de fichiers des thèmes</a></li><li><a href='plugin-editor.php'>Éditeur de fichiers des extensions</a></li></ul></li>
+	<li class="wp-has-submenu wp-not-current-submenu menu-top menu-icon-settings menu-top-last" id="menu-settings">
+	<a href='options-general.php' class="wp-has-submenu wp-not-current-submenu menu-top menu-icon-settings menu-top-last" data-ariahaspopup><div class='wp-menu-image dashicons-before dashicons-admin-settings' aria-hidden='true'><br /></div><div class='wp-menu-name'>Réglages</div></a>
+	<ul class='wp-submenu wp-submenu-wrap'><li class='wp-submenu-head' aria-hidden='true'>Réglages</li><li class="wp-first-item"><a href='options-general.php' class="wp-first-item">Général</a></li><li><a href='options-writing.php'>Écriture</a></li><li><a href='options-reading.php'>Lecture</a></li><li><a href='options-discussion.php'>Commentaires</a></li><li><a href='options-media.php'>Médias</a></li><li><a href='options-permalink.php'>Permaliens</a></li><li><a href='options-privacy.php'>Confidentialité</a></li></ul></li>
+	<li class="wp-not-current-submenu wp-menu-separator" aria-hidden="true"><div class="separator"></div></li>
+	<li class="wp-has-submenu wp-not-current-submenu menu-top toplevel_page_wpseo_dashboard menu-top-first" id="toplevel_page_wpseo_dashboard"><a href='admin.php?page=wpseo_dashboard' class="wp-has-submenu wp-not-current-submenu menu-top toplevel_page_wpseo_dashboard menu-top-first" data-ariahaspopup><div class='wp-menu-image svg' style="background-image:url('data:image/svg+xml;base64,PHN2ZyB2ZXJzaW9uPSIxLjEiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgeG1sOnNwYWNlPSJwcmVzZXJ2ZSIgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgc3R5bGU9ImZpbGw6IzgyODc4YyIgdmlld0JveD0iMCAwIDUxMiA1MTIiIHJvbGU9ImltZyIgYXJpYS1oaWRkZW49InRydWUiIGZvY3VzYWJsZT0iZmFsc2UiPjxnPjxnPjxnPjxnPjxwYXRoIGQ9Ik0yMDMuNiwzOTVjNi44LTE3LjQsNi44LTM2LjYsMC01NGwtNzkuNC0yMDRoNzAuOWw0Ny43LDE0OS40bDc0LjgtMjA3LjZIMTE2LjRjLTQxLjgsMC03NiwzNC4yLTc2LDc2VjM1N2MwLDQxLjgsMzQuMiw3Niw3Niw3NkgxNzNDMTg5LDQyNC4xLDE5Ny42LDQxMC4zLDIwMy42LDM5NXoiLz48L2c+PGc+PHBhdGggZD0iTTQ3MS42LDE1NC44YzAtNDEuOC0zNC4yLTc2LTc2LTc2aC0zTDI4NS43LDM2NWMtOS42LDI2LjctMTkuNCw0OS4zLTMwLjMsNjhoMjE2LjJWMTU0Ljh6Ii8+PC9nPjwvZz48cGF0aCBzdHJva2Utd2lkdGg9IjIuOTc0IiBzdHJva2UtbWl0ZXJsaW1pdD0iMTAiIGQ9Ik0zMzgsMS4zbC05My4zLDI1OS4xbC00Mi4xLTEzMS45aC04OS4xbDgzLjgsMjE1LjJjNiwxNS41LDYsMzIuNSwwLDQ4Yy03LjQsMTktMTksMzcuMy01Myw0MS45bC03LjIsMXY3Nmg4LjNjODEuNywwLDExOC45LTU3LjIsMTQ5LjYtMTQyLjlMNDMxLjYsMS4zSDMzOHogTTI3OS40LDM2MmMtMzIuOSw5Mi02Ny42LDEyOC43LTEyNS43LDEzMS44di00NWMzNy41LTcuNSw1MS4zLTMxLDU5LjEtNTEuMWM3LjUtMTkuMyw3LjUtNDAuNywwLTYwbC03NS0xOTIuN2g1Mi44bDUzLjMsMTY2LjhsMTA1LjktMjk0aDU4LjFMMjc5LjQsMzYyeiIvPjwvZz48L2c+PC9zdmc+')" aria-hidden='true'><br /></div><div class='wp-menu-name'>Yoast SEO <span class="update-plugins count-0"><span class="plugin-count" aria-hidden="true">0</span><span class="screen-reader-text">0 notification</span></span></div></a>
+	<ul class='wp-submenu wp-submenu-wrap'><li class='wp-submenu-head' aria-hidden='true'>Yoast SEO <span class="update-plugins count-0"><span class="plugin-count" aria-hidden="true">0</span><span class="screen-reader-text">0 notification</span></span></li><li class="wp-first-item"><a href='admin.php?page=wpseo_dashboard' class="wp-first-item">Général</a></li><li><a href='admin.php?page=wpseo_page_settings'>Réglages</a></li><li><a href='admin.php?page=wpseo_integrations'>Intégrations</a></li><li><a href='admin.php?page=wpseo_tools'>Outils</a></li><li><a href='admin.php?page=wpseo_page_academy'>Académie</a></li><li><a href='admin.php?page=wpseo_licenses'>Formules</a></li><li><a href='admin.php?page=wpseo_workouts'>Entraînements <span class="yoast-badge yoast-premium-badge"></span></a></li><li><a href='admin.php?page=wpseo_redirects'>Redirections <span class="yoast-badge yoast-premium-badge"></span></a></li><li><a href='admin.php?page=wpseo_page_support'>Support</a></li></ul></li>
+	<li class="wp-has-submenu wp-not-current-submenu menu-top toplevel_page_hfcm-list menu-top-last" id="toplevel_page_hfcm-list"><a href='admin.php?page=hfcm-list' class="wp-has-submenu wp-not-current-submenu menu-top toplevel_page_hfcm-list menu-top-last" data-ariahaspopup><div class='wp-menu-image dashicons-before dashicons-hfcm' aria-hidden='true'><br /></div><div class='wp-menu-name'>HFCM</div></a>
+	<ul class='wp-submenu wp-submenu-wrap'><li class='wp-submenu-head' aria-hidden='true'>HFCM</li><li class="wp-first-item"><a href='admin.php?page=hfcm-list' class="wp-first-item">Tous les extraits</a></li><li><a href='admin.php?page=hfcm-create'>Ajouter nouveau</a></li><li><a href='admin.php?page=hfcm-tools'>Outils</a></li></ul></li><li id="collapse-menu" class="hide-if-no-js"><button type="button" id="collapse-button" aria-label="Replier le menu principal" aria-expanded="true"><span class="collapse-button-icon" aria-hidden="true"></span><span class="collapse-button-label">Replier le menu</span></button></li></ul>
+</div>
+</div>
+<div id="wpcontent">
+
+		<div id="wpadminbar" class="nojq nojs">
+						<div class="quicklinks" id="wp-toolbar" role="navigation" aria-label="Barre d’outils">
+				<ul role='menu' id='wp-admin-bar-root-default' class="ab-top-menu"><li role='group' id='wp-admin-bar-menu-toggle'><a class='ab-item' role="menuitem" href='#'><span class="ab-icon" aria-hidden="true"></span><span class="screen-reader-text">Menu</span></a></li><li role='group' id='wp-admin-bar-wp-logo' class="menupop"><a class='ab-item' role="menuitem" aria-expanded="false" href='https://roadsimulator3.fr/wp-admin/about.php'><span class="ab-icon" aria-hidden="true"></span><span class="screen-reader-text">À propos de WordPress</span></a><div class="ab-sub-wrapper"><ul role='menu' aria-label='À propos de WordPress' id='wp-admin-bar-wp-logo-default' class="ab-submenu"><li role='group' id='wp-admin-bar-about'><a class='ab-item' role="menuitem" href='https://roadsimulator3.fr/wp-admin/about.php'>À propos de WordPress</a></li><li role='group' id='wp-admin-bar-contribute'><a class='ab-item' role="menuitem" href='https://roadsimulator3.fr/wp-admin/contribute.php'>Contribuer</a></li></ul><ul role='menu' aria-label='À propos de WordPress' id='wp-admin-bar-wp-logo-external' class="ab-sub-secondary ab-submenu"><li role='group' id='wp-admin-bar-wporg'><a class='ab-item' role="menuitem" href='https://fr.wordpress.org/'>Site de WordPress-FR</a></li><li role='group' id='wp-admin-bar-documentation'><a class='ab-item' role="menuitem" href='https://fr.wordpress.org/support/'>Documentation</a></li><li role='group' id='wp-admin-bar-learn'><a class='ab-item' role="menuitem" href='https://learn.wordpress.org/'>Apprendre WordPress</a></li><li role='group' id='wp-admin-bar-support-forums'><a class='ab-item' role="menuitem" href='https://wpfr.net/support'>Forums de support</a></li><li role='group' id='wp-admin-bar-feedback'><a class='ab-item' role="menuitem" href='https://wordpress.org/support/forum/requests-and-feedback'>Vos retours</a></li></ul></div></li><li role='group' id='wp-admin-bar-site-name' class="menupop"><a class='ab-item' role="menuitem" aria-expanded="false" href='https://roadsimulator3.fr/'>RoadSimulator3</a><div class="ab-sub-wrapper"><ul role='menu' aria-label='RoadSimulator3' id='wp-admin-bar-site-name-default' class="ab-submenu"><li role='group' id='wp-admin-bar-view-site'><a class='ab-item' role="menuitem" href='https://roadsimulator3.fr/'>Aller sur le site</a></li></ul></div></li><li role='group' id='wp-admin-bar-comments'><a class='ab-item' role="menuitem" href='https://roadsimulator3.fr/wp-admin/edit-comments.php'><span class="ab-icon" aria-hidden="true"></span><span class="ab-label awaiting-mod pending-count count-0" aria-hidden="true">0</span><span class="screen-reader-text comments-in-moderation-text">0 commentaire en modération</span></a></li><li role='group' id='wp-admin-bar-new-content' class="menupop"><a class='ab-item' role="menuitem" aria-expanded="false" href='https://roadsimulator3.fr/wp-admin/post-new.php'><span class="ab-icon" aria-hidden="true"></span><span class="ab-label">Créer</span></a><div class="ab-sub-wrapper"><ul role='menu' aria-label='Créer' id='wp-admin-bar-new-content-default' class="ab-submenu"><li role='group' id='wp-admin-bar-new-post'><a class='ab-item' role="menuitem" href='https://roadsimulator3.fr/wp-admin/post-new.php'>Article</a></li><li role='group' id='wp-admin-bar-new-media'><a class='ab-item' role="menuitem" href='https://roadsimulator3.fr/wp-admin/media-new.php'>Fichier média</a></li><li role='group' id='wp-admin-bar-new-page'><a class='ab-item' role="menuitem" href='https://roadsimulator3.fr/wp-admin/post-new.php?post_type=page'>Page</a></li><li role='group' id='wp-admin-bar-new-user'><a class='ab-item' role="menuitem" href='https://roadsimulator3.fr/wp-admin/user-new.php'>Compte</a></li></ul></div></li><li role='group' id='wp-admin-bar-wpseo-menu' class="menupop"><a class='ab-item' role="menuitem" aria-expanded="false" href='https://roadsimulator3.fr/wp-admin/admin.php?page=wpseo_dashboard'><div id="yoast-ab-icon" class="ab-item yoast-logo svg"><span class="screen-reader-text">SEO</span></div> <div class="wp-core-ui wp-ui-notification yoast-issue-counter wpseo-no-adminbar-notifications"><span class="yoast-issues-count" aria-hidden="true">0</span><span class="screen-reader-text">0 notification</span></div></a><div class="ab-sub-wrapper"><ul role='menu' id='wp-admin-bar-wpseo-menu-default' class="ab-submenu"><li role='group' id='wp-admin-bar-wpseo-settings' class="menupop"><div class="ab-item ab-empty-item" tabindex="0" role="menuitem" aria-expanded="false"><span class="wp-admin-bar-arrow" aria-hidden="true"></span>Réglages SEO</div><div class="ab-sub-wrapper"><ul role='menu' id='wp-admin-bar-wpseo-settings-default' class="ab-submenu"><li role='group' id='wp-admin-bar-wpseo-general'><a class='ab-item' role="menuitem" href='https://roadsimulator3.fr/wp-admin/admin.php?page=wpseo_dashboard'>Général</a></li><li role='group' id='wp-admin-bar-wpseo-page-settings'><a class='ab-item' role="menuitem" href='https://roadsimulator3.fr/wp-admin/admin.php?page=wpseo_page_settings'>Réglages</a></li><li role='group' id='wp-admin-bar-wpseo-integrations'><a class='ab-item' role="menuitem" href='https://roadsimulator3.fr/wp-admin/admin.php?page=wpseo_integrations'>Intégrations</a></li><li role='group' id='wp-admin-bar-wpseo-tools'><a class='ab-item' role="menuitem" href='https://roadsimulator3.fr/wp-admin/admin.php?page=wpseo_tools'>Outils</a></li><li role='group' id='wp-admin-bar-wpseo-page-academy'><a class='ab-item' role="menuitem" href='https://roadsimulator3.fr/wp-admin/admin.php?page=wpseo_page_academy'>Académie</a></li><li role='group' id='wp-admin-bar-wpseo-licenses'><a class='ab-item' role="menuitem" href='https://roadsimulator3.fr/wp-admin/admin.php?page=wpseo_licenses'>Formules</a></li><li role='group' id='wp-admin-bar-wpseo-workouts'><a class='ab-item' role="menuitem" href='https://roadsimulator3.fr/wp-admin/admin.php?page=wpseo_workouts'>Entraînements <span class="yoast-badge yoast-premium-badge"></span></a></li><li role='group' id='wp-admin-bar-wpseo-redirects'><a class='ab-item' role="menuitem" href='https://roadsimulator3.fr/wp-admin/admin.php?page=wpseo_redirects'>Redirections <span class="yoast-badge yoast-premium-badge"></span></a></li><li role='group' id='wp-admin-bar-wpseo-page-support'><a class='ab-item' role="menuitem" href='https://roadsimulator3.fr/wp-admin/admin.php?page=wpseo_page_support'>Support</a></li></ul></div></li><li role='group' id='wp-admin-bar-wpseo-get-premium'><div class="ab-item ab-empty-item" tabindex="0" role="menuitem"><a href="https://yoa.st/admin-bar-get-premium?php_version=8.4&#038;platform=wordpress&#038;platform_version=6.8.2&#038;software=free&#038;software_version=25.6&#038;days_active=3&#038;user_language=fr_FR&#038;screen=hfcm-update" target="_blank" data-action="load-nfd-ctb" data-ctb-id="f6a84663-465f-4cb5-8ba5-f7a6d72224b2" style="padding:0;">Obtenez Yoast SEO Premium &raquo; </a></div></li></ul></div></li></ul><ul role='menu' id='wp-admin-bar-top-secondary' class="ab-top-secondary ab-top-menu"><li role='group' id='wp-admin-bar-my-account' class="menupop with-avatar"><a class='ab-item' role="menuitem" aria-expanded="false" href='https://roadsimulator3.fr/wp-admin/profile.php'>Bonjour, <span class="display-name">Seb</span><img alt='' src='https://secure.gravatar.com/avatar/d2bc5571f93c7f4ac80a205fa5620a5ebb99422dcff2160fc442257ef5623ab8?s=26&#038;d=mm&#038;r=g' srcset='https://secure.gravatar.com/avatar/d2bc5571f93c7f4ac80a205fa5620a5ebb99422dcff2160fc442257ef5623ab8?s=52&#038;d=mm&#038;r=g 2x' class='avatar avatar-26 photo' height='26' width='26' loading='lazy' decoding='async'/></a><div class="ab-sub-wrapper"><ul role='menu' aria-label='Bonjour, Seb' id='wp-admin-bar-user-actions' class="ab-submenu"><li role='group' id='wp-admin-bar-user-info'><a class='ab-item' role="menuitem" href='https://roadsimulator3.fr/wp-admin/profile.php'><img alt='' src='https://secure.gravatar.com/avatar/d2bc5571f93c7f4ac80a205fa5620a5ebb99422dcff2160fc442257ef5623ab8?s=64&#038;d=mm&#038;r=g' srcset='https://secure.gravatar.com/avatar/d2bc5571f93c7f4ac80a205fa5620a5ebb99422dcff2160fc442257ef5623ab8?s=128&#038;d=mm&#038;r=g 2x' class='avatar avatar-64 photo' height='64' width='64' loading='lazy' decoding='async'/><span class='display-name'>Seb</span><span class='username'>admin6223</span><span class='display-name edit-profile'>Modifier le profil</span></a></li><li role='group' id='wp-admin-bar-logout'><a class='ab-item' role="menuitem" href='https://roadsimulator3.fr/wp-login.php?action=logout&#038;_wpnonce=985e1184a4'>Se déconnecter</a></li></ul></div></li></ul>			</div>
+		</div>
+
+		
+<div id="wpbody" role="main">
+
+<div id="wpbody-content">
+		<div id="screen-meta" class="metabox-prefs">
+
+			<div id="contextual-help-wrap" class="hidden no-sidebar" tabindex="-1" aria-label="Onglet d’aide contextuelle">
+				<div id="contextual-help-back"></div>
+				<div id="contextual-help-columns">
+					<div class="contextual-help-tabs">
+						<ul>
+												</ul>
+					</div>
+
+					
+					<div class="contextual-help-tabs-wrap">
+											</div>
+				</div>
+			</div>
+				</div>
+		                <div id="hfcm-message" class="notice notice-success">
+                    <a class="hfcm-dismiss-alert notice-dismiss" href="?hfcm-admin-notice-dismissed">Dismiss</a>
+                    <p>Hey there! You’ve been using the <strong>Header Footer Code Manager</strong> plugin for a while now. If you like the plugin, please support our awesome development and support team by leaving a <a class="hfcm-review-stars" href="https://wordpress.org/support/plugin/header-footer-code-manager/reviews/"><span class="dashicons dashicons-star-filled"></span><span class="dashicons dashicons-star-filled"></span><span class="dashicons dashicons-star-filled"></span><span class="dashicons dashicons-star-filled"></span><span class="dashicons dashicons-star-filled"></span></a> rating. <a href="https://wordpress.org/support/plugin/header-footer-code-manager/reviews/">Rate it!</a> It’ll mean the world to us and keep this plugin free and constantly updated. <a href="https://wordpress.org/support/plugin/header-footer-code-manager/reviews/">Leave A Review</a>                    </p>
+                </div>
+                                <div id="hfcm-message" class="notice notice-success">
+                    <p>
+                        🔥 LIFETIME DEAL ALERT: The PRO version of this plugin is released and and available for a
+                        limited time as a one-time, exclusive lifetime deal.
+                        Want it? <b><i><a
+                                        href="http://www.rockethub.com/deal/header-footer-code-manager-pro-wordpress-plugin?utm_source=freehfcm&utm_medium=banner&utm_campaign=rhltd"
+                                        target="_blank">Click here</a> to get HFCM Pro for the lowest price ever</i></b>
+                    </p>
+                </div>
+                
+    <div class="wrap">
+        <h1>
+            Modifier l’extrait                            <a href="https://roadsimulator3.fr/wp-admin/admin.php?page=hfcm-create" class="page-title-action">
+                    Ajouter un nouvel extrait                </a>
+                    </h1>
+                <form method="post" action="https://roadsimulator3.fr/wp-admin/admin.php?page=hfcm-request-handler&id=12">
+            <input type="hidden" id="_wpnonce" name="_wpnonce" value="4962a5d853" /><input type="hidden" name="_wp_http_referer" value="/wp-admin/admin.php?page=hfcm-update&#038;action=edit&#038;id=12&#038;_wpnonce=19d786c559" />            <table class="wp-list-table widefat fixed hfcm-form-width form-table">
+                <tr>
+                    <th class="hfcm-th-width">Nom de l’extrait de code</th>
+                    <td>
+                        <input type="text" name="data[name]" value="css h1 h2"
+                               class="hfcm-field-width"/>
+                    </td>
+                </tr>
+                                <tr id="snippet_type">
+                    <th class="hfcm-th-width">
+                        Type d’extrait                    </th>
+                    <td>
+                        <select name="data[snippet_type]">
+                            <option value='html'>HTML</option><option value='css' selected>CSS</option><option value='js'>Javascript</option>                        </select>
+                    </td>
+                </tr>
+                                <tr>
+                    <th class="hfcm-th-width">Site Display</th>
+                    <td>
+                        <select name="data[display_on]" onchange="hfcm_showotherboxes(this.value);">
+                            <option value="All" selected="selected">Sur l’ensemble du site</option><option value="s_posts">Articles spécifiques</option><option value="s_pages">Pages spécifiques</option><option value="s_categories">Catégories spécifiques (archive et publications)</option><option value="s_custom_posts">Types de publication personnalisée spécifiques (archive et publications)</option><option value="s_tags">Étiquettes spécifiques (archive et publications)</option><option value="s_is_home">Page d’accueil</option><option value="s_is_search">Page de recherche</option><option value="s_is_archive">Page d’archive</option><option value="latest_posts">Derniers articles</option><option value="manual">Code court uniquement</option>                        </select>
+                    </td>
+                </tr>
+                                <tr id="ex_pages"
+                    style="">
+                    <th class="hfcm-th-width">Pages exclues</th>
+                    <td>
+                        <select name="data[ex_pages][]" multiple>
+                            <option value="43">Nos Produits</option><option value="45">ReadyData : Données Routières Prêtes à l’Emploi</option><option value="48">RoadSimulator3</option>                        </select>
+                    </td>
+                </tr>
+                <tr id="ex_posts"
+                    style="">
+                    <th class="hfcm-th-width">Publications exclues</th>
+                    <td>
+                        <select class="nnr-wraptext" name="data[ex_posts][]" multiple>
+                            <option disabled></option>
+                        </select> <img id="loader"
+                                       src="https://roadsimulator3.fr/wp-content/plugins/header-footer-code-manager/images/ajax-loader.gif">
+                    </td>
+                </tr>
+                                <tr id="s_pages" style="display:none;">
+                    <th class="hfcm-th-width">
+                        Liste des pages                    </th>
+                    <td>
+                        <select name="data[s_pages][]" multiple>
+                            <option value="43">Nos Produits</option><option value="45">ReadyData : Données Routières Prêtes à l’Emploi</option><option value="48">RoadSimulator3</option>                        </select>
+                    </td>
+                </tr>
+                                <tr id="s_posts" style="display:none;">
+                    <th class="hfcm-th-width">
+                        Liste des publications                    </th>
+                    <td>
+                        <select class="nnr-wraptext" name="data[s_posts][]" multiple>
+                            <option disabled>...</option>
+                        </select>
+                    </td>
+                </tr>
+                                <tr id="s_categories" style="display:none;">
+                    <th class="hfcm-th-width">Liste des catégories</th>
+                    <td>
+                        <select name="data[s_categories][]" multiple>
+                            <option value='2'>Catégories - Produit</option><option value='26'>Catégories - Research Gate</option><option value='3'>Catégories - Revue d&#039;article</option><option value='1'>Catégories - Uncategorized</option><option value='4'>Catégories - Vulgarisation</option>                        </select>
+                    </td>
+                </tr>
+                <tr id="s_tags" style="display:none;">
+                    <th class="hfcm-th-width">Liste des étiquettes</th>
+                    <td>
+                        <select name="data[s_tags][]" multiple>
+                            <option value='29'>Étiquettes - 404</option><option value='5'>Étiquettes - article</option><option value='30'>Étiquettes - auto-calibration</option><option value='41'>Étiquettes - biais</option><option value='42'>Étiquettes - bruit 1/f</option><option value='39'>Étiquettes - bruit inertiel</option><option value='35'>Étiquettes - capteurs embarqués</option><option value='37'>Étiquettes - carrouseling</option><option value='47'>Étiquettes - environnement urbain</option><option value='38'>Étiquettes - erreur angulaire</option><option value='44'>Étiquettes - fusion de capteurs</option><option value='6'>Étiquettes - geofabrik</option><option value='43'>Étiquettes - GNSS</option><option value='7'>Étiquettes - GraphHopper</option><option value='36'>Étiquettes - gyroscope MEMS</option><option value='8'>Étiquettes - h3</option><option value='24'>Étiquettes - IEEE</option><option value='9'>Étiquettes - IGN</option><option value='32'>Étiquettes - IMU</option><option value='48'>Étiquettes - inertie</option><option value='46'>Étiquettes - localisation</option><option value='23'>Étiquettes - map matching</option><option value='10'>Étiquettes - MNT</option><option value='45'>Étiquettes - navigation autonome</option><option value='40'>Étiquettes - navigation inertielle</option><option value='34'>Étiquettes - orientation inertielle</option><option value='11'>Étiquettes - osm</option><option value='12'>Étiquettes - osmnx</option><option value='13'>Étiquettes - osrm</option><option value='14'>Étiquettes - pbf</option><option value='15'>Étiquettes - python</option><option value='27'>Étiquettes - Reference</option><option value='28'>Étiquettes - Refonte</option><option value='25'>Étiquettes - Revue d&#039;article</option><option value='16'>Étiquettes - rs3</option><option value='31'>Étiquettes - smartphone</option><option value='17'>Étiquettes - srtm</option><option value='18'>Étiquettes - thèse</option><option value='19'>Étiquettes - Valhalla</option><option value='33'>Étiquettes - véhicule</option>                        </select>
+                    </td>
+                </tr>
+                <tr id="c_posttype" style="display:none;">
+                    <th class="hfcm-th-width">Types de publication personnalisée</th>
+                    <td>
+                        <select name="data[s_custom_posts][]" multiple>
+                            <option value='post'>post</option><option value='page'>page</option><option value='attachment'>attachment</option>                        </select>
+                    </td>
+                </tr>
+                <tr id="lp_count" style="display:none;">
+                    <th class="hfcm-th-width">Nombre de publications</th>
+                    <td>
+                        <select name="data[lp_count]">
+                            <option value='1'>1</option><option value='2'>2</option><option value='3'>3</option><option value='4'>4</option><option value='5' selected>5</option><option value='6'>6</option><option value='7'>7</option><option value='8'>8</option><option value='9'>9</option><option value='10'>10</option><option value='11'>11</option><option value='12'>12</option><option value='13'>13</option><option value='14'>14</option><option value='15'>15</option><option value='16'>16</option><option value='17'>17</option><option value='18'>18</option><option value='19'>19</option><option value='20'>20</option>                        </select>
+                    </td>
+                </tr>
+                                <tr id="locationtr" style="">
+                    <th class="hfcm-th-width">
+                        Emplacement                    </th>
+                    <td>
+                        <select name="data[location]" id="data_location">
+                            <option value='header' selected='selected'>Entête</option><option value='footer'>Pied de page</option>                        </select>
+                        <p>
+                            <b>Note</b>: Tous les emplacements (par exemple, avant le contenu) n’existent pas sur tous les types de publications. L’emplacement n’apparaîtra comme une option que si le crochet approprié existe sur la page.                        </p>
+                    </td>
+                </tr>
+                                                <tr>
+                    <th class="hfcm-th-width">Device Display</th>
+                    <td>
+                        <select name="data[device_type]">
+                            <option value='both' selected='selected'>Afficher sur tous les appareils</option><option value='desktop'>Ordinateur uniquement</option><option value='mobile'>Appareils mobiles uniquement</option>                        </select>
+                    </td>
+                </tr>
+                <tr>
+                    <th class="hfcm-th-width">État</th>
+                    <td>
+                        <select name="data[status]">
+                            <option value='active' selected='selected'>Activé</option><option value='inactive'>Désactivé</option>                        </select>
+                    </td>
+                </tr>
+                                    <tr>
+                        <th class="hfcm-th-width">Code court</th>
+                        <td>
+                            <p>
+                                [hfcm id="12"]
+                                                                    <a data-shortcode='[hfcm id="12"]'
+                                       href="javascript:void(0);" class="nnr-btn-click-to-copy nnr-btn-copy-inline"
+                                       id="hfcm_copy_shortcode">
+                                        Copier                                    </a>
+                                                            </p>
+
+                        </td>
+                    </tr>
+                    <tr>
+                        <th class="hfcm-th-width">
+                            Journal des modifications                        </th>
+                        <td>
+                            <p>
+                                Extrait de code créé par                                <b>Seb</b> le 2025-08-01 à 21:00                                <br/>
+                                                            </p>
+                        </td>
+                    </tr>
+                            </table>
+            <div class="nnr-mt-20">
+                <h1>Extrait de code                    / Code</h1>
+                <div class="nnr-mt-20 nnr-hfcm-codeeditor-box">
+                    <textarea name="data[snippet]" aria-describedby="nnr-newcontent-description" id="nnr_newcontent"
+                              rows="20">article h1 {
+  font-size: 2.6em;
+  margin-bottom: 0.6em;
+  font-weight: 700;
+  line-height: 1.2;
+  color: #1a1a1a;
+  text-align: center;
+}
+
+article h2 {
+  font-size: 1.8em;
+  margin-top: 2.4em;
+  margin-bottom: 1.2em;
+  font-weight: 600;
+  color: #2a4d8f;
+  border-left: 4px solid #2a4d8f;
+  padding-left: 0.6em;
+}</textarea>
+
+                    <p class="notice notice-warning nnr-padding10" id="nnr-snippet-warning">
+                        Avertissement : l’utilisation d’un code inapproprié ou de sources de code non fiables peut endommager votre site ou créer des risques de sécurité. <a href="https://draftpress.com/security-risks-of-wp-plugins-that-allow-code-editing-or-insertion" target="_blank">En savoir plus</a>.                    </p>
+                    <div class="wp-core-ui">
+                        <input type="submit"
+                               name="update"
+                               value="Mise à jour"
+                               class="button button-primary button-large nnr-btnsave">
+                                                    <a onclick="return nnr_confirm_delete_snippet();"
+                               href="https://roadsimulator3.fr/wp-admin/admin.php?page=hfcm-list&#038;action=delete&#038;_wpnonce=06caa59a57&#038;snippet=12"
+                               class="button button-secondary button-large nnr-btndelete">Supprimer</a>
+                                            </div>
+                </div>
+            </div>
+        </form>
+    </div>
+
+
+<div class="clear"></div></div><!-- wpbody-content -->
+<div class="clear"></div></div><!-- wpbody -->
+<div class="clear"></div></div><!-- wpcontent -->
+
+<div id="wpfooter" role="contentinfo">
+		<p id="footer-left" class="alignleft">
+		<span id="footer-thankyou">Merci de faire de <a href="https://fr.wordpress.org/">WordPress</a> votre outil de création de contenu.</span>	</p>
+	<p id="footer-upgrade" class="alignright">
+		Version 6.8.2	</p>
+	<div class="clear"></div>
+</div>
+	<div id="wp-auth-check-wrap" class="hidden">
+	<div id="wp-auth-check-bg"></div>
+	<div id="wp-auth-check">
+	<button type="button" class="wp-auth-check-close button-link"><span class="screen-reader-text">
+		Fermez la boite de dialogue	</span></button>
+			<div id="wp-auth-check-form" class="loading" data-src="https://roadsimulator3.fr/wp-login.php?interim-login=1&#038;wp_lang=fr_FR"></div>
+			<div class="wp-auth-fallback">
+		<p><b class="wp-auth-fallback-expired" tabindex="0">La session a expiré</b></p>
+		<p><a href="https://roadsimulator3.fr/wp-login.php" target="_blank">Veuillez vous reconnecter.</a>
+		La page de connexion s’ouvrira dans une nouvelle fenêtre. Après connexion, vous pourrez la fermer et revenir à cette page.</p>
+	</div>
+	</div>
+	</div>
+	<script src='https://roadsimulator3.fr/wp-admin/load-scripts.php?c=0&amp;load%5Bchunk_0%5D=hoverIntent,wp-dom-ready,wp-hooks&amp;ver=6.8.2'></script>
+<script src="https://roadsimulator3.fr/wp-includes/js/dist/i18n.min.js?ver=5e580eb46a90c2b997e6" id="wp-i18n-js"></script>
+<script id="wp-i18n-js-after">
+wp.i18n.setLocaleData( { 'text direction\u0004ltr': [ 'ltr' ] } );
+</script>
+<script id="wp-a11y-js-translations">
+( function( domain, translations ) {
+	var localeData = translations.locale_data[ domain ] || translations.locale_data.messages;
+	localeData[""].domain = domain;
+	wp.i18n.setLocaleData( localeData, domain );
+} )( "default", {"translation-revision-date":"2025-07-16 08:25:45+0000","generator":"GlotPress\/4.0.1","domain":"messages","locale_data":{"messages":{"":{"domain":"messages","plural-forms":"nplurals=2; plural=n > 1;","lang":"fr"},"Notifications":["Notifications"]}},"comment":{"reference":"wp-includes\/js\/dist\/a11y.js"}} );
+</script>
+<script src="https://roadsimulator3.fr/wp-includes/js/dist/a11y.min.js?ver=3156534cc54473497e14" id="wp-a11y-js"></script>
+<script id="common-js-extra">
+var bulkActionObserverIds = {"bulk_action":"action","changeit":"new_role"};
+</script>
+<script id="common-js-translations">
+( function( domain, translations ) {
+	var localeData = translations.locale_data[ domain ] || translations.locale_data.messages;
+	localeData[""].domain = domain;
+	wp.i18n.setLocaleData( localeData, domain );
+} )( "default", {"translation-revision-date":"2025-07-22 21:56:43+0000","generator":"GlotPress\/4.0.1","domain":"messages","locale_data":{"messages":{"":{"domain":"messages","plural-forms":"nplurals=2; plural=n > 1;","lang":"fr"},"Screen Options updated.":["Mise \u00e0 jour des options d\u2019\u00e9cran."],"%1$s is deprecated since version %2$s with no alternative available.":["%1$s est obsol\u00e8te depuis la version %2$s, aucune alternative n\u2019est disponible."],"%1$s is deprecated since version %2$s! Use %3$s instead.":["%1$s est obsol\u00e8te depuis la version %2$s\u00a0! Utilisez %3$s \u00e0 la place."],"Please select at least one item to perform this action on.":["Veuillez s\u00e9lectionner au moins un \u00e9l\u00e9ment pour effectuer cette action."],"Expand Main menu":["D\u00e9plier le menu principal"],"Dismiss this notice.":["Ignorer cette notification."],"You are about to permanently delete these items from your site.\nThis action cannot be undone.\n'Cancel' to stop, 'OK' to delete.":["Vous \u00eates en train de supprimer d\u00e9finitivement ces \u00e9l\u00e9ments de votre site.\nCette action ne peut pas \u00eatre annul\u00e9e.\n\u00ab\u00a0Annuler\u00a0\u00bb pour arr\u00eater, \u00ab\u00a0OK\u00a0\u00bb pour supprimer."],"Collapse Main menu":["Replier le menu principal"]}},"comment":{"reference":"wp-admin\/js\/common.js"}} );
+</script>
+<script src="https://roadsimulator3.fr/wp-admin/js/common.min.js?ver=6.8.2" id="common-js"></script>
+<script src="https://roadsimulator3.fr/wp-includes/js/hoverintent-js.min.js?ver=2.2.1" id="hoverintent-js-js"></script>
+<script src="https://roadsimulator3.fr/wp-includes/js/admin-bar.min.js?ver=6.8.2" id="admin-bar-js"></script>
+<script src="https://roadsimulator3.fr/wp-admin/js/svg-painter.js?ver=6.8.2" id="svg-painter-js"></script>
+<script id="heartbeat-js-extra">
+var heartbeatSettings = {"nonce":"1086c5b84a"};
+</script>
+<script src="https://roadsimulator3.fr/wp-includes/js/heartbeat.min.js?ver=6.8.2" id="heartbeat-js"></script>
+<script id="wp-auth-check-js-translations">
+( function( domain, translations ) {
+	var localeData = translations.locale_data[ domain ] || translations.locale_data.messages;
+	localeData[""].domain = domain;
+	wp.i18n.setLocaleData( localeData, domain );
+} )( "default", {"translation-revision-date":"2025-07-16 08:25:45+0000","generator":"GlotPress\/4.0.1","domain":"messages","locale_data":{"messages":{"":{"domain":"messages","plural-forms":"nplurals=2; plural=n > 1;","lang":"fr"},"Your session has expired. You can log in again from this page or go to the login page.":["Votre session a expir\u00e9. Vous pouvez vous reconnecter depuis cette page ou aller \u00e0 la page de connexion."]}},"comment":{"reference":"wp-includes\/js\/wp-auth-check.js"}} );
+</script>
+<script src="https://roadsimulator3.fr/wp-includes/js/wp-auth-check.min.js?ver=6.8.2" id="wp-auth-check-js"></script>
+<script id="hfcm_showboxes-js-extra">
+var hfcm_localize = {"header":"Ent\u00eate","before_content":"Avant le contenu","after_content":"Apr\u00e8s le contenu","footer":"Pied de page","id":"12","security":"9e8e776405"};
+</script>
+<script src="https://roadsimulator3.fr/wp-content/plugins/header-footer-code-manager/js/nnr-hfcm-showboxes.js?ver=6.8.2" id="hfcm_showboxes-js"></script>
+
+<div class="clear"></div></div><!-- wpwrap -->
+<script type="text/javascript">if(typeof wpOnload==='function')wpOnload();</script>
+</body>
+</html>

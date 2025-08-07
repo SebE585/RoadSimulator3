@@ -1,0 +1,40 @@
+# === Configuration des vitesses attendues par type de route ===
+
+target_speed_by_road_type:
+  motorway:
+    min_kmh: 100
+    max_kmh: 120
+    min_duration_s: 15
+  primary:
+    min_kmh: 60
+    max_kmh: 90
+    min_duration_s: 12
+  secondary:
+    min_kmh: 45
+    max_kmh: 70
+    min_duration_s: 10
+  tertiary:
+    min_kmh: 35
+    max_kmh: 55
+    min_duration_s: 10
+  service:
+    min_kmh: 40
+    max_kmh: 60
+    min_duration_s: 8
+  residential:
+    min_kmh: 25
+    max_kmh: 40
+    min_duration_s: 8
+  unknown:
+    min_kmh: 10
+    max_kmh: 35
+    min_duration_s: 5
+
+# === Paramètres globaux pour la détection des plateaux de vitesse (plateaux) ===
+
+plateaux_detection:
+  hz: 10                         # fréquence d’échantillonnage
+  threshold_kmh: 2.0            # variation max tolérée sur un plateau
+  min_duration_default_s: 10    # durée minimale par défaut si road_type inconnu
+  rolling_window: 5             # fenêtre pour lissage (en points)
+

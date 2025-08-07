@@ -1,0 +1,31 @@
+simulation:
+  hz: 10
+  step_m: 0.83
+  initial_speed_kmh: 30
+  initial_ramp_duration_s: 5
+  smoothing_window: 3
+  max_speed_delta_kmh: 5
+  max_speed_delta: 5.0
+  inertial_noise_std: 0.03
+  dynamic_gain: true
+  force_target_speed: true   # 👈 Ajout ici
+  target_speed_by_road_type:
+    motorway: 110
+    primary: 70
+    secondary: 50
+    tertiary: 40
+    residential: 30
+    service: 50
+    unknown: 50
+  mnt_path: "data/normandy_l93.tif"
+  cities_coords:
+    - [49.2738, 1.2127]
+    - [49.4431, 1.0993]
+    - [49.3568, 1.2342]
+    - [49.3653, 1.2361]
+    - [49.3305, 1.1811]
+    - [49.3364, 1.1733]
+
+  # === Paramètre de progressivité de la vitesse (utilisé dans adjust_speed_progressively) ===
+  adjust_speed:
+    max_acc_kmh_per_s: 20.0  # accélération max tolérée pour ajustement progressif

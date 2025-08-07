@@ -1,0 +1,154 @@
+events:
+  acceleration:
+    # --- Bloc injection ---
+    max_events: 5              # Nombre maximal d'accélérations à injecter dans la simulation
+    amplitude: 3.0             # Valeur de l'accélération longitudinale simulée (en m/s²)
+    duration_s: 1.0            # Durée de l'événement (en secondes)
+    max_attempts: 10           # Nombre maximal d'essais pour insérer l'événement dans la trajectoire
+    acc_x_mean: 3.0            # Valeur moyenne de l'accélération longitudinale (ancien "amplitude")
+    acc_x_std: 0.3             # Bruit simulé sur acc_x
+    gyro_axes_used: ["x", "y", "z"]   # Axes gyroscopiques à affecter pendant l'accélération
+    gyro_x_mean: 0.7           # Valeur moyenne de gyro_x pendant l'événement
+    gyro_y_mean: 0.6           # Valeur moyenne de gyro_y pendant l'événement
+    gyro_z_mean: 0.2           # Valeur moyenne de gyro_z pendant l'événement
+    gyro_x_std: 0.1            # Écart-type sur gyro_x (pour simuler le bruit)
+    gyro_y_std: 0.1            # Écart-type sur gyro_y (pour simuler le bruit)
+    gyro_z_std: 0.05           # Écart-type sur gyro_z (pour simuler le bruit)
+
+    # --- Bloc détection ---
+    acc_x_thresh: 2.5          # Seuil minimal de détection sur acc_x (accélération)
+    gyro_thresh: 0.3           # Seuil de variation minimale sur les axes gyroscopiques
+    window_pts: 6              # Taille de la fenêtre (en points à 10 Hz) pour confirmer l’événement
+    refractory: 20             # Période réfractaire pour éviter les doublons
+
+  freinage:
+    # --- Bloc injection ---
+    max_events: 5              # Nombre maximal de freinages à injecter
+    min_delta_kmh: 7           # Perte minimale de vitesse (km/h)
+    max_delta_kmh: 15          # Perte maximale de vitesse (km/h)
+    acc_x_start: -3.5          # Accélération initiale simulée pour le freinage (m/s²)
+    duration_pts: 10           # ✅ Durée simulée pour chaque freinage (en points à 10 Hz)
+    acc_x_mean: -3.5             # Moyenne d'accélération longitudinale simulée (identique à acc_x_start)
+    acc_x_std: 0.3               # Écart-type pour ajouter du bruit simulé
+    max_attempts: 10           # Nombre maximal d’essais pour placer le freinage
+    gyro_axes_used: ["x", "y", "z"]   # Axes gyroscopiques affectés pendant le freinage
+    gyro_x_mean: -0.6          # Moyenne de gyro_x (négatif pour ralentissement)
+    gyro_y_mean: -0.4          # Moyenne de gyro_y pendant le freinage
+    gyro_z_mean: -0.3          # Moyenne de gyro_z pendant le freinage
+    gyro_x_std: 0.1            # Écart-type gyro_x (variation simulée)
+    gyro_y_std: 0.1            # Écart-type gyro_y
+    gyro_z_std: 0.05           # Écart-type gyro_z
+
+    # --- Bloc détection ---
+    acc_x_thresh: -2.8         # Seuil d'accélération longitudinale négatif
+    gyro_thresh: 0.3           # Seuil minimal de variation sur les axes gyroscopiques
+    window_pts: 6              # Fenêtre de détection (en points)
+    refractory: 20             # Période réfractaire (points à 10 Hz)
+
+  nid_de_poule:
+    # --- Bloc injection ---
+    max_events: 5              # Nombre maximal d'événements "nid de poule"
+    pattern: [4.2, 3.5, -5.3, 6.1, 9.8, 9.8]  # Profil d'acc_z simulé (exprimé en m/s² à 10 Hz)
+    max_attempts: 10           # Nombre maximal d’essais pour positionner un événement
+    gyro_axes_used: ["x"]     # Axe gyroscopique impacté pendant le choc
+    gyro_x_mean: 1.0           # Moyenne gyro_x pendant l’événement
+    gyro_x_std: 0.5            # Écart-type gyro_x pendant l’événement
+
+    # --- Bloc détection ---
+    acc_z_thresh: 5.0          # Seuil minimal pour le pic vertical (m/s²)
+    gyro_thresh: 3.0           # Seuil de variation gyroscopique (Δgyro ≥ 3.0)
+    window_pts: 8              # Taille de la fenêtre de détection (points)
+    refractory: 20             # Période réfractaire (points à 10 Hz)
+
+  dos_dane:
+    # --- Bloc injection ---
+    max_events: 5              # Nombre maximal de dos d'âne à injecter
+    phase_length: 6            # Longueur d’un pic ou creux (points à 10 Hz)
+    amplitude_step: 0.5        # Incrément d’amplitude d’un point à l’autre
+    gyro_x_peak: 0.5           # Valeur max théorique de gyro_x (non utilisée actuellement)
+    noise_gyro: 0.02           # Bruit gyroscopique injecté
+    gyro_axes_used: ["x"]     # Axes gyroscopiques affectés
+    gyro_x_mean: 0.5           # Moyenne gyro_x
+    gyro_x_std: 0.1            # Écart-type gyro_x
+
+    # --- Bloc détection ---
+    acc_z_thresh: 4.0          # Seuil sur acc_z pour un pic (positif ou négatif)
+    gyro_thresh: 5.0           # Seuil gyroscopique (Δgyro_z ≥ 6.0)
+    window_pts: 8              # Taille de la fenêtre de détection
+    refractory: 20             # Période réfractaire (points à 10 Hz)
+
+  trottoir:
+    # --- Bloc injection ---
+    max_events: 5              # Nombre maximal d’événements "trottoir"
+    duration_pts: 6            # Durée de l’événement (en points à 10 Hz)
+    acc_y_mean: 3.5            # Moyenne acc_y (latéral) pendant le choc
+    acc_z_mean: 8.0            # Moyenne acc_z (vertical) pendant le choc
+    acc_y_std: 0.1             # Bruit acc_y simulé (écart-type)
+    acc_z_std: 0.5             # Bruit acc_z simulé (écart-type)
+    gyro_axes_used: ["x", "y", "z"]  # Axes gyroscopiques simulés
+    gyro_x_mean: 1.0           # Moyenne gyro_x
+    gyro_y_mean: 1.0           # Moyenne gyro_y
+    gyro_z_mean: 5.0           # Moyenne gyro_z
+    gyro_x_std: 0.5            # Écart-type gyro_x
+    gyro_y_std: 0.5            # Écart-type gyro_y
+    gyro_z_std: 0.5            # Écart-type gyro_z
+    max_attempts: 10           # Nombre maximal d’essais d’injection
+
+    # --- Bloc détection ---
+    gyro_thresh: 3.0           # Seuil de variation gyroscopique sur ≥ 1 axe
+    acc_z_thresh: 6.5          # Seuil acc_z (vertical)
+    window_pts: 6              # Taille fenêtre glissante (points à 10 Hz)
+    refractory: 20             # Période réfractaire
+
+  initial:
+    # --- Bloc injection ---
+    duration_pts: 70           # Durée de la phase initiale (en points à 10 Hz)
+    v_max_kmh: 43.0            # Vitesse cible à atteindre
+    acc_x: 2.0                 # Accélération constante appliquée (m/s²)
+
+  final:
+    # --- Bloc injection ---
+    duration_pts: 60           # Durée de la phase de décélération (points à 10 Hz)
+    v_final_kmh: 0.0           # Vitesse finale visée (km/h)
+    acc_x: -1.5                # Décélération simulée (m/s²)
+
+  ouverture_porte:
+    # --- Bloc injection ---
+    max_events: 5              # Nombre d’ouvertures de porte à simuler
+    duration_pts: 10           # Durée de l’ouverture (points à 10 Hz)
+    gyro_y_mean: 10.0          # Valeur moyenne de gyro_y (oscillation latérale)
+    gyro_y_std: 3.0            # Écart-type gyro_y
+    gyro_z_mean: 5.0           # Valeur moyenne de gyro_z (oscillation verticale)
+    gyro_z_std: 2.0            # Écart-type gyro_z
+
+    # --- Bloc détection ---
+    gyro_y_thresh: 5.0         # Seuil gyro_y
+    gyro_z_thresh: 3.0         # Seuil gyro_z
+    window_pts: 5              # Taille de la fenêtre de détection (points à 10 Hz)
+    refractory: 20             # Période réfractaire
+
+# === Bruit inertiel global hors événements ===
+inertial_noise:
+  acc_x:
+    std: 0.4
+  acc_y:
+    std: 0.4
+  acc_z:
+    std: 0.35
+  gyro_x:
+    std: 0.4
+  gyro_y:
+    std: 0.4
+  gyro_z:
+    std: 0.4
+
+# === Seuils de test pour check_realism.py ===
+realism_check:
+  acc:
+    std_min: 0.05
+    std_max: 4.0
+    mean_z_min: 9.0
+    mean_z_max: 10.5
+  gyro:
+    std_min: 0.01
+    std_max: 60.0

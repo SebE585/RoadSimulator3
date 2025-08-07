@@ -1,0 +1,9 @@
+# Dossiers à ignorer
+data/
+logs/
+outputs/
+docs/
+cache/
+
+# Backups ZIP
+*.zip

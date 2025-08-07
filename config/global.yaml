@@ -1,0 +1,14 @@
+general:
+  # Configuration des événements inertiels simulés dans RoadSimulator3.
+  # Chaque section correspond à un type d’événement (accélération, freinage, dos d’âne, etc.)
+  # et contient les paramètres utilisés lors de la génération :
+  # - max_events : nombre maximum à injecter
+  # - amplitude / acc_x / acc_y / acc_z : intensité des accélérations simulées
+  # - duration_s / duration_pts : durée de l'événement en secondes ou en points (à 10 Hz)
+  # - pattern : séquence personnalisée d'accélérations
+  # - max_attempts : nombre d’essais pour trouver un emplacement valable
+  # - *_threshold_kmh : seuil de vitesse pour considérer l’arrêt ou le démarrage
+  # - *_std : écart-type du bruit ajouté
+  hz: 10
+  g: 9.81
+  logging_level: DEBUG  # ou INFO, DEBUG, WARNING, ERROR
