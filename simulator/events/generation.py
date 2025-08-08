@@ -1,3 +1,10 @@
+import numpy as np
+import pandas as pd
+import logging
+from core.utils import ensure_event_column_object
+from simulator.events.config import get_event_config
+from deprecated import deprecated
+
 def _inject_events_loop(df, cfg, event_name, inject_fn, is_valid_location_fn=None):
     """
     Boucle utilitaire pour injecter des événements dans un DataFrame.
@@ -34,12 +41,7 @@ def _inject_events_loop(df, cfg, event_name, inject_fn, is_valid_location_fn=Non
         injected_indices.append(start_idx)
         count += 1
     return df
-import numpy as np
-import pandas as pd
-import logging
-from core.utils import ensure_event_column_object
-from simulator.events.config import get_event_config
-from deprecated import deprecated
+
 
 """
 Generation des événements inertiels réalistes pour RoadSimulator3.

@@ -1,5 +1,4 @@
 import numpy as np
-import pandas as pd
 import logging
 from simulator.events.generation import generate_opening_door
 from geopy.distance import geodesic

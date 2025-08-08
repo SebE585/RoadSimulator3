@@ -18,8 +18,9 @@ Fonctions principales :
 """
 
 import numpy as np
-import pandas as pd
 import logging
+from deprecated import deprecated
+
 from simulator.events.utils import ensure_event_column_object
 
 from simulator.events.config import CONFIG

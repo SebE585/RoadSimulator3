@@ -1,15 +1,49 @@
 import logging
 import time
+import json
 import requests
-from typing import List
 import pandas as pd
-from sseclient import SSEClient
 from tqdm import tqdm
 
 from core.osmnx.mapping import get_edge_type_nearest
 
 logger = logging.getLogger(__name__)
 OSMNX_BASE_URL = "http://localhost:5002/nearest_road_batch_stream"
+
+
+def _iter_sse(url: str, timeout: int = 300):
+    """Minimal SSE line parser using requests.iter_lines.
+
+    Yields dicts with a single key 'data' containing the concatenated data lines
+    for each SSE event. This avoids third-party client issues (bytes/str mix).
+    """
+    with requests.get(
+        url,
+        stream=True,
+        timeout=timeout,
+        headers={"Accept": "text/event-stream"},
+    ) as resp:
+        resp.raise_for_status()
+        buffer = []
+        for raw in resp.iter_lines(decode_unicode=True):
+            if raw is None:
+                continue
+            line = raw.strip()
+            # Blank line separates events
+            if not line:
+                if buffer:
+                    yield {"data": "\n".join(buffer)}
+                    buffer = []
+                continue
+            # Comments start with ':' per SSE spec – ignore
+            if line.startswith(":"):
+                continue
+            # Only collect data lines (we ignore 'event:' etc. for now)
+            if line.startswith("data:"):
+                buffer.append(line[5:].lstrip())
+        # Flush last event if stream ends without trailing blank line
+        if buffer:
+            yield {"data": "\n".join(buffer)}
 
 
 def enrich_road_type_stream(
@@ -70,7 +104,7 @@ def enrich_road_type_stream(
     stream_url = stream_url_template.format(stream_id=stream_id)
     logger.info(f"[OSMNX] Connexion à {stream_url}...")
 
-    client = SSEClient(stream_url)
+    iterable = _iter_sse(stream_url)
     count = 0
 
     speed_by_type = {
@@ -84,11 +118,17 @@ def enrich_road_type_stream(
         "unknown": 50
     }
 
-    for event in tqdm(client, total=n, desc="⏳ Enrichissement road_type"):
+    for event in tqdm(iterable, total=n, desc="⏳ Enrichissement road_type"):
         try:
-            if not event.data:
-                continue
-            data = eval(event.data) if isinstance(event.data, str) else event.data
+            payload = event.get("data", "")
+            if isinstance(payload, str) and payload.strip():
+                try:
+                    data = json.loads(payload)
+                except Exception as e:
+                    logger.error(f"[OSMNX] JSON decode error: {e} — raw: {payload[:200]}")
+                    continue
+            else:
+                data = payload
             idx = data["index"]
 
             # ✅ Compatibilité highway / osm_highway

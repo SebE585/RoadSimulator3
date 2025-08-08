@@ -1,6 +1,9 @@
 from collections import defaultdict
 import pandas as pd
+import logging
 from core.decorators import deprecated
+
+logger = logging.getLogger(__name__)
 
 
 class EventCounter:

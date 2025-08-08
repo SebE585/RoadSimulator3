@@ -10,7 +10,9 @@ plotly>=5.19
 jupyterlab>=4.0
 selenium>=4.16
 webdriver-manager>=4.0
+
 pytest>=7.4
+sseclient-py>=1.8
 
 geopandas>=0.14
 fiona>=1.9
