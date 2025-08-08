@@ -184,10 +184,16 @@ zip:
 		-x "cache/*"
 
 commit:
+	@echo "📝 Commit + tag v1.0"
 	@git add .
-	@git commit -m "Release 1.0"
-	@git tag -a v1.0 -m "Version 1.0"
-	@echo "\033[32m✅ Commit and tag v1.0 created successfully.\033[0m"
+	@git commit -m "Release 1.0" || echo "(info) aucun changement à committer"
+	@if git rev-parse -q --verify "refs/tags/v1.0" >/dev/null; then \
+		echo "ℹ️  Tag v1.0 existe déjà, on ne le recrée pas."; \
+	else \
+		git tag -a v1.0 -m "Version 1.0"; \
+		echo "🏷️  Tag v1.0 créé."; \
+	fi
+	@echo "\033[32m✅ Commit/Tag terminé.\033[0m"
 
 # List available targets
 help:
