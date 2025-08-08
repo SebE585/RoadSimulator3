@@ -195,6 +195,25 @@ commit:
 	fi
 	@echo "\033[32m✅ Commit/Tag terminé.\033[0m"
 
+
+# Commit with custom VERSION (and optional MSG)
+commit-tag:
+	@if [ -z "$(VERSION)" ]; then \
+		echo "❌ VERSION non spécifiée. Utilise : make commit-tag VERSION=1.2.3 [MSG=\"message\"]"; \
+		exit 1; \
+	fi
+	@msg="${MSG:-chore: release v$(VERSION)}"; \
+	echo "📝 Commit + tag v$(VERSION) — $$msg"; \
+	git add .; \
+	git commit -m "$$msg" || echo "(info) aucun changement à committer"; \
+	if git rev-parse -q --verify "refs/tags/v$(VERSION)" >/dev/null; then \
+		echo "ℹ️  Le tag v$(VERSION) existe déjà, pas de recréation."; \
+	else \
+		git tag -a v$(VERSION) -m "Version $(VERSION)"; \
+		echo "🏷️  Tag v$(VERSION) créé."; \
+	fi
+	@echo "\033[32m✅ Commit/Tag v$(VERSION) terminé.\033[0m"
+
 # List available targets
 help:
 	@echo "Available targets:"
