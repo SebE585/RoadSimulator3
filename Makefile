@@ -9,7 +9,7 @@ OUTPUT_DIR := data/simulations
 
 export PYTHONPATH := .
 
-.PHONY: simulate check clean zip
+.PHONY: simulate check clean zip release
 
 # Lancer une simulation complète
 simulate:
@@ -47,3 +47,17 @@ zip: clean
 		-x "cache/*" \
 		-x "venv/*" \
 		-x ".venv/*"
+
+# Release complète avec commit, tag, push et archive
+release:
+	@if [ -z "$(VERSION)" ]; then \
+		echo "❌ VERSION non spécifiée. Utilise : make release VERSION=1.0.0"; \
+		exit 1; \
+	fi
+	@echo "📦 Publication version $(VERSION)..."
+	@git add .
+	@git commit -m "🚀 Version $(VERSION) stable" || echo "(info) aucun changement à committer"
+	@git tag -a v$(VERSION) -m "Version stable v$(VERSION) – RoadSimulator3"
+	@git push origin main
+	@git push origin v$(VERSION)
+	$(MAKE) zip
