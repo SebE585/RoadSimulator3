@@ -25,7 +25,7 @@ from core.decorators import deprecated
 
 from simulator.events.config import CONFIG
 
-from typing import Optional, Tuple
+from typing import Optional
 
 def _ensure_event_object(df: pd.DataFrame) -> pd.DataFrame:
     """Ensure the `event` column exists and is dtype=object.
@@ -61,7 +61,6 @@ def _pick_start_index(
     # A start `i` is valid if the slice occupancy[i-spacing_pts : i+duration_pts+spacing_pts] has no True
     # To avoid O(n*duration) checks, precompute a sliding window sum over occupancy.
     occ_int = occupancy.astype(np.int32)
-    window = duration_pts + 2 * spacing_pts
     # cumulative sum trick
     csum = np.concatenate(([0], np.cumsum(occ_int)))
 
@@ -90,7 +89,6 @@ def _reserve(occupancy: np.ndarray, start: int, duration_pts: int, spacing_pts: 
 
 
 # --- New helpers for dilation and config-driven merge gap ---
-import numpy as np
 
 def _dilate_occupancy(occ: np.ndarray, spacing_pts: int) -> np.ndarray:
     """Return a boolean occupancy dilated by `spacing_pts` on each side (1D morphological dilation).
@@ -199,19 +197,19 @@ def generate_stops(df) -> pd.DataFrame:
 @deprecated
 def inject_stops_and_waits(df, max_events_per_type=5, hz=10, min_stop_duration=120, min_wait_duration=30):
     logger.warning("⚠️ Appel d'une fonction marquée @deprecated.")
-    logger.info("[INJECTION] Génération initiale des stops...")
+    logger.info("Génération initiale des stops…")
     df = generate_stops(df, max_events=max_events_per_type, min_duration=min_stop_duration)
 
-    logger.info("[INJECTION] Génération initiale des waits...")
+    logger.info("Génération initiale des waits…")
     df = generate_waits(df, max_events=max_events_per_type, min_duration=min_wait_duration)
 
-    logger.info("[INJECTION] Expansion des stops et waits à leur durée réelle avec profils inertiels...")
+    logger.info("Expansion des stops et waits à leur durée réelle avec profils inertiels…")
     df = expand_stop_and_wait(df, hz=hz)
 
-    logger.info("[INJECTION] Application des profils inertiels autour des stops/waits...")
+    logger.info("Application des profils inertiels autour des stops/waits…")
     df = apply_stop_or_wait_profile(df, hz=hz)
 
-    logger.info("[INJECTION] Application du bruit inertiel spécifique sur les waits...")
+    logger.info("Application du bruit inertiel spécifique sur les waits…")
     df = apply_inertial_noise_on_wait(df, hz=hz)
 
     return df
@@ -230,7 +228,7 @@ def apply_stop_or_wait_profile(df, v_target_kmh=40, decel_amplitude=-3.0, accel_
     block_starts = list(stop_starts) + list(wait_starts)
 
     if not block_starts:
-        logger.info("[INFO] Aucun événement stop ou wait détecté, aucun profil inertiel appliqué.")
+        logger.info("Aucun événement stop ou wait détecté, aucun profil inertiel appliqué.")
         return df
 
     for idx_stop in sorted(block_starts):
@@ -274,11 +272,11 @@ def apply_inertial_noise_on_wait(df, hz=10, noise_std=0.05, verbose=False) -> pd
 
     if n_points == 0:
         if verbose:
-            logger.info("[INFO] Aucun événement 'wait' trouvé pour bruit inertiel.")
+            logger.info("Aucun événement 'wait' trouvé pour bruit inertiel.")
         return df
 
     if verbose:
-        logger.info(f"[INFO] Application du bruit inertiel sur {n_points} points 'wait'...")
+        logger.info(f"Application du bruit inertiel sur {n_points} points 'wait'…")
 
     df.loc[mask_wait, 'acc_x'] += np.random.normal(0, noise_std, n_points)
     df.loc[mask_wait, 'acc_y'] += np.random.normal(0, noise_std, n_points)
@@ -356,7 +354,7 @@ def expand_stop_and_wait(df, hz=10, stop_duration_s=120, wait_duration_s=30, ver
     total_waits = df['event'].value_counts().get('wait', 0)
 
     if verbose:
-        logger.info(f"[INFO] Expansion des {total_stops} stops et {total_waits} waits.")
+        logger.info(f"Expansion des {total_stops} stops et {total_waits} waits.")
 
     indices_to_expand_stop = []
     indices_to_expand_wait = []
@@ -393,7 +391,7 @@ def expand_stop_and_wait(df, hz=10, stop_duration_s=120, wait_duration_s=30, ver
         df.loc[indices_to_expand_wait, 'event'] = 'wait'
 
     if verbose:
-        logger.info(f"[INFO] Expansion complète terminée : {len(indices_to_expand_stop)} points stop, {len(indices_to_expand_wait)} points wait.")
+        logger.info(f"Expansion complète terminée : {len(indices_to_expand_stop)} points stop, {len(indices_to_expand_wait)} points wait.")
 
     # Merge fragmented blocks to avoid artificial multiple short segments
     df = merge_contiguous_stop_wait(df, max_gap_pts=None)

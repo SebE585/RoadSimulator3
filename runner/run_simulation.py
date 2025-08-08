@@ -1,10 +1,10 @@
-from deprecated import deprecated
 import os
 from datetime import datetime
 import logging
 
 import numpy as np
 import pandas as pd
+pd.set_option('future.no_silent_downcasting', True)
 
 from simulator.events.gyro import generate_gyroscope_signals
 
@@ -45,7 +45,6 @@ from core.osmnx.client import enrich_road_type_stream
 from core.osrm.simulate import simulate_route_via_osrm
 
 from simulator.events.noise import inject_inertial_noise
-from simulator.events.neutral import inject_neutral_phases
 from simulator.events.opening import inject_opening_for_deliveries
 from simulator.pipeline_utils import inject_all_events
 from simulator.events.utils import clean_invalid_events
@@ -249,7 +248,10 @@ def run_simulation(input_csv=None, speed_target_kmh=30, use_rs3ds: bool = True):
         logger.warning("⚠️ Événements déjà injectés, saut de l'étape.")
 
     # 🚪 8. Injection ouverture de porte
-    df = inject_opening_for_deliveries(df)
+    try:
+        df = inject_opening_for_deliveries(df)
+    except Exception as e:
+        logger.debug("inject_opening_for_deliveries skipped (%s)", e)
 
     # 🆕 9. Injection des phases neutres
     # if df['event'].fillna('').str.contains('wait').sum() < 100:
@@ -357,6 +359,7 @@ def run_simulation(input_csv=None, speed_target_kmh=30, use_rs3ds: bool = True):
     first_stop_idx = df[df["event"] == "stop"].index.min()
     if pd.notna(first_stop_idx):
         logger.info("Suppression du premier 'stop' à l’index %s (point de départ)", first_stop_idx)
+        df["event"] = df["event"].astype("object")
         df.at[first_stop_idx, "event"] = float('nan')
 
     # 💾 17. Export CSV et visualisations

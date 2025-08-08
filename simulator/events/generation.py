@@ -1,4 +1,112 @@
-def _inject_events_loop(df, cfg, event_name, propose_fn, apply_fn, is_valid_location_fn=None):
+
+"""Event generation module for RoadSimulator3.
+
+Provides utilities to inject realistic inertial events (acc, gyro) into a
+trajectory DataFrame at 10 Hz. The injection loop separates proposal and
+application to avoid premature mutations and duplicate writes.
+"""
+
+from __future__ import annotations
+
+# Standard library
+import logging
+from typing import Callable, Optional
+
+# Third-party
+import numpy as np
+import pandas as pd
+
+# Local modules
+from core.utils import ensure_event_column_object
+from simulator.events.config import get_event_config
+from deprecated import deprecated
+
+__all__ = [
+    "generate_acceleration",
+    "generate_freinage",
+    "generate_dos_dane",
+    "generate_nid_de_poule",
+    "generate_trottoir",
+    "generate_stop",
+    "generate_wait",
+    "generate_opening_door",
+]
+
+logger = logging.getLogger(__name__)
+
+# ----------------------------
+# Private helpers (stateless)
+# ----------------------------
+
+def _apply_overrides(cfg: dict, config: dict, event_name: str) -> dict:
+    """Merge YAML overrides coming from `config['events'][event_name]` into cfg.
+    Values in `config` take precedence over `cfg`.
+    """
+    try:
+        overrides = (config or {}).get("events", {}).get(event_name, {})
+        if overrides:
+            cfg = {**cfg, **overrides}
+    except Exception:
+        # Keep silent: fall back to cfg if structure is unexpected
+        pass
+    return cfg
+
+
+def _has_recent_event(df: pd.DataFrame, idx: int, spacing: int) -> bool:
+    start = max(0, idx - spacing)
+    return df.loc[start:idx, "event"].notna().any()
+
+
+def _is_nearby_duplicate(
+    df: pd.DataFrame,
+    event: str,
+    lat: float,
+    lon: float,
+    epsilon: float = 1e-5,
+) -> bool:
+    """Check if a similar event exists nearby in the DataFrame."""
+    nearby = df[
+        (df["event"] == event)
+        & (df["lat"].between(lat - epsilon, lat + epsilon))
+        & (df["lon"].between(lon - epsilon, lon + epsilon))
+    ]
+    return not nearby.empty
+
+
+def _stronger_deduplication(df: pd.DataFrame, window: int = 5) -> pd.DataFrame:
+    """Remove clusters of duplicated events within a `window` size.
+
+    If the same event label appears multiple times within a short interval,
+    only the first is kept.
+    """
+    df = df.copy()
+    previous_event_idx: Optional[int] = None
+    for idx, row in df.iterrows():
+        if pd.isna(row["event"]):
+            continue
+        if (
+            previous_event_idx is not None
+            and (idx - previous_event_idx) <= window
+            and row["event"] == df.at[previous_event_idx, "event"]
+        ):
+            df.at[idx, "event"] = np.nan
+        else:
+            previous_event_idx = idx
+    return df
+
+
+# ---------------------------------
+# Core injection loop (stateless)
+# ---------------------------------
+
+def _inject_events_loop(
+    df: pd.DataFrame,
+    cfg: dict,
+    event_name: str,
+    propose_fn: Callable[[list[int]], Optional[tuple]],
+    apply_fn: Callable[[int, int], None],
+    is_valid_location_fn: Optional[Callable[[int], bool]] = None,
+) -> pd.DataFrame:
     """
     Boucle utilitaire pour injecter des événements dans un DataFrame.
 
@@ -24,14 +132,21 @@ def _inject_events_loop(df, cfg, event_name, propose_fn, apply_fn, is_valid_loca
     Returns:
         pd.DataFrame: DataFrame modifié.
     """
-    hz = cfg.get("hz", 10)
-    min_separation_s = 3.0
-    min_separation_pts = int(min_separation_s * hz)
-    count, total_attempts = 0, 0
-    injected_indices = []
-    max_events = cfg.get("max_events", 1)
-    max_attempts = cfg.get("max_attempts", 10)
-    global_spacing_pts = cfg.get("global_spacing_pts", 5000)
+    # Paramètres et garde-fous
+    hz = int(cfg.get("hz", 10))
+    min_separation_s = float(cfg.get("min_separation_s", 3.0))
+    min_separation_pts = max(1, int(min_separation_s * hz))
+    max_events = int(cfg.get("max_events", 1))
+    max_attempts = int(cfg.get("max_attempts", 10))
+    global_spacing_pts = int(cfg.get("global_spacing_pts", 5000))
+
+    if max_events <= 0 or len(df) == 0:
+        logger.debug("[INJECT_DIAG][%s] Nothing to do (max_events<=0 or empty df)", event_name)
+        return df
+
+    count = 0
+    total_attempts = 0
+    injected_indices: list[int] = []
 
     # Diagnostics counters
     diag = {
@@ -41,50 +156,87 @@ def _inject_events_loop(df, cfg, event_name, propose_fn, apply_fn, is_valid_loca
         "too_close_self": 0,
         "global_spacing": 0,
         "invalid_location": 0,
+        "out_of_bounds": 0,
+        "occupied": 0,
         "accepted": 0,
     }
 
-    # Keep a short sample of attempts for debug (not all to avoid huge memory)
-    attempts_sample = []
+    # échantillon réduit pour debug
+    attempts_sample: list[tuple[str, int, str]] = []
+    MAX_SAMPLE = 10
+
+    def _add_sample(idx: int, why: str) -> None:
+        if len(attempts_sample) < MAX_SAMPLE:
+            attempts_sample.append((event_name, idx, why))
 
     while count < max_events and total_attempts < max_events * max_attempts:
         total_attempts += 1
+
         # propose_fn doit proposer : (start_idx, duration_pts) ou ('skip', reason) ou None
         proposal = propose_fn(injected_indices)
         if proposal is None:
             diag["proposed_none"] += 1
             continue
 
-        # Normalize outputs (aucune mutation de df ne doit avoir eu lieu à ce stade)
-        if isinstance(proposal, tuple) and len(proposal) == 2 and all(isinstance(x, (int, np.integer)) for x in proposal):
-            start_idx, duration_pts = proposal
-        elif isinstance(proposal, tuple) and len(proposal) >= 2 and proposal[0] == "skip":
+        # Normalisation de la proposition (aucune mutation ne doit avoir eu lieu)
+        start_idx = None
+        duration_pts = None
+        if (
+            isinstance(proposal, tuple)
+            and len(proposal) == 2
+            and all(isinstance(x, (int, np.integer)) for x in proposal)
+        ):
+            start_idx, duration_pts = int(proposal[0]), int(proposal[1])
+        elif (
+            isinstance(proposal, tuple)
+            and len(proposal) >= 2
+            and proposal[0] == "skip"
+        ):
             reason = str(proposal[1])
             diag["skip_reason"][reason] = diag["skip_reason"].get(reason, 0) + 1
             continue
         else:
-            # Unexpected shape → treat as None
+            # Forme inattendue → assimilée à None
             diag["proposed_none"] += 1
             continue
 
         diag["proposed"] += 1
 
-        # Enforce local spacing between same-event injections in this pass
-        if injected_indices and min([abs(start_idx - idx) for idx in injected_indices]) < min_separation_pts:
-            diag["too_close_self"] += 1
-            attempts_sample.append((event_name, start_idx, "too_close_self"))
+        # Validations générales
+        if duration_pts is None or duration_pts <= 0 or start_idx is None:
+            diag["out_of_bounds"] += 1
+            _add_sample(-1, "bad_duration_or_index")
             continue
 
-        # Enforce global spacing against ANY prior event already present in df
+        end_idx = start_idx + duration_pts - 1
+        if start_idx < 0 or end_idx >= len(df):
+            diag["out_of_bounds"] += 1
+            _add_sample(start_idx, "out_of_bounds")
+            continue
+
+        # Espacement local entre injections du même type dans cette passe
+        if injected_indices and min(abs(start_idx - idx) for idx in injected_indices) < min_separation_pts:
+            diag["too_close_self"] += 1
+            _add_sample(start_idx, "too_close_self")
+            continue
+
+        # Espacement global vis-à-vis des événements déjà présents dans df
         if global_spacing_pts and _has_recent_event(df, start_idx, global_spacing_pts):
             diag["global_spacing"] += 1
-            attempts_sample.append((event_name, start_idx, "global_spacing"))
+            _add_sample(start_idx, "global_spacing")
             continue
 
-        # External location validator (e.g., road_type filter)
+        # Validation externe (ex. filtre par road_type)
         if is_valid_location_fn is not None and not is_valid_location_fn(start_idx):
             diag["invalid_location"] += 1
-            attempts_sample.append((event_name, start_idx, "invalid_location"))
+            _add_sample(start_idx, "invalid_location")
+            continue
+
+        # Défense supplémentaire : s'assurer que la fenêtre est libre
+        window = range(start_idx, start_idx + duration_pts)
+        if not all(pd.isna(df.at[j, "event"]) for j in window):
+            diag["occupied"] += 1
+            _add_sample(start_idx, "occupied_indices")
             continue
 
         # ✅ Validation passée — on applique réellement l'injection maintenant
@@ -93,56 +245,20 @@ def _inject_events_loop(df, cfg, event_name, propose_fn, apply_fn, is_valid_loca
         count += 1
         diag["accepted"] += 1
 
-    # Final diagnostics log (concise)
-    if diag["accepted"] < max_events:
-        logger.debug(
-            "[INJECT_DIAG][%s] accepted=%d / wanted=%d | proposed=%d (none=%d) | too_close_self=%d | global_spacing=%d | invalid_location=%d | skip_reason=%s",
-            event_name,
-            diag["accepted"], max_events,
-            diag["proposed"], diag["proposed_none"],
-            diag["too_close_self"], diag["global_spacing"], diag["invalid_location"],
-            diag["skip_reason"],
-        )
-        if attempts_sample:
-            sample_str = ", ".join([f"(idx={i},why={w})" for _, i, w in attempts_sample[:10]])
-            logger.debug("[INJECT_DIAG][%s] sample: %s", event_name, sample_str)
-    else:
-        logger.debug("[INJECT_DIAG][%s] All OK: accepted=%d", event_name, diag["accepted"]) 
+    # Journalisation finale concise
+    logger.debug(
+        "[INJECT_DIAG][%s] accepted=%d / wanted=%d | proposed=%d (none=%d) | too_close_self=%d | global_spacing=%d | invalid_location=%d | out_of_bounds=%d | occupied=%d | skip_reason=%s",
+        event_name,
+        diag["accepted"], max_events,
+        diag["proposed"], diag["proposed_none"],
+        diag["too_close_self"], diag["global_spacing"], diag["invalid_location"],
+        diag["out_of_bounds"], diag["occupied"], diag["skip_reason"],
+    )
+    if attempts_sample:
+        sample_str = ", ".join([f"(idx={i},why={w})" for _, i, w in attempts_sample])
+        logger.debug("[INJECT_DIAG][%s] sample: %s", event_name, sample_str)
 
     return df
-import numpy as np
-import pandas as pd
-import logging
-from core.utils import ensure_event_column_object
-from simulator.events.config import get_event_config
-from deprecated import deprecated
-
-"""
-Generation des événements inertiels réalistes pour RoadSimulator3.
-Chaque fonction injecte un type d'événement spécifique dans la colonne 'event' 
-ainsi que des signaux accéléromètre et gyroscope réalistes.
-"""
-
-
-logger = logging.getLogger(__name__)
-
-def _apply_overrides(cfg: dict, config: dict, event_name: str) -> dict:
-    """
-    Merge YAML overrides coming from `config['events'][event_name]` into the per-event cfg.
-    Values in `config` take precedence over `cfg`.
-    """
-    try:
-        overrides = (config or {}).get("events", {}).get(event_name, {})
-        if overrides:
-            cfg = {**cfg, **overrides}
-    except Exception:
-        # Keep silent: fall back to cfg if structure is unexpected
-        pass
-    return cfg
-
-def _has_recent_event(df, idx, spacing):
-    start = max(0, idx - spacing)
-    return df.loc[start:idx, 'event'].notna().any()
 
 
 def generate_acceleration(df, config):
@@ -440,28 +556,6 @@ def generate_opening_door(df, config):
         logger.info(f"✅ Ouvertures de porte injectées : {count}")
     return df.sort_values("timestamp").reset_index(drop=True)
 
-def _stronger_deduplication(df, window=5):
-    """Remove clusters of duplicated events within a window.
-
-    If the same event label appears multiple times within a short interval, only the first is kept.
-
-    Args:
-        df (pd.DataFrame): Input DataFrame containing event data.
-        window (int, optional): Number of points within which to deduplicate events. Defaults to 5.
-
-    Returns:
-        pd.DataFrame: DataFrame with deduplicated events.
-    """
-    df = df.copy()
-    previous_event_idx = None
-    for idx, row in df.iterrows():
-        if pd.isna(row["event"]):
-            continue
-        if previous_event_idx is not None and (idx - previous_event_idx) <= window and row["event"] == df.at[previous_event_idx, "event"]:
-            df.at[idx, "event"] = np.nan
-        else:
-            previous_event_idx = idx
-    return df
 
 
 def generate_trottoir(df, config):
@@ -519,25 +613,6 @@ def generate_trottoir(df, config):
         logger.info(f"✅ Trottoirs injectés : {injected_count[0]}")
     return df.sort_values("timestamp").reset_index(drop=True)
 
-def _is_nearby_duplicate(df, event, lat, lon, epsilon=1e-5):
-    """Check if a similar event exists nearby in the DataFrame.
-
-    Args:
-        df (pd.DataFrame): DataFrame containing at least columns 'event', 'lat', 'lon'.
-        event (str): Event name to check for.
-        lat (float): Latitude of the candidate event.
-        lon (float): Longitude of the candidate event.
-        epsilon (float, optional): Proximity threshold for latitude and longitude. Defaults to 1e-5 (~1 meter).
-
-    Returns:
-        bool: True if a nearby duplicate event exists, False otherwise.
-    """
-    nearby_duplicates = df[
-        (df["event"] == event) &
-        (df["lat"].between(lat - epsilon, lat + epsilon)) &
-        (df["lon"].between(lon - epsilon, lon + epsilon))
-    ]
-    return not nearby_duplicates.empty
 def generate_stop(df, config):
     """Inject stop events into the DataFrame.
 
