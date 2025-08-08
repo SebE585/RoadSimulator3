@@ -1,5 +1,4 @@
 """Stop/Wait helpers for RoadSimulator3.
-
 This module provides utilities to (1) add a progressive acceleration ramp
 right after stop/wait events, and (2) (deprecated) inject stop/wait labels
 near provided lat/lon positions.
@@ -96,12 +95,14 @@ def apply_progressive_acceleration_after_stop_wait(
         win_len = end_idx - start_idx
         sl = slice(start_idx, end_idx)
 
-        # Appliquer la rampe de vitesse (km/h)
+        # Utiliser un indexing positionnel robuste pour éviter les erreurs de longueur
         speed_profile_kmh = accel_profile_m_s[:win_len] * 3.6
-        df_out.loc[sl, "speed"] = speed_profile_kmh
-
+        rows = np.arange(start_idx, end_idx)
+        col_speed = df_out.columns.get_loc("speed")
+        col_accx = df_out.columns.get_loc("acc_x")
+        df_out.iloc[rows, col_speed] = speed_profile_kmh
         # Accélération longitudinale (m/s²) constante durant la rampe
-        df_out.loc[sl, "acc_x"] = accel_const_m_s2
+        df_out.iloc[rows, col_accx] = accel_const_m_s2
 
     return df_out
 
@@ -122,6 +123,9 @@ def apply_stop_wait_at_positions(
       import cycles et les warnings si la fonction n'est pas utilisée.
     """
     df_out = df.copy()
+    # S'assurer que la colonne 'event' est bien en dtype=object pour éviter les FutureWarnings
+    if "event" in df_out.columns and df_out["event"].dtype != "object":
+        df_out["event"] = df_out["event"].astype("object")
 
     matched_indices: List[int] = []
     # ~80 s à 10 Hz

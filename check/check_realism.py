@@ -470,9 +470,9 @@ def check_stop_spacing(df, duration_pts=50, min_spacing_pts=None):
         stop_groups[i + 1][0] - stop_groups[i][-1] > min_spacing_pts
         for i in range(len(stop_groups) - 1)
     )
-    logger.info(f"Stops = {nb_stops}, spacing ok = {is_spacing_ok}")
+    print(f"✅ Stops = {nb_stops}, spacing ok = {is_spacing_ok}")
     if not is_spacing_ok and nb_stops <= 6:
-        logger.info("Espacement faible toléré car nombre réduit de stops.")
+        print("[INFO] Espacement faible toléré car nombre réduit de stops.")
         return True
     return is_spacing_ok
 

@@ -1,52 +1,4 @@
-<<<<<<< HEAD
-import numpy as np
-import pandas as pd
-import logging
-from core.utils import ensure_event_column_object
-from simulator.events.config import get_event_config
-from deprecated import deprecated
-
-def _inject_events_loop(df, cfg, event_name, inject_fn, is_valid_location_fn=None):
-    """
-    Boucle utilitaire pour injecter des événements dans un DataFrame.
-    Args:
-        df (pd.DataFrame): DataFrame à modifier.
-        cfg (dict): Configuration de l'événement.
-        event_name (str): Nom de l'événement.
-        inject_fn (function): Fonction à appeler pour injecter l'événement (start_idx, duration_pts).
-        is_valid_location_fn (function, optional): Fonction de validation de l'emplacement (start_idx) -> bool.
-    Returns:
-        pd.DataFrame: DataFrame modifié.
-    """
-    hz = cfg.get("hz", 10)
-    min_separation_s = 3.0
-    min_separation_pts = int(min_separation_s * hz)
-    count, total_attempts = 0, 0
-    injected_indices = []
-    max_events = cfg.get("max_events", 1)
-    max_attempts = cfg.get("max_attempts", 10)
-    global_spacing_pts = cfg.get("global_spacing_pts", 5000)
-    while count < max_events and total_attempts < max_events * max_attempts:
-        total_attempts += 1
-        # inject_fn doit retourner start_idx, duration_pts, ou None pour skip
-        inject_result = inject_fn(injected_indices)
-        if inject_result is None:
-            continue
-        start_idx, duration_pts = inject_result
-        if injected_indices and min([abs(start_idx - idx) for idx in injected_indices]) < min_separation_pts:
-            continue
-        if global_spacing_pts and _has_recent_event(df, start_idx, global_spacing_pts):
-            continue
-        if is_valid_location_fn is not None and not is_valid_location_fn(start_idx):
-            continue
-        injected_indices.append(start_idx)
-        count += 1
-    return df
-
-=======
-
 """Event generation module for RoadSimulator3.
-
 Provides utilities to inject realistic inertial events (acc, gyro) into a
 trajectory DataFrame at 10 Hz. The injection loop separates proposal and
 application to avoid premature mutations and duplicate writes.
@@ -66,7 +18,6 @@ import pandas as pd
 from core.utils import ensure_event_column_object
 from simulator.events.config import get_event_config
 from deprecated import deprecated
->>>>>>> fix/1-deduplication-evenements
 
 __all__ = [
     "generate_acceleration",
