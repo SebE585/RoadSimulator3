@@ -1,69 +1,60 @@
 # ✅ RoadSimulator3 – TODO pour finaliser la version 1.0
 
-## 🎯 Objectifs de la version 1.0
-
-Livrer une version stable, propre, testée, documentée et prête à être diffusée.
+## 🎯 Objectifs de la version 1.0  
+Livrer une version **stable, propre, testée, documentée et prête à diffuser**.
 
 ---
 
 ## 📁 Nettoyage et structure
-
-- [ ] Supprimer tous les répertoires obsolètes (`old/`, `deprecated/`, etc.).
-- [ ] Élaguer les notebooks non utilisés dans `notebooks/`.
-- [ ] Supprimer les fichiers inutiles : `.DS_Store`, `.pyc`, `__pycache__/`.
-- [ ] Nettoyer les sorties dans `outputs/`, `logs/`, `out*/`, `cache/`.
+- [x] Suppression des répertoires obsolètes (`old/`, `deprecated/`, etc.)
+- [x] Élagage des notebooks non utilisés dans `notebooks/`
+- [x] Suppression des fichiers inutiles : `.DS_Store`, `.pyc`, `__pycache__/`
+- [x] Nettoyage des sorties (`outputs/`, `logs/`, `out*/`, `cache/`)
+- [ ] Vérification finale post-`scripts/clean_outputs.sh`
 
 ---
 
 ## ⚙️ Organisation du projet
-
-- [ ] Ajouter un `Makefile` avec les commandes standard :
+- [x] Ajout d’un `Makefile` avec commandes :
   - `make simulate`
   - `make check`
   - `make clean`
   - `make zip`
-- [ ] Ajouter un script `clean_outputs.sh` (logs, outputs, cache).
+- [x] Script `scripts/clean_outputs.sh` pour purge des outputs
+- [ ] Vérifier cohérence des noms de scripts (`simulate_xxx.py`, `check_xxx.py`, etc.)
 
 ---
 
 ## 🧪 Tests unitaires
-
-- [ ] Ajouter des tests pour la détection inertielle (`detectors.py`)
-- [ ] Ajouter des tests pour les événements (`generation.py`)
-- [ ] Tester `simulate_and_check.py` sur un petit trajet
-- [ ] Ajouter test de bout en bout (simulation → CSV → HTML)
+- [ ] Tests pour détection inertielle (`detectors.py`)
+- [ ] Tests pour événements (`generation.py`)
+- [ ] Test `simulate_and_check.py` sur petit trajet
+- [ ] Test bout en bout (simulation → CSV → HTML)
 
 ---
 
 ## 📦 Dépendances et packaging
-
-- [ ] Figer les versions dans `requirements.txt`
-- [ ] Vérifier la compatibilité sur Python 3.12 (ARM et x86)
-- [ ] Ajouter un fichier `environment.yml` pour conda (optionnel)
+- [x] Versions figées dans `requirements.txt`
+- [x] Compatibilité Python 3.12 ARM/x86 validée
+- [ ] Ajouter fichier `environment.yml` (conda)
 
 ---
 
 ## 📖 Documentation
-
-- [ ] Compléter le `README.md` avec :
-  - Arborescence du projet
-  - Exemples d’usage
-  - Dépendances système
+- [ ] Compléter `README.md` (arborescence, exemples, dépendances)
 - [ ] Ajouter `docs/` avec guide d’utilisation
-- [ ] Documenter le fichier de configuration YAML (`config/`)
+- [ ] Documenter le YAML de config inertielle (`config/events.yaml`)
 
 ---
 
 ## 🧾 Fichiers de version
-
-- [ ] Créer `VERSION.md` → `v1.0.0`
-- [ ] Créer `CHANGELOG.md` avec récapitulatif des changements depuis la v0.9
-- [ ] Vérifier que tous les scripts affichent leur version en ligne de commande (`--version`)
+- [x] `VERSION.md` → `v1.0.0`
+- [x] `CHANGELOG.md` mis à jour (depuis v0.9)
+- [ ] Vérifier que tous les scripts supportent `--version`
 
 ---
 
 ## ✅ Finalisation
-
-- [ ] Marquer `v1.0.0` dans Git (`git tag v1.0.0`)
-- [ ] Générer l’archive `.zip` propre (`RoadSimulator3_v1.0.zip`)
-- [ ] Test d'installation sur machine vierge
+- [ ] Marquage Git `v1.0.0`
+- [ ] Génération de l’archive `.zip` propre (`RoadSimulator3_v1.0.zip`)
+- [ ] Test d’installation sur machine vierge
