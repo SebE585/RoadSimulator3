@@ -2,9 +2,28 @@ import logging
 import pandas as pd
 import numpy as np
 from geopy.distance import geodesic
-from simulator.events.gyro import recompute_inertial_acceleration
 
 from core.config_loader import load_config
+# NOTE: recompute_inertial_acceleration is imported locally from core.kinematics inside functions to avoid circular imports
+
+
+# Helper to clamp global speed jumps
+def cap_global_speed_delta(df: pd.DataFrame, max_delta_kmh_per_step: float = 3.0) -> pd.DataFrame:
+    """Clamp per-sample speed changes (in km/h per step) to avoid brutal jumps.
+    Assumes df['speed'] is in km/h, which is consistent with this module.
+    """
+    if "speed" not in df.columns:
+        return df
+    df = df.copy()
+    s = pd.to_numeric(df["speed"], errors="coerce").fillna(method="ffill").fillna(0.0)
+    # per-step difference in km/h
+    ds = s.diff()
+    # clamp the per-step delta
+    ds_clamped = ds.clip(lower=-float(max_delta_kmh_per_step), upper=float(max_delta_kmh_per_step))
+    # reconstruct a capped speed series starting from the first value
+    s_capped = s.iloc[0] + ds_clamped.fillna(0.0).cumsum()
+    df["speed"] = s_capped.clip(lower=0.0)
+    return df
 
 def interpolate_target_speed_progressively(df, alpha=0.1, force=False, config=None):
     if config is not None:

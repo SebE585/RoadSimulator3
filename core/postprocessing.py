@@ -1,10 +1,9 @@
 import numpy as np
 import pandas as pd
-from core.kinematics import recompute_speed, smooth_signal
+from core.kinematics import smooth_signal
 from simulator.events.noise import inject_inertial_noise
 from core.geo_utils import compute_heading, compute_curvature, compute_sinuosity
-from simulator.events.gyro import recompute_inertial_acceleration
-from core.osmnx.mapping import HIGHWAY_TO_TYPE
+from core.kinematics import recompute_inertial_acceleration
 from core.decorators import deprecated
 
 def fill_heading(df):
@@ -33,12 +32,6 @@ def fill_sinuosity(df, window):
     df['sinuosity'] = sinuosity
     return df
 
-@deprecated
-def smooth_signal(series, window=5):
-    """
-    Applique une moyenne glissante pour lisser un signal.
-    """
-    return series.rolling(window=window, center=True, min_periods=1).mean()
 
 @deprecated
 def finalize_trajectory(df, hz=10, smoothing_window=3, config=None):
@@ -106,3 +99,13 @@ def finalize_trajectory(df, hz=10, smoothing_window=3, config=None):
         print(f"[PIPELINE] ⚠️ NaN détectés : {nan_summary.to_dict()}")
 
     return df
+#
+# Back-compat aliases expected by the pipeline
+def _fill_heading(df):
+    return fill_heading(df)
+
+def _fill_curvature(df):
+    return fill_curvature(df)
+
+def _fill_sinuosity(df, window):
+    return fill_sinuosity(df, window)

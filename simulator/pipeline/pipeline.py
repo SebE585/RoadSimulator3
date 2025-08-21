@@ -1,4 +1,5 @@
 import logging
+import pandas as pd
 import numpy as np
 
 # Fonctions utilitaires pipeline
@@ -31,13 +32,13 @@ from core.terrain.client import enrich_terrain_via_api
 
 # Injection bruit et gyroscope
 from simulator.events.noise import inject_inertial_noise
-from simulator.events.gyro import simulate_gyroscope_from_heading, inject_gyroscope_from_events
+from simulator.events.gyro import generate_gyroscope_signals
 
 # Événements inertiels
-from simulator.events.generation import apply_final_deceleration, apply_initial_acceleration
+from simulator.events.initial_final import inject_final_deceleration, inject_initial_acceleration
 
 # Détection événements
-from simulator.s import detect_all_events
+from simulator.detectors import detect_all_events
 
 
 logger = logging.getLogger(__name__)
@@ -73,6 +74,15 @@ class SimulationPipeline:
 
         hz = self.config["hz"]
 
+        # Assurer la présence d'une colonne speed numérique (avant tout calcul)
+        if "speed" not in df.columns:
+            df["speed"] = 0.0
+        else:
+            try:
+                df["speed"] = pd.to_numeric(df["speed"], errors="coerce").fillna(0.0)
+            except Exception:
+                df["speed"] = 0.0
+
         # Étape 2 : typer les routes via API OSMnx
         df = enrich_road_type_stream(df)
         assert_dataframe_integrity(df, "enrich_road_type_stream")
@@ -102,6 +112,46 @@ class SimulationPipeline:
         df = cap_speed_to_target(df, alpha=0.2)
         assert_dataframe_integrity(df, "recompute_speed (après target_speed)")
 
+        # --- SPEED RESCUE: rebuild speed from geometry if still NaN or all zeros ---
+        if df["speed"].isnull().any() or np.allclose(df["speed"], 0):
+            try:
+                dt = 1.0 / float(hz if hz else 10)
+
+                if {"x", "y"}.issubset(df.columns):
+                    dx = pd.to_numeric(df["x"], errors="coerce").diff()
+                    dy = pd.to_numeric(df["y"], errors="coerce").diff()
+                    dist = np.sqrt(dx * dx + dy * dy)
+                elif {"lat", "lon"}.issubset(df.columns):
+                    lat1 = np.radians(pd.to_numeric(df["lat"].shift(), errors="coerce").to_numpy(dtype=float))
+                    lon1 = np.radians(pd.to_numeric(df["lon"].shift(), errors="coerce").to_numpy(dtype=float))
+                    lat2 = np.radians(pd.to_numeric(df["lat"], errors="coerce").to_numpy(dtype=float))
+                    lon2 = np.radians(pd.to_numeric(df["lon"], errors="coerce").to_numpy(dtype=float))
+                    dlat = lat2 - lat1
+                    dlon = lon2 - lon1
+                    a = np.sin(dlat / 2.0) ** 2 + np.cos(lat1) * np.cos(lat2) * np.sin(dlon / 2.0) ** 2
+                    c = 2.0 * np.arctan2(np.sqrt(a), np.sqrt(1.0 - a))
+                    dist = 6371000.0 * c  # meters
+                    dist = pd.Series(np.nan_to_num(dist, nan=0.0, posinf=0.0, neginf=0.0), index=df.index)
+                else:
+                    dist = pd.Series(0.0, index=df.index)
+
+                # to km/h with a light median smoothing
+                speed_rescue = (pd.to_numeric(dist, errors="coerce").fillna(0.0) / dt) * 3.6
+                speed_rescue = speed_rescue.rolling(9, center=True, min_periods=1).median()
+
+                vmax_series = df.get("target_speed", pd.Series(self.config.get("target_speed_kmh", 30), index=df.index))
+                vmax_series = pd.to_numeric(vmax_series, errors="coerce").fillna(self.config.get("target_speed_kmh", 30))
+                speed_rescue = np.minimum(speed_rescue, vmax_series)
+
+                mask_invalid = df["speed"].isnull() | np.isclose(df["speed"], 0)
+                df.loc[mask_invalid, "speed"] = speed_rescue.loc[mask_invalid]
+
+                # Clamp brutal per-step jumps (km/h per step)
+                df = cap_global_speed_delta(df, max_delta_kmh_per_step=3.0)
+                assert_dataframe_integrity(df, "recompute_speed rescue")
+            except Exception as e:
+                logger.warning("[SPEED-RESCUE] Impossible de reconstruire la vitesse: %s", e)
+
         # Calcul métriques cinématiques
         df = compute_kinematic_metrics(df, hz=hz)
         df = recompute_inertial_acceleration(df, hz=hz)
@@ -126,15 +176,18 @@ class SimulationPipeline:
         assert_dataframe_integrity(df, "inject_inertial_noise")
         check_inertial_stats(df, label="📊 Inertie après enrichissement")
 
-        # Simulation gyroscope
-        df = simulate_gyroscope_from_heading(df)
-        df = inject_gyroscope_from_events(df)
+        # Simulation gyroscope (unified)
+        df = generate_gyroscope_signals(df, hz=hz)
 
         # Injection événements inertiels
-        df = apply_initial_acceleration(df, self.full_config)
+        v_max_kmh = self.config.get("target_speed_kmh", 30)
+        init_dur = self.full_config.get("injection", {}).get("acceleration", {}).get("duration_s", 5.0)
+        final_dur = self.full_config.get("injection", {}).get("freinage", {}).get("duration_s", 5.0)
+
+        df = inject_initial_acceleration(df, v_max_kmh, duration=init_dur)
         df = inject_all_events(df, self.full_config)
         assert_dataframe_integrity(df, "inject_all_events")
-        df = apply_final_deceleration(df, self.full_config)
+        df = inject_final_deceleration(df, v_max_kmh, duration=final_dur)
 
         # Post-traitement inertiel
         df = apply_postprocessing(df, hz=hz, config=self.config)

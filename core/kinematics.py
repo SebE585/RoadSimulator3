@@ -214,6 +214,12 @@ def resample_trajectory_to_10hz(df, timestamp_col='timestamp', hz=10):
     df = df.copy()
     df[timestamp_col] = pd.to_datetime(df[timestamp_col])
     df = df.set_index(timestamp_col).sort_index()
+    # Ensure non-object dtypes before interpolate (avoids FutureWarning)
+    df = df.infer_objects(copy=False)
+    # Optionally coerce numeric columns to numbers (safe)
+    num_cols = df.select_dtypes(include=["number"]).columns
+    if len(num_cols) > 0:
+        df[num_cols] = df[num_cols].apply(pd.to_numeric, errors="coerce")
     freq = f"{int(1000/hz)}ms"
     df_resampled = df.resample(freq).interpolate(method='linear')
     df_resampled = df_resampled.reset_index()
@@ -334,72 +340,8 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
 
-@deprecated
-def check_speed_plateaux(df, speed_cfg):
-    logger.warning("⚠️ Appel d'une fonction marquée @deprecated.")
-    """
-    Vérifie que chaque type de route possède au moins un plateau de vitesse réaliste,
-    selon les seuils définis dans speed.yaml.
-
-    Args:
-        df (pd.DataFrame): Trajectoire avec colonnes 'road_type' et 'speed'.
-        speed_cfg (dict): Configuration chargée depuis speed.yaml.
-
-    Returns:
-        dict: Dictionnaire des résultats par type de route.
-    """
-    hz = speed_cfg["plateau_detection"]["hz"]
-    threshold_kmh = speed_cfg["plateau_detection"]["threshold_kmh"]
-    default_duration_s = speed_cfg["plateau_detection"]["min_duration_default_s"]
-    window = speed_cfg["plateau_detection"]["rolling_window"]
-
-    results = {}
-    road_types = df["road_type"].dropna().unique()
-
-    for rt in road_types:
-        subset = df[df["road_type"] == rt].copy()
-        if len(subset) < 2:
-            results[rt] = {"status": "❌ Trop peu de points", "mean_speed": np.nan}
-            continue
-
-        speeds = subset["speed"].rolling(window=hz * window, min_periods=1).mean()
-        stds = subset["speed"].rolling(window=hz * window, min_periods=1).std()
-
-        target_cfg = speed_cfg.get("target_speed_by_road_type", {}).get(rt, {})
-        min_kmh = target_cfg.get("min_kmh", 0)
-        max_kmh = target_cfg.get("max_kmh", 150)
-        min_duration_s = target_cfg.get("min_duration_s", default_duration_s)
-        min_pts = int(min_duration_s * hz)
-
-        plateaus = []
-        start = None
-        for i in range(len(subset)):
-            if pd.isna(stds.iloc[i]) or stds.iloc[i] > threshold_kmh:
-                if start is not None and i - start >= min_pts:
-                    segment = speeds.iloc[start:i]
-                    mean_segment = segment.mean()
-                    if min_kmh <= mean_segment <= max_kmh:
-                        plateaus.append((start, i, mean_segment))
-                start = None
-            else:
-                if start is None:
-                    start = i
-
-        if plateaus:
-            results[rt] = {
-                "status": "✅",
-                "nb_plateaus": len(plateaus),
-                "mean_speeds": [round(p[2], 1) for p in plateaus],
-                "durations_s": [round((p[1] - p[0]) / hz, 1) for p in plateaus],
-            }
-            results[rt]["mean_speed_kmh"] = round(np.mean([p[2] for p in plateaus]), 1)
-        else:
-            results[rt] = {"status": "❌ Aucun plateau réaliste", "nb_plateaus": 0}
-
-    return results
 
 # If recompute_inertial_acceleration is needed here, import it from imu_utils:
-from core.imu_utils import recompute_inertial_acceleration
 
 # Import check_inertial_stats if needed by other modules
 from core.imu_utils import check_inertial_stats
@@ -442,3 +384,86 @@ def calculate_angular_velocity(df, freq_hz=10):
     gyro_z_deg = np.degrees(gyro_z).clip(-180, 180)
     df["gyro_z"] = gyro_z_deg
     return df
+
+
+# Nouvelle fonction : recompute_inertial_acceleration
+def recompute_inertial_acceleration(df: pd.DataFrame, hz: int = 10) -> pd.DataFrame:
+    """
+    Recalcule acc_x et acc_y à partir de la vitesse (km/h) et du heading.
+    - heading accepté en degrés ou radians (détection auto).
+    - acc_z conservé si présent, sinon 9.81 par défaut.
+    """
+    out = df.copy()
+
+    if "speed" not in out.columns or "heading" not in out.columns:
+        raise ValueError("Le DataFrame doit contenir les colonnes 'speed' et 'heading'.")
+
+    # speed en m/s
+    v = pd.to_numeric(out["speed"], errors="coerce").fillna(0.0).to_numpy() / 3.6
+
+    # heading en radians (auto-détection si donné en degrés)
+    heading_vals = pd.to_numeric(out["heading"], errors="coerce").fillna(0.0).to_numpy()
+    if np.nanmax(np.abs(heading_vals)) > 2 * np.pi + 1e-6:
+        theta = np.radians(heading_vals)
+    else:
+        theta = heading_vals
+
+    dv = np.gradient(v) * float(hz)
+    dtheta = np.gradient(theta) * float(hz)
+
+    acc_x = dv * np.cos(theta) - v * np.sin(theta) * dtheta
+    acc_y = dv * np.sin(theta) + v * np.cos(theta) * dtheta
+
+    out["acc_x"] = acc_x
+    out["acc_y"] = acc_y
+    out["acc_z"] = pd.to_numeric(out.get("acc_z", 9.81)).fillna(9.81)
+
+    return out
+
+
+# Helper: enrich_inertial_coupling
+def enrich_inertial_coupling(df: pd.DataFrame, hz: int = 10) -> pd.DataFrame:
+    """
+    Couche d'enrichissement inertiel « souple » pour garantir la cohérence minimale
+    entre vitesse/heading et signaux IMU. Ne remplace rien d'existant si déjà présent.
+
+    - (Re)calcule acc_x à partir de la dérivée de la vitesse si absente ou entièrement NaN.
+    - (Re)calcule gyro_z à partir de la dérivée du heading si absent ou entièrement NaN.
+    - Crée des colonnes manquantes avec des valeurs par défaut sûres.
+      (acc_y=0, acc_z=9.81, gyro_x=0, gyro_y=0)
+    """
+    out = df.copy()
+
+    # Recalcule acc_x si nécessaire (dérivée de la vitesse en m/s²)
+    need_acc_x = ("acc_x" not in out.columns) or out["acc_x"].isna().all()
+    if need_acc_x and "speed" in out.columns:
+        try:
+            out = calculate_linear_acceleration(out, freq_hz=hz)
+        except Exception:
+            # Valeur par défaut neutre si échec
+            out["acc_x"] = 0.0
+
+    # Recalcule gyro_z si nécessaire (dérivée du heading en deg/s)
+    need_gyro_z = ("gyro_z" not in out.columns) or out["gyro_z"].isna().all()
+    if need_gyro_z and "heading" in out.columns:
+        try:
+            out = calculate_angular_velocity(out, freq_hz=hz)
+        except Exception:
+            out["gyro_z"] = 0.0
+
+    # Colonnes IMU manquantes → valeurs par défaut sûres
+    if "acc_y" not in out.columns:
+        out["acc_y"] = 0.0
+    if "acc_z" not in out.columns:
+        out["acc_z"] = 9.81
+    if "gyro_x" not in out.columns:
+        out["gyro_x"] = 0.0
+    if "gyro_y" not in out.columns:
+        out["gyro_y"] = 0.0
+
+    # Remplir les NaN restants avec des valeurs neutres
+    for col, default in [("acc_x", 0.0), ("acc_y", 0.0), ("acc_z", 9.81), ("gyro_x", 0.0), ("gyro_y", 0.0), ("gyro_z", 0.0)]:
+        if col in out.columns:
+            out[col] = out[col].fillna(default)
+
+    return out
