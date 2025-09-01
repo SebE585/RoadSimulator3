@@ -1,132 +1,69 @@
+# runner/simulate_and_check.py
+# -*- coding: utf-8 -*-
+from __future__ import annotations
 import os
-import sys
 import argparse
 import logging
 from datetime import datetime
 
 import pandas as pd
-import matplotlib.pyplot as plt
 
 from core.config_loader import load_full_config
 from core.osrm.simulate import simulate_route_via_osrm
 from core.utils import ensure_csv_column_order
 from core.reports import generate_reports
 from check.check_realism import check_realism
-from simulator.pipeline.pipeline import SimulationPipeline
-from simulator.cleaning import clean_simulation_errors
+from simulator.pipeline.pipeline import SimulationPipeline, PipelineOptions
+from simulator.events.utils import marquer_livraisons
 
-# ↓↓↓ Supprime les logs de debug liés aux polices matplotlib
 logging.getLogger("matplotlib").setLevel(logging.WARNING)
-
-# ↓↓↓ Logger principal de l'application
 logging.basicConfig(level=logging.INFO, format='[%(levelname)s] %(message)s')
-logger = logging.getLogger(__name__)
-
-
-def simulate_and_enrich(csv_path: str = None, outdir: str = None) -> pd.DataFrame:
-    """
-    Simule ou charge un trajet, puis applique le pipeline d'enrichissement inertiel/contextuel.
-
-    Args:
-        csv_path (str, optional): Chemin vers un fichier CSV existant à charger.
-                                  Si None, génère un nouveau trajet via OSRM.
-        outdir (str, optional): Répertoire de sortie pour enregistrer les graphiques.
-
-    Returns:
-        pd.DataFrame: DataFrame enrichi avec les données simulées.
-    """
-    config = load_full_config()
-    pipeline = SimulationPipeline(config)
-
-    if csv_path and os.path.exists(csv_path):
-        logger.info(f"📂 Chargement du fichier CSV existant : {csv_path}")
-        df = pd.read_csv(csv_path)
-    else:
-        logger.info("🛰️ Simulation d’un nouveau trajet via OSRM...")
-        df = simulate_route_via_osrm(
-            cities_coords=config["simulation"]["cities_coords"],
-            hz=config["simulation"]["hz"],
-            step_m=config["simulation"]["step_m"]
-        )
-        logger.info(f"✅ Trajet interpolé initial : {len(df)} points générés.")
-
-    df = pipeline.run(df)
-
-    from core.kinematics_speed import (
-        adjust_speed_progressively,
-        interpolate_target_speed_progressively,
-        cap_speed_to_target
-    )
-
-    from simulator.events.gyro import generate_gyroscope_signals
-
-    # Étapes complémentaires post-pipeline
-    df = adjust_speed_progressively(df)
-    df = interpolate_target_speed_progressively(
-        df,
-        alpha=0.1,
-        force=config["simulation"].get("force_target_speed", False)
-    )
-    df = cap_speed_to_target(df, alpha=0.2)
-    df = generate_gyroscope_signals(df)
-
-    if outdir:
-        os.makedirs(outdir, exist_ok=True)
-        plot_path = os.path.join(outdir, "trace_speed_vs_index.png")
-        df["speed"].plot(title="Vitesse vs index").figure.savefig(plot_path)
-        plt.close()
-
-    logger.info(f"🚀 Vitesse maximale : {df['speed'].max():.2f} km/h")
-    return df
+log = logging.getLogger(__name__)
 
 
 def main():
-    """
-    Point d’entrée de la simulation : simulation ou lecture CSV, enrichissement,
-    export CSV, vérification de réalisme, génération des rapports.
-    """
     parser = argparse.ArgumentParser(description="Simule et enrichit une trajectoire véhicule")
     parser.add_argument('--csv', type=str, default=None,
-                        help="Chemin vers un fichier CSV à charger au lieu de simuler")
+                        help="Fichier CSV existant (sinon simulation OSRM)")
     parser.add_argument('--outdir', type=str, default=None,
-                        help="Répertoire de sortie pour les fichiers générés (défaut : data/simulations/)")
-
+                        help="Répertoire de sortie (défaut : data/simulations/...)")
     args = parser.parse_args()
 
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    outdir = args.outdir or f'data/simulations/simulated_{timestamp}'
+    ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+    outdir = args.outdir or f"data/simulations/simulated_{ts}"
     os.makedirs(outdir, exist_ok=True)
 
-    df = simulate_and_enrich(csv_path=args.csv, outdir=outdir)
+    cfg = load_full_config()
 
-    # Nettoyage des erreurs critiques détectées
-    df = clean_simulation_errors(df)
+    if args.csv and os.path.exists(args.csv):
+        log.info("📂 Chargement CSV: %s", args.csv)
+        df = pd.read_csv(args.csv)
+        scenario_stops = None
+    else:
+        log.info("🛰️ Simulation via OSRM…")
+        cities = cfg["simulation"]["cities_coords"]
+        hz = int(cfg["simulation"].get("hz", 10))
+        df = simulate_route_via_osrm(cities_coords=cities, hz=hz)
 
+        # Préparer le scénario stop/wait alterne depuis les positions (mêmes points que run_simulation)
+        coords_df = pd.DataFrame(cities, columns=["lat", "lon"])
+        coords_df = marquer_livraisons(coords_df, prefix="stop_", start_index=1)
+        coords_df["event"] = ["stop" if i % 2 == 0 else "wait" for i in range(len(coords_df))]
+        scenario_stops = coords_df
+
+    pipe = SimulationPipeline(cfg, options=PipelineOptions())
+    df = pipe.run(df, scenario_stops_df=scenario_stops)
+
+    # Export & checks
     df = ensure_csv_column_order(df)
-    csv_path = os.path.join(outdir, 'trace.csv')
-    try:
-        df.to_csv(csv_path, index=False)
-        logger.info(f"[DEBUG] ✅ Fichier CSV écrit à : {os.path.abspath(csv_path)}")
-    except Exception as e:
-        logger.error(f"[❌] Échec d'écriture du fichier CSV : {e}")
-        raise
+    csv_path = os.path.join(outdir, "trace.csv")
+    df.to_csv(csv_path, index=False)
+    log.info("📤 CSV exporté : %s", os.path.abspath(csv_path))
 
-    logger.info(f"📤 CSV exporté : {csv_path}")
-
-    # Vérification de la cohérence inertielle et structurelle
-    check_realism(df, timestamp=timestamp)
-
-    # Résumé des indicateurs clés
-    logger.info("\n--- ✅ Résumé final ---")
-    logger.info(f"🔢 Points générés : {len(df)}")
-    if 'distance_m' in df.columns:
-        logger.info(f"📏 Distance estimée : {df['distance_m'].sum() / 1000:.2f} km")
-    if 'speed' in df.columns:
-        logger.info(f"🚗 Vitesse moyenne : {df['speed'].mean():.2f} km/h")
-    logger.info(f"📁 Dossier complet : {outdir}")
-    logger.info(f"🚀 Vitesse maximale : {df['speed'].max():.2f} km/h")
-
+    check_realism(df, timestamp=ts)
     generate_reports(df, outdir)
+
+    log.info("✅ Rapports générés dans %s", outdir)
 
 
 if __name__ == "__main__":

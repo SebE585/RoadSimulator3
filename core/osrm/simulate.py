@@ -6,12 +6,24 @@ et retourne un DataFrame exploitable pour enrichissement inertiel.
 """
 
 from datetime import datetime, timedelta
-import pandas as pd
 from typing import List, Tuple, Optional
+
+import logging
+import numpy as np
+import pandas as pd
+
 from .client import get_route_from_coords
 from core.decorators import deprecated
 
-def simulate_route_via_osrm(cities_coords: List[Tuple[float, float]], hz: int = 10, start_time: Optional[datetime] = None) -> pd.DataFrame:
+
+logger = logging.getLogger(__name__)
+
+
+def simulate_route_via_osrm(
+    cities_coords: List[Tuple[float, float]],
+    hz: int = 10,
+    start_time: Optional[datetime] = None
+) -> pd.DataFrame:
     """
     Génère un DataFrame simulé à partir d’un itinéraire OSRM interpolé à pas fixe.
 
@@ -26,6 +38,7 @@ def simulate_route_via_osrm(cities_coords: List[Tuple[float, float]], hz: int = 
             - lon (float) : Longitude
             - timestamp (datetime) : Horodatage simulé à fréquence fixe
             - road_type (str) : Type de route extrait depuis OSM
+            - heading (float) : Cap (rad ou deg selon compute_heading)
 
     Raises:
         ValueError: Si la liste est vide, contient des NaN ou des coordonnées hors limites géographiques.
@@ -46,25 +59,49 @@ def simulate_route_via_osrm(cities_coords: List[Tuple[float, float]], hz: int = 
     if len(osrm_coords) < 2:
         raise ValueError("OSRM a retourné un trajet trop court (moins de 2 points).")
 
+    # Interpolation à pas fixe (m)
     from core.osrm.interpolation import interpolate_route_at_fixed_step
     df = pd.DataFrame(osrm_coords, columns=["lat", "lon"])
-    step_m = 0.83  # default interpolation step in meters
-    df_interp = pd.DataFrame(interpolate_route_at_fixed_step(df[["lat", "lon"]].to_records(index=False).tolist(), step_m=step_m), columns=["lat", "lon"])
+    step_m = 0.83  # pas moyen ~0.83 m
+    df_interp = pd.DataFrame(
+        interpolate_route_at_fixed_step(
+            df[["lat", "lon"]].to_records(index=False).tolist(),
+            step_m=step_m
+        ),
+        columns=["lat", "lon"]
+    )
 
-    timestamps = [start_time + timedelta(seconds=i * (1 / hz)) for i in range(len(df_interp))]
+    # Timestamps vectorisés
+    n = len(df_interp)
+    df_interp["timestamp"] = start_time + pd.to_timedelta(np.arange(n) / float(hz), unit="s")
 
-    df_interp["timestamp"] = timestamps
+    # Distance totale rapide (Haversine vectorisé)
+    def _haversine_total_km(lat_deg: np.ndarray, lon_deg: np.ndarray) -> float:
+        """
+        Somme des distances successives en km (Haversine vectorisé).
+        lat/lon en degrés.
+        """
+        if lat_deg.size < 2:
+            return 0.0
+        R = 6371.0088  # km
+        lat = np.radians(lat_deg.astype(np.float64))
+        lon = np.radians(lon_deg.astype(np.float64))
+        dlat = lat[1:] - lat[:-1]
+        dlon = lon[1:] - lon[:-1]
+        a = np.sin(dlat / 2.0) ** 2 + np.cos(lat[:-1]) * np.cos(lat[1:]) * np.sin(dlon / 2.0) ** 2
+        c = 2.0 * np.arctan2(np.sqrt(a), np.sqrt(1.0 - a))
+        return float(R * np.sum(c))
 
-    from geopy.distance import geodesic
-    distance_km = sum(geodesic(df_interp.iloc[i][["lat", "lon"]], df_interp.iloc[i+1][["lat", "lon"]]).km for i in range(len(df_interp)-1))
+    distance_km = _haversine_total_km(df_interp["lat"].to_numpy(), df_interp["lon"].to_numpy())
     print(f"[DEBUG] Distance totale estimée du trajet : {distance_km:.2f} km")
 
+    # Enrichissement type de route (stream)
     from core.osmnx.client import enrich_road_type_stream
     df_osrm = enrich_road_type_stream(df_interp)
 
     print(f"[SIMULATE] ✅ {len(df_osrm)} points interpolés générés à {hz} Hz.")
 
-    # Ajout du calcul du heading avant l'export CSV
+    # Ajout du heading
     from core.kinematics import compute_heading
     lat1 = df_osrm["lat"][:-1].to_numpy()
     lon1 = df_osrm["lon"][:-1].to_numpy()
@@ -72,11 +109,12 @@ def simulate_route_via_osrm(cities_coords: List[Tuple[float, float]], hz: int = 
     lon2 = df_osrm["lon"][1:].to_numpy()
 
     headings = compute_heading(lat1, lon1, lat2, lon2)
-    df_osrm["heading"] = [headings[0]] + list(headings)  # égalise la taille en dupliquant le premier heading
+    # égalise la taille en dupliquant le premier heading
+    df_osrm["heading"] = [headings[0]] + list(headings)
 
     # Export CSV output_osrm_trajectory.csv in RS3_OUTPUT_DIR or latest simulation dir
     import os
-    from core.utils import get_latest_simulation_dir, get_simulation_output_dir, save_dataframe_as_csv
+    from core.utils import get_latest_simulation_dir, get_simulation_output_dir, save_dataframe_as_csv  # noqa: F401
 
     output_dir = os.environ.get("RS3_OUTPUT_DIR")
     if output_dir is None:
@@ -92,7 +130,11 @@ def simulate_route_via_osrm(cities_coords: List[Tuple[float, float]], hz: int = 
 
 # Nouvelle fonction : simulation à partir des événements
 @deprecated
-def simulate_route_via_osrm_from_events(df: pd.DataFrame, hz: int = 10, start_time: Optional[datetime] = None) -> pd.DataFrame:
+def simulate_route_via_osrm_from_events(
+    df: pd.DataFrame,
+    hz: int = 10,
+    start_time: Optional[datetime] = None
+) -> pd.DataFrame:
     logger.warning("⚠️ Appel d'une fonction marquée @deprecated.")
     """
     Reconstruit un trajet complet via OSRM en utilisant les points marqués par des événements,
@@ -135,8 +177,10 @@ def simulate_route_via_osrm_from_events(df: pd.DataFrame, hz: int = 10, start_ti
 
     # Découpage en segments pour appel OSRM par morceaux
     MAX_SEGMENT_POINTS = 200
-    segments = [event_points[i:i+MAX_SEGMENT_POINTS]
-                for i in range(0, len(event_points) - 1, MAX_SEGMENT_POINTS - 1)]
+    segments = [
+        event_points[i:i + MAX_SEGMENT_POINTS]
+        for i in range(0, len(event_points) - 1, MAX_SEGMENT_POINTS - 1)
+    ]
 
     dfs = []
     for segment in segments:
@@ -155,9 +199,8 @@ def simulate_route_via_osrm_from_events(df: pd.DataFrame, hz: int = 10, start_ti
     from core.kinematics import recompute_speed
     df_interp = recompute_speed(df_interp)
 
-    from geopy.distance import geodesic
-
     # Réinjection des événements par proximité géographique (tolérance : 3 m)
+    from geopy.distance import geodesic
     events = df.dropna(subset=["event"])[["lat", "lon", "event"]].drop_duplicates()
     df_interp["event"] = None
 

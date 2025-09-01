@@ -1,0 +1,159 @@
+# config/fleet.yaml
+fleet_name: "fleet_normandie_multi_zones"
+hz: 10
+depot:
+  name: "Dépôt Romilly-sur-Andelle - 876 rue Saint Georges"
+  coord: [49.361800, 1.263500]   # lat, lon (à ajuster)
+
+profiles:
+  parcels:
+    stops: 70
+    stop_mean_s: 120      # arrêt moyen 2 min
+    stop_std_s: 30
+  meubles:
+    stops: 20
+    stop_mean_s: 600      # arrêt moyen 10 min
+    stop_std_s: 120
+
+# NOTE: OSRM extract limité à la Haute‑Normandie (Seine‑Maritime + Eure).
+# Tous les bboxes ci‑dessous sont bornés dans cette zone pour éviter les routes hors graphe.
+vehicles:
+  - name: "VL-01"
+    zone: "Rouen"
+    seed: 101
+    generate:
+      bbox:   # [lat_min, lon_min, lat_max, lon_max]
+        - [49.395, 1.025, 49.490, 1.200]
+
+  - name: "VL-02"
+    zone: "Le Havre"
+    seed: 102
+    generate:
+      bbox:
+        - [49.475, 0.050, 49.550, 0.200]
+
+  - name: "VL-03"
+    zone: "Yvetot"
+    seed: 103
+    generate:
+      bbox:
+        - [49.605, 0.700, 49.640, 0.800]
+
+  - name: "VL-04"
+    zone: "Pont-Audemer"
+    seed: 104
+    generate:
+      bbox:
+        - [49.335, 0.450, 49.380, 0.550]
+
+  - name: "VL-05"
+    zone: "Dieppe"
+    seed: 105
+    generate:
+      bbox:
+        - [49.900, 1.030, 50.000, 1.120]
+
+  - name: "VL-06"
+    zone: "Fécamp"
+    seed: 106
+    generate:
+      bbox:
+        - [49.730, 0.330, 49.780, 0.420]
+
+  - name: "VL-07"
+    zone: "Évreux"
+    seed: 107
+    generate:
+        bbox:
+          - [49.000, 1.100, 49.060, 1.200]
+
+  - name: "VL-08"
+    zone: "Louviers"
+    seed: 108
+    generate:
+      bbox:
+        - [49.200, 1.110, 49.270, 1.200]
+
+  - name: "VL-09"
+    zone: "Vernon"
+    seed: 109
+    generate:
+      bbox:
+        - [49.060, 1.430, 49.120, 1.510]
+
+  - name: "VL-10"
+    zone: "Gisors"
+    seed: 110
+    generate:
+      bbox:
+        - [49.250, 1.740, 49.320, 1.830]
+
+  - name: "VL-11"
+    zone: "Bernay"
+    seed: 111
+    generate:
+      bbox:
+        - [49.070, 0.570, 49.120, 0.640]
+
+  - name: "VL-12"
+    zone: "Gaillon / Aubevoye"
+    seed: 112
+    generate:
+      bbox:
+        - [49.140, 1.310, 49.200, 1.400]
+
+  - name: "VL-13"
+    zone: "Les Andelys"
+    seed: 113
+    generate:
+      bbox:
+        - [49.200, 1.380, 49.260, 1.500]
+
+  - name: "VL-14"
+    zone: "Le Tréport / Eu"
+    seed: 114
+    generate:
+      bbox:
+        - [50.040, 1.360, 50.090, 1.450]
+
+  - name: "VL-15"
+    zone: "Bolbec"
+    seed: 115
+    generate:
+      bbox:
+        - [49.560, 0.460, 49.610, 0.550]
+
+  - name: "VL-16"
+    zone: "Lillebonne / Port-Jérôme"
+    seed: 116
+    generate:
+      bbox:
+        - [49.480, 0.520, 49.520, 0.620]
+
+  - name: "VL-17"
+    zone: "Sotteville / St-Étienne-du-Rouvray"
+    seed: 117
+    generate:
+      bbox:
+        - [49.350, 1.050, 49.400, 1.150]
+
+  - name: "VL-18"
+    zone: "Mont-Saint-Aignan / Bois-Guillaume"
+    seed: 118
+    generate:
+      bbox:
+        - [49.450, 1.060, 49.490, 1.140]
+
+  - name: "VL-19"
+    zone: "Barentin / Pavilly"
+    seed: 119
+    generate:
+      bbox:
+        - [49.540, 0.930, 49.590, 1.020]
+
+  - name: "VL-20"
+    zone: "Neufchâtel-en-Bray"
+    seed: 120
+    generate:
+      bbox:
+        - [49.700, 1.420, 49.740, 1.510]

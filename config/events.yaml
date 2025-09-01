@@ -100,6 +100,24 @@ events:
     window_pts: 6              # Taille fenêtre glissante (points à 10 Hz)
     refractory: 20             # Période réfractaire
 
+  # Limitation explicite du nombre de stops/waits (uniquement ceux du scénario)
+  stop_wait:
+    # --- Bloc injection ---
+    enabled: true                 # Active l'injection stop/wait
+    source: "scenario_only"       # "scenario_only" | "auto" — ne créer que les stops issus du scénario/positions fournies
+    max_events: 6                 # Maximum absolu de stops/waits à injecter
+    min_duration_pts: 20          # Durée minimale d'un stop (points à 10 Hz) = 2s
+    max_duration_pts: 120         # Durée maximale d'un stop (points à 10 Hz) = 12s
+    min_separation_pts: 200       # Séparation minimale entre stops (points à 10 Hz) = 20s
+    enforce_full_stop: true       # Force la vitesse à ~0 pendant le stop
+    from_positions_window_m: 250  # Tolérance de rattachement aux positions "scénario" (en mètres)
+
+    # --- Bloc détection ---
+    detection:
+      speed_thresh_kmh: 1.0       # Considérer "à l'arrêt" si vitesse &lt; 1 km/h
+      window_pts: 5               # Fenêtre temporelle pour confirmer le stop
+      refractory: 50              # Période réfractaire pour éviter les doublons
+
   initial:
     # --- Bloc injection ---
     duration_pts: 70           # Durée de la phase initiale (en points à 10 Hz)
@@ -127,12 +145,15 @@ events:
     window_pts: 5              # Taille de la fenêtre de détection (points à 10 Hz)
     refractory: 20             # Période réfractaire
 
+    attach_to_stops: true                   # Attache l'ouverture de porte aux stops existants
+    attach_only_to_delivery_stops: true     # Uniquement aux stops de livraison (si balisés par le scénario)
+
 # === Bruit inertiel global hors événements ===
 inertial_noise:
   acc_x:
-    std: 0.4
+    std: 0.6
   acc_y:
-    std: 0.4
+    std: 0.6
   acc_z:
     std: 0.35
   gyro_x:
@@ -152,3 +173,9 @@ realism_check:
   gyro:
     std_min: 0.01
     std_max: 60.0
+
+# === Politiques globales d'événements ===
+policy:
+  preserve_stops_after_reprojection: false   # Ne pas ré-appliquer les stops perdus lors de la reprojection
+  keep_only_scenario_stops: true             # Ne conserver que les stops définis par le scénario (Carla/positions)
+  fill_unknown_events: false                 # Ne pas remplir les trous par 'unknown' pour ne pas écraser les événements
