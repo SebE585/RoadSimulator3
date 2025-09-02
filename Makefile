@@ -23,7 +23,7 @@ help:
 	@echo "  make fmt        - format code with black"
 	@echo "  make lint       - lint code with flake8"
 	@echo "  make ci         - local CI (fmt + lint + tests)"
-	@echo "  make publish    - push main branch to GitHub and Gitea"
+	@echo "  make publish [MSG='message'] - stage+commit (if meaningful changes) + push to GitHub & Gitea"
 	@echo "  make tag VERSION=x.y.z - create & push annotated git tag"
 
 fmt:
@@ -35,14 +35,19 @@ lint:
 ci: fmt lint test
 
 publish:
-	@git add -A
-	@if ! git diff --cached --quiet; then \
-	  git commit -m "chore: auto-publish commit"; \
+	@MSG="$(MSG)"; if [ -z "$$MSG" ]; then MSG="chore: auto-publish"; fi; \
+	if git diff -w --quiet && git diff --cached -w --quiet; then \
+	  echo "No substantial changes (ignoring whitespace). Skipping commit."; \
 	else \
-	  echo "No changes to commit"; \
-	fi
-	@git push github HEAD:main
-	@git push gitea HEAD:main
+	  git add -A; \
+	  if ! git diff --cached --quiet; then \
+	    git commit -m "$$MSG"; \
+	  else \
+	    echo "Nothing staged to commit."; \
+	  fi; \
+	fi; \
+	git push github HEAD:main; \
+	git push gitea HEAD:main
 
 # usage: make tag VERSION=1.0.1
 tag:
