@@ -6,6 +6,8 @@ pyproject.toml
 core/__init__.py
 core/config_loader.py
 core/decorators.py
+core/exporters.py
+core/exporters_schema_merge.py
 core/geo_utils.py
 core/gps_utils.py
 core/gyroscope.py
@@ -18,6 +20,7 @@ core/kinematics_speed.py
 core/meteo_loader.py
 core/osm_zone_loader.py
 core/pbf_utils.py
+core/plot_utils.py
 core/postprocessing.py
 core/reports.py
 core/reprojection.py
@@ -35,6 +38,7 @@ roadsimulator3.egg-info/requires.txt
 roadsimulator3.egg-info/top_level.txt
 runner/__init__.py
 runner/generate_outputs_from_csv.py
+runner/run_fleet.py
 runner/run_simulation.py
 runner/simulate_and_check.py
 simulator/__init__.py
@@ -43,8 +47,13 @@ simulator/detectors.py
 simulator/pipeline_utils.py
 simulator/trajectory.py
 simulator/utils.py
+tests/test_altitude_enricher.py
+tests/test_dataset_schema.py
+tests/test_delivery_markers.py
+tests/test_event_category_mapper.py
 tests/test_events_basic.py
 tests/test_export_csv.py
+tests/test_gyro_acc_initiale.py
 tests/test_gyroscope.py
 tests/test_osmnx_mocked.py
 tests/test_osrm_client_mocked.py
