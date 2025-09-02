@@ -91,3 +91,12 @@ data/
 # Dev artifacts
 src/
 *.bak
+
+# OS / IDE / caches
+.DS_Store
+.vscode/
+.idea/
+.pytest_cache/
+__pycache__/
+.python-version
+.ruff_cache/
