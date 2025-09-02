@@ -100,3 +100,14 @@ src/
 __pycache__/
 .python-version
 .ruff_cache/
+
+# Outputs & data generated
+logs/
+outputs/
+out/
+*.log
+*.csv
+*.json
+*.parquet
+*.png
+*.html
