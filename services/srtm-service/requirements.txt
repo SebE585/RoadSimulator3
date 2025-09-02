@@ -1,6 +1,0 @@
-flask
-pandas
-rasterio
-pyproj
-scipy
-geopy
