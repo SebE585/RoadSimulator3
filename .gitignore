@@ -111,3 +111,15 @@ out/
 *.parquet
 *.png
 *.html
+
+# Archives/binaires
+*.zip
+*.tar
+*.tar.gz
+*.tgz
+*.7z
+*.rar
+*.bundle
+*.so
+*.dylib
+*.bin
