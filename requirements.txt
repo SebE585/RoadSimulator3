@@ -39,7 +39,6 @@ latexcodec==3.0.1
 loguru==0.7.3
 looseversion==1.3.0
 Markdown==3.8.2
--e git+ssh://git@192.168.1.3:2222/seb/roadsimulator3.git@67d602774cd3908891f2893c9c1b798aec9ebee1#egg=media_clean&subdirectory=projects/media_clean
 mercantile==1.2.1
 mergedeep==1.3.4
 mkdocs==1.6.1
