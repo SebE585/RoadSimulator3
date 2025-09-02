@@ -1,0 +1,10 @@
+# RS3 Altitude Enricher config (v1.0)
+version: "1.0"
+provider: srtm   # srtm | ign | none
+cache_dir: data/cache/srtm
+interpolation: bilinear   # nearest | bilinear
+fill_strategy: forward    # forward | backward | drop
+quality_checks:
+  valid_range_m: [-450, 9000]
+  allow_nans: false
+  reject_rate_threshold: 0.01

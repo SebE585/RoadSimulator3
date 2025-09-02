@@ -1,0 +1,73 @@
+# RS3 Dataset Schema (v1.0)
+# Source of truth for columns: order, dtype, unit, nullability, description.
+version: "1.0"
+columns:
+  - name: timestamp
+    dtype: datetime
+    format: iso8601
+    nullable: false
+    description: "UTC timestamp at 10 Hz."
+
+  - name: lat
+    dtype: float64
+    unit: degree
+    nullable: false
+    description: "WGS84 latitude."
+
+  - name: lon
+    dtype: float64
+    unit: degree
+    nullable: false
+    description: "WGS84 longitude."
+
+  - name: speed
+    dtype: float32
+    unit: m/s
+    nullable: false
+    description: "Vehicle ground speed."
+
+  - name: acc_x
+    dtype: float32
+    unit: "m/s^2"
+    nullable: false
+    description: "IMU longitudinal acceleration."
+
+  - name: acc_y
+    dtype: float32
+    unit: "m/s^2"
+    nullable: false
+    description: "IMU lateral acceleration."
+
+  - name: acc_z
+    dtype: float32
+    unit: "m/s^2"
+    nullable: false
+    description: "IMU vertical acceleration."
+
+  - name: gyro_x
+    dtype: float32
+    unit: "rad/s"
+    nullable: false
+    description: "IMU angular rate around X (roll rate). Always present."
+
+  - name: gyro_y
+    dtype: float32
+    unit: "rad/s"
+    nullable: false
+    description: "IMU angular rate around Y (pitch rate). Always present."
+
+  - name: gyro_z
+    dtype: float32
+    unit: "rad/s"
+    nullable: false
+    description: "IMU angular rate around Z (yaw rate). Always present."
+
+  - name: event
+    dtype: category
+    nullable: true
+    description: "Liste ou tag d'événements associés à ce timestamp."
+
+  - name: road_type
+    dtype: category
+    nullable: true
+    description: "Type de route selon OSM/OSRM (ex: motorway, residential, unknown)."

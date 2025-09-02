@@ -1,0 +1,12 @@
+[core]
+	repositoryformatversion = 0
+	filemode = true
+	bare = true
+	ignorecase = true
+	precomposeunicode = true
+[remote "origin"]
+	url = git@github.com:SebE585/RoadSimulator3.git
+	fetch = +refs/heads/*:refs/remotes/origin/*
+[remote "gitea"]
+	url = git@ulysse:seb/RoadSimulator3.git
+	fetch = +refs/heads/*:refs/remotes/gitea/*

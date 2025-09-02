@@ -13,7 +13,24 @@ from core.utils import ensure_csv_column_order
 from core.reports import generate_reports
 from check.check_realism import check_realism
 from simulator.pipeline.pipeline import SimulationPipeline
+
 from simulator.cleaning import clean_simulation_errors
+
+# v1.0 enrichers & schema enforcement (guarded imports)
+try:
+    from enrichments.delivery_markers import apply_delivery_markers
+except Exception:
+    apply_delivery_markers = None
+
+try:
+    from enrichments.event_category_mapper import project_event_categories
+except Exception:
+    project_event_categories = None
+
+try:
+    from core.exporters import enforce_schema_order
+except Exception:
+    enforce_schema_order = None
 
 # ↓↓↓ Supprime les logs de debug liés aux polices matplotlib
 logging.getLogger("matplotlib").setLevel(logging.WARNING)
@@ -36,6 +53,8 @@ def simulate_and_enrich(csv_path: str = None, outdir: str = None) -> pd.DataFram
         pd.DataFrame: DataFrame enrichi avec les données simulées.
     """
     config = load_full_config()
+    # Ensure schema path is available for canonical ordering
+    config.setdefault("schema_path", "config/dataset_schema.yaml")
     pipeline = SimulationPipeline(config)
 
     if csv_path and os.path.exists(csv_path):
@@ -70,6 +89,26 @@ def simulate_and_enrich(csv_path: str = None, outdir: str = None) -> pd.DataFram
     df = cap_speed_to_target(df, alpha=0.2)
     df = generate_gyroscope_signals(df)
 
+    # v1.0 — Delivery markers & event category projection
+    try:
+        if apply_delivery_markers is not None:
+            df = apply_delivery_markers(df, config=config)
+    except Exception:
+        logger.debug("apply_delivery_markers skipped", exc_info=True)
+
+    try:
+        if project_event_categories is not None:
+            df = project_event_categories(df, config=config)
+    except Exception:
+        logger.debug("project_event_categories skipped", exc_info=True)
+
+    # v1.0 — Enforce canonical column order (keeps `event` for backward-compat)
+    try:
+        if enforce_schema_order is not None:
+            df = enforce_schema_order(df, config)
+    except Exception:
+        logger.debug("enforce_schema_order skipped", exc_info=True)
+
     if outdir:
         os.makedirs(outdir, exist_ok=True)
         plot_path = os.path.join(outdir, "trace_speed_vs_index.png")
@@ -101,6 +140,11 @@ def main():
 
     # Nettoyage des erreurs critiques détectées
     df = clean_simulation_errors(df)
+
+    # Optional sanity: log presence of v1.0 columns
+    for col in ("in_delivery", "delivery_state", "event_infra", "event_behavior", "event_context"):
+        if col in df.columns:
+            logger.info(f"[v1.0] Colonne présente : {col}")
 
     df = ensure_csv_column_order(df)
     csv_path = os.path.join(outdir, 'trace.csv')

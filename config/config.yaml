@@ -1,3 +1,17 @@
+schema_path: config/dataset_schema.yaml
+dataset:
+  altitude:
+    provider: srtm         # srtm|ign|demo|none
+    api_url: http://localhost:5004/enrich_terrain
+    fill_strategy: forward
+  events:
+    categories: [infra, behavior, context]
+  delivery:
+    buttons: { enabled: true }
+inertial:
+  gyro: { noise_std: 0.02, drift_per_sec: 0.0005, seed: 42 }
+simulation: { hz: 10, target_speed_kmh: 30 }
+
 injection:
   acceleration:
     amplitude: 5.0

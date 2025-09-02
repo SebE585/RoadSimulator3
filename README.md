@@ -20,20 +20,40 @@ RoadSimulator3 (RS3) is an advanced open-source road network simulation platform
 
 ## Quickstart
 
-1. Clone the repository:
+1. Run a simulation:
    ```
-   git clone https://github.com/yourusername/RoadSimulator3.git
+   make simulate
    ```
-2. Install dependencies:
+2. Run a fleet simulation with specific vehicle profiles:
    ```
-   cd RoadSimulator3
-   pip install -r requirements.txt
+   make fleet PROFILE=parcels VEHICLES=VL-01,VL-02
    ```
-3. Run the simulation example:
+3. Validate the generated dataset:
    ```
-   python examples/simple_simulation.py
+   python tools/validate_dataset.py --csv data/simulations/last_trace.csv --strict-order
    ```
-4. Explore the documentation in the `docs/` directory for tutorials and API references.
+
+## Dataset Schema (v1.0)
+
+| Column          | Type    | Notes                            |
+|-----------------|---------|---------------------------------|
+| timestamp       | float   | Time in seconds                 |
+| lat             | float   | Latitude in decimal degrees     |
+| lon             | float   | Longitude in decimal degrees    |
+| altitude_m      | float   | Altitude in meters              |
+| speed           | float   | Speed in meters per second      |
+| acc_x           | float   | Acceleration in X axis (m/s²)   |
+| acc_y           | float   | Acceleration in Y axis (m/s²)   |
+| acc_z           | float   | Acceleration in Z axis (m/s²)   |
+| gyro_x          | float   | Gyroscope X axis (rad/s)        |
+| gyro_y          | float   | Gyroscope Y axis (rad/s)        |
+| gyro_z          | float   | Gyroscope Z axis (rad/s)        |
+| in_delivery     | bool    | Whether vehicle is in delivery  |
+| delivery_state  | category| Delivery state                  |
+| event           | category| Event type                     |
+| event_infra     | category| Infrastructure related event    |
+| event_behavior  | category| Behavior related event          |
+| event_context   | category| Contextual event information    |
 
 ## Architecture
 

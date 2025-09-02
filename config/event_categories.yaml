@@ -1,0 +1,27 @@
+# RS3 Event → Category mapping (v1.0)
+version: "1.0"
+categories:
+  - infra
+  - behavior
+  - context
+
+mapping:
+  # Infrastructure
+  nid_de_poule: infra
+  dos_d_ane: infra
+  ralentisseur: infra
+  virage_serre: infra
+  rond_point: infra
+
+  # Behavior
+  acceleration_initiale: behavior
+  freinage_fort: behavior
+  demarrage_cote: behavior
+  manoeuvre_stationnement: behavior
+
+  # Context
+  zone_urbaine_dense: context
+  zone_residentielle: context
+  meteo_pluie: context
+  meteo_vent: context
+  travaux: context

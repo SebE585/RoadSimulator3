@@ -16,6 +16,27 @@ from simulator.events.stop_wait import apply_progressive_acceleration_after_stop
 from simulator.events.utils import clean_invalid_events
 from simulator.vizualisation.generate_map_comparison import TraceDebugger
 
+# v1.0 enrichers & schema enforcement (guarded imports)
+try:
+    from enrichments.delivery_markers import apply_delivery_markers
+except Exception:
+    apply_delivery_markers = None
+
+try:
+    from enrichments.event_category_mapper import project_event_categories
+except Exception:
+    project_event_categories = None
+
+try:
+    from enrichments.altitude_enricher import enrich_altitude
+except Exception:
+    enrich_altitude = None
+
+try:
+    from core.exporters import enforce_schema_order
+except Exception:
+    enforce_schema_order = None
+
 logger = logging.getLogger(__name__)
 
 def apply_postprocessing(df, hz=None, config=None):
@@ -52,6 +73,19 @@ def inject_all_events(df, config):
     Returns:
         pd.DataFrame: Données enrichies avec événements simulés.
     """
+    # --- v1.0: ensure minimal columns & delivery markers ---
+    if "event" not in df.columns:
+        df["event"] = np.nan
+    for col in ("gyro_x", "gyro_y", "gyro_z"):
+        if col not in df.columns:
+            df[col] = 0.0
+
+    try:
+        if apply_delivery_markers is not None:
+            df = apply_delivery_markers(df, config=config)
+    except Exception:
+        logger.debug("apply_delivery_markers skipped", exc_info=True)
+
     logger.info("➡️ Injection minimale des événements (stop, wait, ouverture_porte)")
     tracker = EventCounter()
 
@@ -93,7 +127,21 @@ def inject_all_events(df, config):
     ]:
         df = maybe_inject(name, func)
 
+    # v1.0 — project event categories (event_infra / event_behavior / event_context)
+    try:
+        if project_event_categories is not None:
+            df = project_event_categories(df, config=config)
+    except Exception:
+        logger.debug("project_event_categories skipped", exc_info=True)
+
     logger.info("📊 Événements injectés : " + tracker.summary())
+
+    # v1.0 — altitude enrichment
+    try:
+        if enrich_altitude is not None:
+            df = enrich_altitude(df, config=config)
+    except Exception:
+        logger.debug("enrich_altitude skipped", exc_info=True)
 
     # Réordonnancement final
     df = df.sort_values("timestamp").reset_index(drop=True)
@@ -112,6 +160,13 @@ def inject_all_events(df, config):
         for i in range(1, len(idx)):
             if idx[i] == idx[i - 1] + 1:
                 df.at[idx[i], "event"] = np.nan
+    # v1.0 — enforce canonical column order from dataset_schema.yaml
+    try:
+        if enforce_schema_order is not None:
+            df = enforce_schema_order(df, config)
+    except Exception:
+        logger.debug("enforce_schema_order skipped", exc_info=True)
+
     return df
 
 def deduplicate_event_labels(df: pd.DataFrame) -> pd.DataFrame:

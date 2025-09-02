@@ -134,8 +134,8 @@ def resample_time(df: pd.DataFrame, freq_hz: int = 10) -> pd.DataFrame:
     original_event = None
     if "event" in df.columns:
         tmp = df[["timestamp", "event"]].copy()
-        # Keep only non-null labels
-        original_event = tmp.dropna(subset=["event"])  # could be empty
+        # Keep only non-null labels (copy to avoid SettingWithCopyWarning later)
+        original_event = tmp.dropna(subset=["event"]).copy()  # could be empty
 
     # Build new regular time index
     start = df["timestamp"].iloc[0]
@@ -165,7 +165,7 @@ def resample_time(df: pd.DataFrame, freq_hz: int = 10) -> pd.DataFrame:
     # Re-apply original event labels **only at exact timestamps** via merge
     if original_event is not None and not original_event.empty:
         # Ensure dtype compatibility for merge
-        original_event["timestamp"] = pd.to_datetime(original_event["timestamp"])
+        original_event.loc[:, "timestamp"] = pd.to_datetime(original_event["timestamp"])
         df = df.merge(
             original_event.drop_duplicates(subset=["timestamp"], keep="last"),
             on="timestamp",

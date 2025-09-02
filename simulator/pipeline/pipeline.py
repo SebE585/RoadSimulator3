@@ -39,6 +39,22 @@ from simulator.events.generation import apply_final_deceleration, apply_initial_
 # Détection événements
 from simulator.s import detect_all_events
 
+# v1.0 enrichers & schema enforcement (guarded imports)
+try:
+    from enrichments.delivery_markers import apply_delivery_markers
+except Exception:
+    apply_delivery_markers = None
+
+try:
+    from enrichments.event_category_mapper import project_event_categories
+except Exception:
+    project_event_categories = None
+
+try:
+    from core.exporters import enforce_schema_order
+except Exception:
+    enforce_schema_order = None
+
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
@@ -109,12 +125,38 @@ class SimulationPipeline:
         assert_dataframe_integrity(df, "recompute_inertial_acceleration")
         check_inertial_stats(df, label="📊 Inertie avant enrichissement")
 
-        # Injection du bruit inertiel
+        # v1.0 — Colonnes minimales assurées
         if "event" not in df.columns:
             df["event"] = np.nan
         for col in ["gyro_x", "gyro_y", "gyro_z"]:
             if col not in df.columns:
                 df[col] = 0.0
+
+        # v1.0 — Marqueurs début/fin de livraison (in_delivery / delivery_state)
+        try:
+            if apply_delivery_markers is not None:
+                df = apply_delivery_markers(df, config=self.full_config)
+        except Exception:
+            logger.debug("apply_delivery_markers skipped", exc_info=True)
+
+        # v1.0 — Projection des catégories d'événements (event_infra/behavior/context)
+        try:
+            if project_event_categories is not None:
+                df = project_event_categories(df, config=self.full_config)
+        except Exception:
+            logger.debug("project_event_categories skipped", exc_info=True)
+
+        # Injection événements inertiels (avant gyroscope dépendant des events)
+        df = apply_initial_acceleration(df, self.full_config)
+        df = inject_all_events(df, self.full_config)
+        assert_dataframe_integrity(df, "inject_all_events")
+        df = apply_final_deceleration(df, self.full_config)
+
+        # Simulation gyroscope (assure présence même si pas d'utilisation)
+        df = simulate_gyroscope_from_heading(df)
+        df = inject_gyroscope_from_events(df)
+
+        # Injection du bruit inertiel (acc/gyro) — après events & gyro de base
         std = self.config.get("inertial_noise_std", 0.03)  # valeur par défaut 0.03 si absente
         noise_params = {
             "acc_std": std,
@@ -125,16 +167,6 @@ class SimulationPipeline:
         df = inject_inertial_noise(df, noise_params)
         assert_dataframe_integrity(df, "inject_inertial_noise")
         check_inertial_stats(df, label="📊 Inertie après enrichissement")
-
-        # Simulation gyroscope
-        df = simulate_gyroscope_from_heading(df)
-        df = inject_gyroscope_from_events(df)
-
-        # Injection événements inertiels
-        df = apply_initial_acceleration(df, self.full_config)
-        df = inject_all_events(df, self.full_config)
-        assert_dataframe_integrity(df, "inject_all_events")
-        df = apply_final_deceleration(df, self.full_config)
 
         # Post-traitement inertiel
         df = apply_postprocessing(df, hz=hz, config=self.config)
@@ -149,5 +181,12 @@ class SimulationPipeline:
         detection_summary = detect_all_events(df)
         for k, v in detection_summary.items():
             logger.info(f"  {k:20} : {'✅' if v else '❌'}")
+
+        # v1.0 — Enforcement de l'ordre canonique des colonnes avant retour
+        try:
+            if enforce_schema_order is not None:
+                df = enforce_schema_order(df, self.full_config)
+        except Exception:
+            logger.debug("enforce_schema_order skipped", exc_info=True)
 
         return df
