@@ -1,16 +1,52 @@
-.PHONY: install dev test simulate clean
+.PHONY: install dev test simulate clean fmt lint ci publish tag help
 
 install:
-\tpython -m pip install -r requirements.txt
+	python -m pip install -r requirements.txt
 
 dev:
-\tpython -m pip install -r requirements.txt -r requirements-dev.txt
+	python -m pip install -r requirements.txt -r requirements-dev.txt
 
 test:
-\tpytest
+	pytest
 
 simulate:
-\tpython -m runner.run_simulation --config config/example.yaml
+	python -m runner.run_simulation --config config/example.yaml
 
 clean:
-\trm -rf logs outputs .pytest_cache __pycache__
+	rm -rf logs outputs .pytest_cache __pycache__
+
+help:
+	@echo "Targets:"
+	@echo "  make dev        - install runtime + dev dependencies"
+	@echo "  make test       - run pytest"
+	@echo "  make simulate   - run example simulation (config/example.yaml)"
+	@echo "  make fmt        - format code with black"
+	@echo "  make lint       - lint code with flake8"
+	@echo "  make ci         - local CI (fmt + lint + tests)"
+	@echo "  make publish    - push main branch to GitHub and Gitea"
+	@echo "  make tag VERSION=x.y.z - create & push annotated git tag"
+
+fmt:
+	black .
+
+lint:
+	flake8 .
+
+ci: fmt lint test
+
+publish:
+	@git add -A
+	@if ! git diff --cached --quiet; then \
+	  git commit -m "chore: auto-publish commit"; \
+	else \
+	  echo "No changes to commit"; \
+	fi
+	@git push github HEAD:main
+	@git push gitea HEAD:main
+
+# usage: make tag VERSION=1.0.1
+tag:
+	@if [ -z "$(VERSION)" ]; then echo "Usage: make tag VERSION=x.y.z"; exit 1; fi
+	@git tag -a v$(VERSION) -m "Release v$(VERSION)"
+	@git push github v$(VERSION)
+	@git push gitea  v$(VERSION)
