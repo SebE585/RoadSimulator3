@@ -48,3 +48,10 @@ Thumbs.db         # Windows
 .mypy_cache/
 pytest_cache/
 *.log
+
+# Archives & payloads lourds
+*.zip
+*.tar
+*.tar.gz
+*.7z
+*.rar
