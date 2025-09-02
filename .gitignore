@@ -123,3 +123,8 @@ out/
 *.so
 *.dylib
 *.bin
+
+# Python build
+build/
+dist/
+*.egg-info/
