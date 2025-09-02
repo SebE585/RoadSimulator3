@@ -5,7 +5,7 @@
 [![AGPL License](https://img.shields.io/badge/License-AGPL-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
 [![CC-BY-SA License](https://img.shields.io/badge/License-CC--BY--SA-green.svg)](https://creativecommons.org/licenses/by-sa/4.0/)
 [![CC-BY License](https://img.shields.io/badge/License-CC--BY-green.svg)](https://creativecommons.org/licenses/by/4.0/)
-[![Proprietary Plugins](https://img.shields.io/badge/Plugins-Proprietary-red.svg)](https://yourcompany.com/plugins_pro)
+[![Proprietary Plugins](https://img.shields.io/badge/Plugins-Proprietary-red.svg)](https://roadsimulator3.fr/roadsimulator3/)
 
 RoadSimulator3 (RS3) is an advanced open-source road network simulation platform designed for researchers, developers, and urban planners. It provides a flexible and extensible environment to model, simulate, and analyze complex road systems.
 
