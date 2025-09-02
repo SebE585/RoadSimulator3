@@ -1,6 +1,35 @@
-RoadSimulator3 Professional Plugins EULA (abrégé)
-- Licence non exclusive, non transférable.
-- Interdit la redistribution du code source.
-- Usage soumis à contrat et clé de licence.
-- Pas de reverse engineering.
-- Limitation de garantie / responsabilité.
+# RoadSimulator3 – Licence des Plugins Professionnels (EULA)
+
+Les plugins professionnels de RoadSimulator3 sont distribués sous une **licence propriétaire**.  
+En installant, utilisant ou accédant à ces plugins, vous acceptez les conditions suivantes :
+
+---
+
+## 1. Champ d’application
+- Cette licence s’applique à tout code et modules situés dans le répertoire `plugins_pro/` ou distribués séparément sous contrat commercial.
+- Ces plugins ne sont **pas** couverts par la licence AGPL-3.0 utilisée pour le noyau de RS3.
+
+## 2. Droits accordés
+- Droit non exclusif et non transférable d’utiliser les plugins conformément à un contrat commercial valide.
+- Droit d’intégrer les plugins dans vos propres déploiements et usages de RS3.
+
+## 3. Restrictions
+- La redistribution du code source ou des binaires est strictement interdite sans accord écrit préalable.
+- L’ingénierie inverse, la décompilation ou la modification des plugins est interdite sauf autorisation explicite.
+- La sous-licence ou la revente ne sont pas autorisées.
+
+## 4. Support & mises à jour
+- L’accès aux mises à jour, correctifs et support technique nécessite un contrat de maintenance valide.
+
+## 5. Responsabilité
+- Les plugins sont fournis « tels quels », sans garantie d’adéquation à un usage particulier.
+- L’auteur ne peut être tenu responsable de tout dommage résultant de l’utilisation de ces plugins.
+
+## 6. Résiliation
+- Toute violation de ces termes entraîne la résiliation immédiate de la licence.
+- En cas de résiliation, vous devez cesser toute utilisation des plugins et détruire toutes les copies.
+
+---
+
+© 2025 Sébastien Edet – Tous droits réservés.  
+Contact : **sebastien.edet@gmail.com**

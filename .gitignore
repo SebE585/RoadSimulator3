@@ -87,3 +87,7 @@ data/
 # IDE
 .vscode/
 .idea/
+
+# Dev artifacts
+src/
+*.bak
