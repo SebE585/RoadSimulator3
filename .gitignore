@@ -55,3 +55,35 @@ pytest_cache/
 *.tar.gz
 *.7z
 *.rar
+
+# --- RS3 hygiene ---
+# OS / Python
+.DS_Store
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+
+# Logs & sorties
+logs/
+outputs/
+out/
+*.log
+
+# Données générées
+data/
+*.csv
+*.json
+*.parquet
+
+# Archives & binaires
+*.zip
+*.tar
+*.tar.gz
+*.7z
+*.rar
+*.bundle
+
+# IDE
+.vscode/
+.idea/
