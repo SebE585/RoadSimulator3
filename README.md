@@ -1,7 +1,7 @@
 # RoadSimulator3
 
 [![Tests](https://github.com/yourusername/RoadSimulator3/actions/workflows/tests.yml/badge.svg)](https://github.com/yourusername/RoadSimulator3/actions/workflows/tests.yml)
-[![LinkedIn](https://img.shields.io/badge/LinkedIn-Sebastien_Edet-blue)](https://www.linkedin.com/in/sebastien-edet/)
+[![LinkedIn](https://img.shields.io/badge/LinkedIn-Sebastien_Edet-blue)](https://www.linkedin.com/in/sebastienedet/)
 [![AGPL License](https://img.shields.io/badge/License-AGPL-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
 [![CC-BY-SA License](https://img.shields.io/badge/License-CC--BY--SA-green.svg)](https://creativecommons.org/licenses/by-sa/4.0/)
 [![CC-BY License](https://img.shields.io/badge/License-CC--BY-green.svg)](https://creativecommons.org/licenses/by/4.0/)
