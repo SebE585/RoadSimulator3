@@ -128,3 +128,10 @@ out/
 build/
 dist/
 *.egg-info/
+
+# Envs & backups
+.venv/
+venv/
+*.bak
+*.tmp
+*~
