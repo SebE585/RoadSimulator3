@@ -1,12 +1,8 @@
-# -*- coding: utf-8 -*-
+# core2/stages/initial_stop_locker.py
 from __future__ import annotations
-
-from dataclasses import dataclass
-from typing import Sequence
-
 import numpy as np
 import pandas as pd
-
+from dataclasses import dataclass
 from ..contracts import Result
 from ..context import Context
 
@@ -14,39 +10,15 @@ from ..context import Context
 @dataclass
 class InitialStopLocker:
     """
-    Fige le début de la trajectoire sur `head_s` secondes :
-      - met la vitesse à 0 (colonne `speed`)
-      - optionnellement, verrouille la position (lat/lon) au tout premier point
-      - remet à 0 les signaux IMU sur la même fenêtre (si présents)
-
-    Ce stage est le pendant "départ" de FinalStopLocker.
-    Il est utile pour satisfaire le test 'start_zero' du validateur.
-
-    Paramètres
-    ----------
-    head_s : float
-        Durée (s) à figer dès le début. Exemple: 2.0.
-    lock_pos : bool
-        Si True, recopie lat/lon du premier échantillon sur la fenêtre.
-    start_zero_thr_mps : float
-        Seuil m/s pour considérer le départ déjà quasi nul. Si la médiane
-        de vitesse sur la fenêtre est < seuil, on force (=0). Sinon on n'agit pas.
-        Mettre None pour forcer inconditionnellement la mise à 0.
-    imu_cols : Sequence[str]
-        Colonnes IMU à remettre à 0 si elles existent.
+    Verrouille le début du trajet à vitesse nulle pendant `head_s`.
+    - Option lock_pos: recopie lat/lon du 1er point → vitesse recalculée = 0
+    - Si start_zero_thr_mps est donné, n'applique le verrou que si la médiane
+      des vitesses dans la fenêtre de tête est < ce seuil.
+      Si None → verrou inconditionnel.
     """
-
     head_s: float = 2.0
     lock_pos: bool = True
-    start_zero_thr_mps: float | None = 0.6
-    imu_cols: Sequence[str] = (
-        "acc_x",
-        "acc_y",
-        "acc_z",
-        "gyro_x",
-        "gyro_y",
-        "gyro_z",
-    )
+    start_zero_thr_mps: float | None = None
 
     name: str = "InitialStopLocker"
 
@@ -54,59 +26,43 @@ class InitialStopLocker:
         df = ctx.df
         if df is None or df.empty:
             return Result(ok=False, message="df vide")
-        if "timestamp" not in df.columns:
-            return Result(ok=False, message="timestamp manquant")
-        if "speed" not in df.columns:
-            # On ne fait rien si la vitesse n'existe pas encore
-            return Result(ok=True, message="speed absente — InitialStopLocker ignoré")
+
+        if "timestamp" not in df.columns or "speed" not in df.columns:
+            return Result(ok=False, message="timestamp/speed manquants")
+
+        hz = float(ctx.meta.get("hz", 10.0))
+        n_head = max(1, int(round(self.head_s * hz)))
 
         out = df.copy()
-
-        # Cadence nominale attendue (déjà fixée dans SpeedSync, sinon cfg.sim.hz)
-        hz = float(ctx.meta.get("hz", ctx.cfg.get("sim", {}).get("hz", 10)))
-        hz = 10.0 if not np.isfinite(hz) or hz <= 0 else hz
-
-        # Taille de fenêtre en échantillons, bornée à la taille du DF
-        n = max(0, int(round(self.head_s * hz)))
-        if n <= 0:
-            ctx.df = out
-            return Result()  # rien à faire
-        n = min(n, len(out))
-
-        # Détermine si on doit intervenir (fenêtre déjà quasi nulle ?)
-        sp = pd.to_numeric(out["speed"], errors="coerce").fillna(0.0).to_numpy()
-        apply_lock = True
+        # Critère de déclenchement si demandé
+        do_lock = True
         if self.start_zero_thr_mps is not None:
-            head_med = float(np.nanmedian(sp[:n])) if n > 0 else 0.0
-            apply_lock = head_med < float(self.start_zero_thr_mps)
+            sp = pd.to_numeric(out["speed"], errors="coerce").fillna(0.0).to_numpy()
+            head_med = float(np.nanmedian(sp[:n_head])) if len(sp) else 0.0
+            do_lock = head_med < float(self.start_zero_thr_mps)
 
-        if apply_lock:
-            # 1) Vitesse = 0 sur la fenêtre
-            out.loc[: n - 1, "speed"] = 0.0
+        if not do_lock:
+            return Result()  # rien à faire
 
-            # 2) Position verrouillée sur le tout premier point
-            if self.lock_pos and {"lat", "lon"}.issubset(out.columns):
-                lat0 = out.at[0, "lat"]
-                lon0 = out.at[0, "lon"]
-                out.loc[: n - 1, "lat"] = lat0
-                out.loc[: n - 1, "lon"] = lon0
+        # 1) vitesse = 0 en tête
+        if "speed" in out.columns:
+            out.loc[out.index[:n_head], "speed"] = 0.0
 
-            # 3) IMU remis à 0 si colonnes présentes
-            for c in self.imu_cols:
-                if c in out.columns:
-                    out.loc[: n - 1, c] = 0.0
+        # 2) option lock_pos : recopie lat/lon du 1er point => plus de déplacement
+        if self.lock_pos and {"lat", "lon"}.issubset(out.columns) and len(out) >= 1:
+            lat0 = float(pd.to_numeric(out.at[out.index[0], "lat"], errors="coerce"))
+            lon0 = float(pd.to_numeric(out.at[out.index[0], "lon"], errors="coerce"))
+            out.loc[out.index[:n_head], "lat"] = lat0
+            out.loc[out.index[:n_head], "lon"] = lon0
 
-            # 4) (optionnel) Tag d'événement
-            if "event" in out.columns:
-                out.loc[: n - 1, "event"] = out.loc[: n - 1, "event"].fillna("").astype(str)
-                # n'écrase pas un éventuel tag existant, concatène proprement
-                out.loc[: n - 1, "event"] = out.loc[: n - 1, "event"].replace("", "START_LOCK").where(
-                    out.loc[: n - 1, "event"] != "", out.loc[: n - 1, "event"]
-                )
-
-            ctx.meta["initial_stop_locked_n"] = int(n)
+        # 3) event: tagger STOP si présent
+        if "event" in out.columns:
+            ev = out["event"].astype("object").fillna("")
+            ev.loc[ev.index[:n_head]] = np.where(ev.loc[ev.index[:n_head]] == "", "STOP", ev.loc[ev.index[:n_head]])
+            out["event"] = ev
         else:
-            ctx.meta["initial_stop_locked_n"] = 0
+            out["event"] = ""
+            out.loc[out.index[:n_head], "event"] = "STOP"
 
         ctx.df = out
         return Result()

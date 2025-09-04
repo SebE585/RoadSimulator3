@@ -14,9 +14,69 @@ import yaml
 from ..contracts import Result
 from ..context import Context
 
+
 logger = logging.getLogger(__name__)
 
+# --- distance helper pour le résumé ---
+def _haversine_series_m(lat1, lon1, lat2, lon2):
+    R = 6371000.0
+    p1 = np.radians(lat1)
+    p2 = np.radians(lat2)
+    dphi = np.radians(lat2 - lat1)
+    dlmb = np.radians(lon2 - lon1)
+    a = (np.sin(dphi/2)**2 + np.cos(p1)*np.cos(p2)*np.sin(dlmb/2)**2)
+    return 2 * R * np.arcsin(np.sqrt(a))
+
+def _compute_summary(df: pd.DataFrame, ctx: Context, hz_meta: float | None) -> dict:
+    """Retourne un dict KPI: duration_s, distance_km, avg_kmh, stops_count, stop_time_s."""
+    if df is None or df.empty:
+        return dict(duration_s=0, distance_km=0, avg_kmh=0, stops_count=0, stop_time_s=0)
+
+    # Durée
+    t = pd.to_datetime(df.get("timestamp", []), utc=True, errors="coerce")
+    if len(t) >= 2 and t.notna().any():
+        duration_s = float((t.iloc[-1] - t.iloc[0]).total_seconds())
+    else:
+        duration_s = float(ctx.meta.get("duration_after_speed_sync_s") or ctx.meta.get("duration_expected_s") or 0)
+
+    # Distance (haversine cumulée)
+    lat = pd.to_numeric(df.get("lat", pd.Series([])), errors="coerce").astype(float).to_numpy()
+    lon = pd.to_numeric(df.get("lon", pd.Series([])), errors="coerce").astype(float).to_numpy()
+    dist_m = 0.0
+    if len(lat) > 1:
+        d = _haversine_series_m(lat[:-1], lon[:-1], lat[1:], lon[1:])
+        dist_m = float(np.nansum(d))
+    distance_km = dist_m / 1000.0
+
+    # Vitesse moyenne (GPS)
+    avg_kmh = (distance_km / (duration_s / 3600.0)) if duration_s > 0 else 0.0
+
+    # Stops (compte blocs STOP contigus) + temps à l'arrêt
+    stops_count = 0
+    stop_time_s = 0.0
+    if "event" in df.columns and len(df):
+        ev = df["event"].astype(str).fillna("").to_numpy()
+        is_stop = (ev == "STOP")
+        if is_stop.any():
+            hz = float(hz_meta) if hz_meta and hz_meta > 0 else float(ctx.meta.get("hz", 10) or 10)
+            stop_time_s = float(np.sum(is_stop)) / hz
+            prev = False
+            for cur in is_stop:
+                if cur and not prev:
+                    stops_count += 1
+                prev = cur
+
+    return dict(
+        duration_s=max(0.0, duration_s),
+        distance_km=max(0.0, distance_km),
+        avg_kmh=max(0.0, avg_kmh),
+        stops_count=int(stops_count),
+        stop_time_s=max(0.0, stop_time_s),
+    )
+
 # ========= Templates =========
+#
+# Note: _write_report_inline injects Plotly via either a local asset or CDN using the {{PLOTLY_TAG}} placeholder.
 
 def _templates_dir() -> Path:
     """
@@ -405,32 +465,59 @@ def _write_map_embedded(outdir: str, track_json: str) -> str:
 
 def _write_report_inline(ctx: Context, outdir: str, title: str, chart_json: str) -> str:
     """
-    Rend 'report.html' à partir du template 'report.html'.
-    Le template doit consommer une variable globale JS `window.RS3_CHART`
-    qu'on injecte ici via {{INLINE_DATA_SCRIPT}}.
-    Placeholders attendus:
+    Renders 'report.html' from the 'report.html' template.
+    Placeholders :
       - {{TITLE}}
       - {{QA_BLOCK}}
-      - {{INLINE_DATA_SCRIPT}}
+      - {{PLOTLY_TAG}}
+      - {{INLINE_BLOCK}}
     """
-    # Bloc QA
+    # Bloc QA (markup non stylé → styles dans le template)
     qa_html = ""
     try:
         qa = ctx.artifacts.get("qa_pretty") or {}
         if isinstance(qa, dict):
-            status = qa.get("status", "")
-            block = qa.get("text", "")
-            qa_html = f"<pre style='background:#f8f8f8;padding:8px;border:1px solid #eee;border-radius:6px'>{status}\n{block}</pre>"
+            status = (qa.get("status") or "").strip()
+            block = (qa.get("text") or "").strip()
+            if status or block:
+                qa_html = (
+                    "<div class='qa-panel'>"
+                    f"<div class='qa-status'>{status}</div>"
+                    f"<pre class='qa-body'>{block}</pre>"
+                    "</div>"
+                )
     except Exception:
         pass
 
-    inline_script = f"<script>window.RS3_CHART = {chart_json};</script>"
+    # Plotly local si dispo sinon CDN
+    assets_dir = _templates_dir() / "assets"
+    plotly_path = assets_dir / "plotly-2.32.0.min.js"
+    if plotly_path.exists():
+        try:
+            content = plotly_path.read_text(encoding="utf-8")
+            plotly_tag = "<script>" + content + "</script>"
+        except Exception:
+            plotly_tag = '<script src="https://cdn.plot.ly/plotly-2.32.0.min.js"></script>'
+    else:
+        plotly_tag = '<script src="https://cdn.plot.ly/plotly-2.32.0.min.js"></script>'
 
+    # Injecte données inline (charts + summary)
+    hz_meta = float(ctx.meta.get("hz", 10.0)) if ctx.meta.get("hz") else None
+    df = ctx.df if ctx.df is not None else pd.DataFrame()
+    summary = _compute_summary(df, ctx, hz_meta)
+    summary_json = json.dumps(summary, ensure_ascii=False)
+    inline_block = (
+        f"<script>window.RS3_CHART = {chart_json};"
+        f"window.RS3_SUMMARY = {summary_json};</script>"
+    )
+
+    # Rend le template
     tpl = _read_template("report.html")
     html = _render_template(tpl, {
         "TITLE": title,
         "QA_BLOCK": qa_html,
-        "INLINE_DATA_SCRIPT": inline_script,
+        "PLOTLY_TAG": plotly_tag,
+        "INLINE_BLOCK": inline_block,
     })
     path = Path(outdir) / "report.html"
     path.write_text(html, encoding="utf-8")
