@@ -116,14 +116,6 @@ initial_stop_locker:
   lock_pos: true        # recopie lat/lon du 1er point → vitesse recalculée = 0
   start_zero_thr_mps: null   # <<< force inconditionnellement le verrou
 
-exporter:
-  report:
-    enabled: true
-    standalone_map: true   # important -> carte autonome (pas de CORS)
-    map_sample_hz: 1.0     # trajectoire à ~1 Hz
-    inline_data: true      # embarque aussi les séries pour les graphes
-    charts_sample_hz: 1.0  # graphes ~1 Hz
-
 stages:
   - SpeedSync
   - MidStopsLocker        # << nouveau stage
@@ -138,3 +130,11 @@ mid_stops_locker:
   margin_after_s: 1.0
   write_event: true
   respect_existing_stop: true
+
+exporter:
+  report:
+    enabled: true
+    standalone_map: true     # important pour éviter CORS en file://
+    inline_data: true        # injecte RS3_CHART dans report.html
+    map_sample_hz: 1.0       # trace ~1 Hz
+    charts_sample_hz: 1.0    # downsample des courbes à ~1 Hz
