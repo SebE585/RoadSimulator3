@@ -20,7 +20,10 @@ def _haversine_series_m(lat1, lon1, lat2, lon2):
 
 class LegsStitch:
     """
-    Concatène les legs routés, pose un axe temps continu, puis resample à hz.
+    Concatène les legs routés, pose un axe temps continu, puis remaillage à hz.
+    ✨ Insertion d'arrêts (service) après CHAQUE leg, avec position figée et
+       durée exactement égale au 'service_s' du stop de destination.
+       => La vitesse retombe à 0 pendant ces fenêtres après remaillage.
     """
     name = "LegsStitch"
 
@@ -29,143 +32,238 @@ class LegsStitch:
         if not traces:
             return Result(ok=False, message="legs_traces manquant")
 
+        # Cadence visée
         hz = int(ctx.cfg.get("sim", {}).get("hz", 10))
-        dt = pd.to_timedelta(1 / hz, unit="s")
+        step_ms = int(round(1000.0 / max(hz, 1)))
+        if step_ms <= 0:
+            step_ms = 100  # fallback 10 Hz
 
-        # concat brut (on conserve l'ordre des legs)
-        df = pd.concat(traces, ignore_index=True)
-
-        plan = ctx.artifacts.get("legs_plan", {})
+        # ---- Récup plan (stops + start time) ----
+        plan = ctx.artifacts.get("legs_plan", {}) or {}
+        stops = plan.get("stops", []) or []  # liste ordonnée des stops du YAML
         start_iso = plan.get("start_time_utc")
+        # Durée par défaut si 'service_s' absent
+        ls_cfg = ctx.cfg.get("legs_stitch", {}) if isinstance(ctx.cfg, dict) else {}
+        default_service_s = float(ls_cfg.get("inject_stop_hold_s", 5.0))
+
+        # Start time
         if start_iso:
-            # Robust parse supporting both '...Z' and '+00:00'
             t0 = pd.to_datetime(start_iso, utc=True)
         else:
             t0 = pd.Timestamp.utcnow().tz_localize("UTC")
 
-        # --- Nouvelle stratégie de timeline ---
-        # 1) Durée totale: on privilégie la somme des durées OSRM si dispo; sinon fallback = 1s/échantillon
+        # Durée totale de déplacement (mouvement) d'après OSRM si dispo
         summaries = ctx.artifacts.get("legs_summary", [])
-        total_dur_s = None
+        total_move_dur_s = None
         try:
             if summaries and isinstance(summaries, list):
-                total_dur_s = float(sum(float(s.get("duration_s", 0.0)) for s in summaries))
+                total_move_dur_s = float(sum(float(s.get("duration_s", 0.0)) for s in summaries))
         except Exception:
-            total_dur_s = None
+            total_move_dur_s = None
 
-        n = len(df)
-        df = df.copy()
+        # ---- Concat avec insertion d'arrêts après CHAQUE leg ----
+        # Convention: leg i relie stop i -> stop i+1
+        # On insère un bloc "service" au stop de destination (i+1), durée = stops[i+1].service_s
+        frames = []
+        hold_specs = []   # collecte diagnostique [(stop_id, seconds), ...]
+        hold_id = 0
 
-        # 2) Paramètre "temps brut" par distance cumulée (évite artefacts liés au nombre de points)
+        n_legs = len(traces)
+        n_stops = len(stops)  # attendu: n_stops = n_legs + 1 (si plan complet)
+
+        for i, leg in enumerate(traces):
+            # géo brute
+            g = leg[["lat", "lon"]].copy()
+            g["is_hold"] = False
+            g["hold_id"] = -1
+            g["stop_id"] = ""
+            g["event"] = ""
+            frames.append(g)
+
+            # stop de destination = index stop (i+1) si présent
+            dest_idx = i + 1
+            if dest_idx < n_stops:
+                stop = stops[dest_idx] or {}
+                stop_id = str(stop.get("id", f"STOP_{dest_idx}"))
+                service_s = float(stop.get("service_s", default_service_s) or 0.0)
+            else:
+                # Si on ne connaît pas le stop, on peut ignorer ou appliquer défaut 0
+                stop_id = f"STOP_{dest_idx}"
+                service_s = 0.0
+
+            if service_s > 0:
+                # Utilise le dernier point du leg i comme position d'arrêt
+                last_lat = float(g.iloc[-1]["lat"])
+                last_lon = float(g.iloc[-1]["lon"])
+                n_hold = max(1, int(round(service_s * hz)))
+
+                hold_df = pd.DataFrame({
+                    "lat": [last_lat] * n_hold,
+                    "lon": [last_lon] * n_hold,
+                    "is_hold": [True] * n_hold,
+                    "hold_id": [hold_id] * n_hold,
+                    "stop_id": [stop_id] * n_hold,
+                    "event": ["STOP"] * n_hold,  # on marque clairement l'arrêt service
+                })
+                frames.append(hold_df)
+                hold_specs.append((stop_id, float(service_s)))
+                hold_id += 1
+
+        df = pd.concat(frames, ignore_index=True)
+
+        # ---- Distances brutes ----
         lat_raw = df["lat"].to_numpy(dtype=float)
         lon_raw = df["lon"].to_numpy(dtype=float)
+        n = len(df)
         dmeters = np.zeros(n, dtype=float)
         if n > 1:
             dmeters[1:] = _haversine_series_m(lat_raw[:-1], lon_raw[:-1], lat_raw[1:], lon_raw[1:])
-        cum_m = np.cumsum(dmeters)
-        total_m = float(cum_m[-1]) if n > 0 else 0.0
-        # Si total_m ~ 0 (trajet dégénéré), on fabrique un cum linéaire pour éviter les divisions par zéro
-        if total_m <= 0:
-            cum_m = np.linspace(0.0, 1.0, n)
-            total_m = 1.0
 
-        # --- Contrôle longueur géo (Haversine) vs somme OSRM (si disponible) ---
-        osrm_total_m = None
-        try:
-            if summaries and isinstance(summaries, list):
-                osrm_total_m = float(sum(float(s.get("distance_m", 0.0)) for s in summaries))
-        except Exception:
-            osrm_total_m = None
+        # ---- Séparation mouvement / hold ----
+        is_hold = df["is_hold"].to_numpy(dtype=bool)
+        move_mask = ~is_hold
+        total_m_move = float(np.sum(dmeters[move_mask]))
+        if total_m_move <= 0:
+            # Sécurité si la géo est dégénérée
+            total_m_move = float(max(n - 1, 1))
+            tmp = np.zeros_like(dmeters)
+            if n > 1:
+                tmp[1:] = 1.0
+            dmeters = tmp
 
-        if osrm_total_m and osrm_total_m > 0:
-            ratio = float(total_m) / osrm_total_m
-            ctx.artifacts["legs_geom_vs_osrm"] = {
-                "geo_total_m": float(total_m),
-                "osrm_total_m": float(osrm_total_m),
-                "ratio": float(ratio),
-                "threshold": 0.9,
-                "under_sampled": bool(ratio < 0.9),
-            }
-            if ratio < 0.9:
-                logger.warning(
-                    "[LegsStitch] Tracé sous-échantillonné: géo=%.1f m, OSRM=%.1f m (ratio=%.3f &lt; 0.9)",
-                    total_m, osrm_total_m, ratio
-                )
-        else:
-            # Stocke tout de même l’info géo pour diagnostic
-            ctx.artifacts["legs_geom_vs_osrm"] = {
-                "geo_total_m": float(total_m),
-                "osrm_total_m": None,
-                "ratio": None,
-                "threshold": 0.9,
-                "under_sampled": None,
-            }
+        # ---- Durées globales ----
+        # Mouvement (OSRM) sinon fallback "1 s par pas mouvement"
+        if total_move_dur_s is None or total_move_dur_s <= 0:
+            total_move_dur_s = float(max(np.sum(move_mask) - 1, 1))
+            ctx.artifacts["legs_stitch_duration_fallback_s"] = total_move_dur_s
 
-        # 3) Détermine la durée à utiliser
-        if total_dur_s is None or total_dur_s <= 0:
-            # fallback: 1 seconde par échantillon (héritage), mais on le note
-            total_dur_s = float(max(n - 1, 1))
-            ctx.artifacts["legs_stitch_duration_fallback_s"] = total_dur_s
+        # HOLDs: somme des service_s réellement injectés
+        total_hold_dur_s = 0.0
+        if hold_specs:
+            total_hold_dur_s = float(sum(s for _, s in hold_specs))
 
-        # 4) Construit un axe temps en secondes basé sur la progression spatiale
-        t_lin = (cum_m / total_m) * total_dur_s
+        total_dur_s = float(total_move_dur_s + total_hold_dur_s)
 
-        # 5) Indexe par ce temps et reindexe exactement à dt
-        df["timestamp"] = pd.to_datetime(t0) + pd.to_timedelta(t_lin, unit="s")
-        df = df.set_index("timestamp").sort_index()
-        # Déduplique prudemment si nécessaire
-        if df.index.has_duplicates:
-            df = df[~df.index.duplicated(keep="first")]
+        # ---- Répartition temporelle pas à pas ----
+        # - Mouvement: proportionnel à la distance de chaque pas
+        # - HOLD: exactement service_s, réparti sur le nb d'échantillons du bloc
+        time_s = np.zeros(n, dtype=float)
 
-        # Grille régulière exacte à hz, calée sur la durée totale théorique
-        step_ms = int(round(1000.0 / hz))  # ex: 10 Hz -> 100 ms
-        if step_ms <= 0:
-            step_ms = 100  # fallback 10 Hz
-        
-        # Nombre d'échantillons: plancher pour ne jamais dépasser la durée (inclut t0)
-        n_samples = int(np.floor(total_dur_s * hz)) + 1
-        t0_utc = pd.to_datetime(t0, utc=True)
-        target_index = pd.date_range(start=t0_utc, periods=n_samples, freq=pd.to_timedelta(step_ms, unit="ms"))
-        df = df.reindex(target_index).interpolate(method="time")
-        # S'assure que l'index est bien UTC
+        # Prépare durée par hold_id
+        # On re-dérive la durée réelle de chaque bloc à partir du nombre d'échantillons et du service_s voulu
+        #  => dt pas à pas = service_s / n_points_de_ce_bloc
+        hold_dt_map: dict[int, float] = {}
+        if is_hold.any():
+            # calcule pour chaque hold_id le nombre d'échantillons du bloc
+            counts = df.loc[is_hold, "hold_id"].value_counts().to_dict()
+            # reconstruire un dict hold_id -> service_s à partir des stop_id présents
+            # plus simple: regrouper par hold_id et prendre le stop_id du bloc
+            grp = df.loc[is_hold, ["hold_id", "stop_id"]].drop_duplicates(subset=["hold_id"])
+            service_by_stopid = {sid: sec for sid, sec in hold_specs}  # stop_id -> seconds
+            for _, row in grp.iterrows():
+                hid = int(row["hold_id"])
+                sid = str(row["stop_id"])
+                cnt = int(counts.get(hid, 0))
+                if cnt > 0:
+                    service_s = float(service_by_stopid.get(sid, default_service_s))
+                    hold_dt_map[hid] = service_s / float(cnt)
+
+        for i in range(1, n):
+            if is_hold[i]:
+                hid = int(df.iloc[i]["hold_id"])
+                dt_i = float(hold_dt_map.get(hid, default_service_s))
+                time_s[i] = time_s[i-1] + dt_i
+            else:
+                di = float(dmeters[i])
+                frac = (di / total_m_move) if total_m_move > 0 else 0.0
+                dt_i = frac * float(total_move_dur_s)
+                time_s[i] = time_s[i-1] + dt_i
+
+        # ---- Index temps ----
+        t_index = pd.to_datetime(t0) + pd.to_timedelta(time_s, unit="s")
+        df = df.set_index(t_index)
         df.index = df.index.tz_convert("UTC")
         df.index.name = "timestamp"
-        # Diagnostics
+
+        # ---- Remaillage exact à hz sur la durée totale théorique ----
+        n_samples = int(np.floor(total_dur_s * hz)) + 1
+        target_index = pd.date_range(
+            start=df.index[0],
+            periods=n_samples,
+            freq=pd.to_timedelta(step_ms, unit="ms")
+        )
+
+        # Interpoler uniquement les colonnes numériques; propager les colonnes non numériques (event/stop_id...)
+        union_index = df.index.union(target_index)
+        num_cols = df.select_dtypes(include=[np.number]).columns.tolist()
+        obj_cols = [c for c in df.columns if c not in num_cols]
+
+        # Numeric -> time interpolation
+        if num_cols:
+            num_part = df[num_cols].reindex(union_index).interpolate(method="time")
+            num_part = num_part.reindex(target_index)
+        else:
+            num_part = pd.DataFrame(index=target_index)
+
+        # Objects -> forward/back fill (no time interpolate on object dtype)
+        if obj_cols:
+            obj_part = df[obj_cols].reindex(union_index).ffill().bfill().reindex(target_index)
+        else:
+            obj_part = pd.DataFrame(index=target_index)
+
+        # Recombine and ensure index name survives the ops
+        df = pd.concat([num_part, obj_part], axis=1)
+        df = df.loc[target_index]
+        df.index.name = "timestamp"
+
+        # ---- Vitesse depuis lat/lon + dt réel ----
+        lat = df["lat"].to_numpy(dtype=float)
+        lon = df["lon"].to_numpy(dtype=float)
+        ns = df.index.asi8
+        tsec = (ns - ns[0]) / 1e9
+        dmeters = np.zeros_like(lat, dtype=float)
+        if len(lat) > 1:
+            dmeters[1:] = _haversine_series_m(lat[:-1], lon[:-1], lat[1:], lon[1:])
+        dt_s = np.diff(tsec, prepend=tsec[0])
+        pos = dt_s > 0
+        median_dt = float(np.median(dt_s[pos])) if pos.any() else (1.0 / max(hz, 1))
+        dt_s[~pos] = median_dt
+        speed = np.maximum(dmeters / dt_s, 0.0)
+
+        # Lissage léger num.
+        k = max(1, int(round(0.3 * hz)))
+        if k > 1:
+            speed = pd.Series(speed, index=df.index)\
+                    .rolling(window=k, center=True, min_periods=1)\
+                    .median().to_numpy()
+
+        df["speed"] = speed
+
+        # ---- Sortie minimale requise par les stages suivants ----
+        out = df.reset_index()
+        # s'assurer que le nom d'index a bien été conservé
+        if "timestamp" not in out.columns:
+            out = out.rename(columns={out.columns[0]: "timestamp"})
+
+        base_cols = [c for c in ["timestamp", "lat", "lon", "speed"] if c in out.columns]
+        out = out[base_cols].copy()
+
+        # on garde les annotations utiles si présentes
+        for extra in ("event", "stop_id"):
+            if extra in df.columns and extra not in out.columns:
+                out[extra] = df[extra].to_numpy()
+
+        ctx.df = out
+        ctx.meta["hz"] = hz
         ctx.meta["hz_expected"] = float(hz)
         ctx.meta["samples_expected"] = int(n_samples)
         ctx.meta["duration_expected_s"] = float(total_dur_s)
 
-        # 6) Recalcule systématiquement la vitesse depuis lat/lon et le dt réel (index temps)
-        lat = df["lat"].to_numpy(dtype=float)
-        lon = df["lon"].to_numpy(dtype=float)
-        ns = df.index.asi8  # int64 ns
-        tsec = (ns - ns[0]) / 1e9
+        # Diagnostics : liste des arrêts réellement injectés
+        ctx.artifacts["legs_stitch_holds"] = {
+            "count": len(hold_specs),
+            "items": [{"stop_id": sid, "service_s": sec} for sid, sec in hold_specs],
+            "total_hold_s": total_hold_dur_s,
+        }
 
-        # Diagnostic de cadence
-        if len(tsec) > 1:
-            dt_obs = np.diff(tsec)
-            hz_obs = 1.0 / np.median(dt_obs)
-            ctx.meta["hz_observed"] = float(hz_obs)
-
-        dmeters = np.zeros_like(lat, dtype=float)
-        if len(lat) > 1:
-            dmeters[1:] = _haversine_series_m(lat[:-1], lon[:-1], lat[1:], lon[1:])
-
-        dt_s = np.diff(tsec, prepend=tsec[0])
-        pos = dt_s > 0
-        median_dt = float(np.median(dt_s[pos])) if pos.any() else float(dt.total_seconds())
-        dt_s[~pos] = median_dt
-
-        speed = dmeters / dt_s  # m/s
-        speed = np.maximum(speed, 0.0)
-        df["speed"] = speed
-
-        # Lissage robuste (médiane centrée ~300 ms) pour éliminer les à-coups numériques
-        k = max(1, int(round(0.3 * hz)))
-        if k > 1:
-            df["speed"] = df["speed"].rolling(window=k, center=True, min_periods=1).median()
-
-        df = df.reset_index()
-        ctx.df = df[["timestamp","lat","lon","speed"]]
-        ctx.meta["hz"] = hz
         return Result()

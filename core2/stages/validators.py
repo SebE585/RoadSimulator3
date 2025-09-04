@@ -13,7 +13,6 @@ from ..context import Context
 logger = logging.getLogger(__name__)
 
 
-
 def _compute_checklist(df: pd.DataFrame, hz_target: float = 10.0) -> tuple[dict, dict]:
     """Calcule une checklist standardisée (✅/❌) et quelques métriques.
     Retourne (checks, metrics).
@@ -21,8 +20,9 @@ def _compute_checklist(df: pd.DataFrame, hz_target: float = 10.0) -> tuple[dict,
     checks: dict[str, bool] = {}
     metrics: dict[str, float] = {}
 
-    # Cadence & timeline
+    # --- Cadence & timeline ---
     t = pd.to_datetime(df["timestamp"], utc=True, errors="coerce")
+    # ns depuis epoch (astype('int64') ≈ ns, évite .view deprecated)
     ns = t.astype("int64").to_numpy()
     dt = np.diff((ns - ns[0]) / 1e9, prepend=0.0)
     pos = dt > 0
@@ -30,31 +30,30 @@ def _compute_checklist(df: pd.DataFrame, hz_target: float = 10.0) -> tuple[dict,
         checks["cadence_10hz"] = False
         metrics["dt_median_s"] = float("nan")
         metrics["hz_obs"] = float("nan")
-        # Même si cadence KO, on continue à remplir le reste prudemment
         dt_med = float("nan")
     else:
         dt_med = float(np.median(dt[pos]))
         metrics["dt_median_s"] = dt_med
         metrics["hz_obs"] = (1.0 / dt_med) if dt_med > 0 else float("nan")
-        checks["cadence_10hz"] = abs(dt_med - 1.0 / hz_target) < 0.02  # ±20 ms
+        # tolérance ±20 ms à 10 Hz
+        checks["cadence_10hz"] = abs(dt_med - 1.0 / hz_target) < 0.02
 
-    # Vitesse (m/s et km/h)
-    sp = pd.to_numeric(df.get("speed", 0.0), errors="coerce").fillna(0.0).to_numpy()
-    if "speed_kmh" in df.columns:
+    # --- Vitesse (PRIORITÉ à 'speed' en m/s ; 'speed_kmh' juste en secours) ---
+    sp_mps = pd.to_numeric(df.get("speed", 0.0), errors="coerce").fillna(0.0).to_numpy()
+    if (np.asarray(sp_mps) == 0.0).all() and "speed_kmh" in df.columns:
+        # fallback si speed vide
         sp_kmh = pd.to_numeric(df["speed_kmh"], errors="coerce").fillna(0.0).to_numpy()
         sp_mps = sp_kmh / 3.6
-    else:
-        sp_mps = sp
     checks["speed_nonnegative"] = bool((sp_mps >= -1e-6).all())
 
-    # Départ/fin à 0 (médiane sur 1 s)
+    # --- Départ/fin à 0 (médiane sur 1 s) ---
     n_tail = max(1, int(round(hz_target * 1.0)))  # 1 s window
     start0 = float(np.nanmedian(sp_mps[:n_tail])) < 0.6  # 0.6 m/s ≈ 2.16 km/h
     end0 = float(np.nanmedian(sp_mps[-n_tail:])) < 0.6
     checks["start_zero"] = start0
     checks["end_zero"] = end0
 
-    # Variabilité inertielle minimale (sur mouvement)
+    # --- Variabilité inertielle minimale (sur mouvement) ---
     moving = sp_mps > 0.5
     v_med = float(np.nanmedian(sp_mps[moving])) if moving.any() else 0.0
     metrics["v_median_mps"] = v_med
@@ -68,7 +67,7 @@ def _compute_checklist(df: pd.DataFrame, hz_target: float = 10.0) -> tuple[dict,
     checks["ax_variability"] = std_ax > 0.02   # m/s²
     checks["gz_variability"] = std_gz > 0.002  # rad/s
 
-    # Cohérence latérale sur virages (ay ≈ v * gz) + rayon plausible
+    # --- Cohérence latérale sur virages (ay ≈ v * gz) + rayon plausible ---
     ay = pd.to_numeric(df.get("acc_y", 0.0), errors="coerce").fillna(0.0).to_numpy()
     turn = np.logical_and(moving, np.abs(gz) > 0.01)
     if turn.any():
@@ -79,21 +78,20 @@ def _compute_checklist(df: pd.DataFrame, hz_target: float = 10.0) -> tuple[dict,
         checks["lateral_consistency"] = err < 0.5  # tolérance m/s²
 
         # 2) Rayon de courbure plausible
-        #   a) basé sur le gyro (plus robuste): R_gz ≈ v / |gz|
+        #   a) via gyro: R_gz ≈ v / |gz|
         R_gz = sp_mps[turn] / np.maximum(np.abs(gz[turn]), 1e-3)
         plausible_gz = np.logical_and(R_gz > 10.0, R_gz < 3000.0)
         ratio_gz = float(np.mean(plausible_gz)) if R_gz.size else 1.0
         metrics["turn_radius_from_gz_ratio"] = ratio_gz
         metrics["turn_radius_from_gz_med"] = float(np.nanmedian(R_gz)) if R_gz.size else float("nan")
 
-        #   b) à titre indicatif: rayon depuis ay (peut être bruité/lissé)
+        #   b) indicatif via ay: R_ay ≈ v² / |ay|
         R_ay = (sp_mps[turn] ** 2) / np.maximum(np.abs(ay[turn]), 1e-3)
         plausible_ay = np.logical_and(R_ay > 10.0, R_ay < 3000.0)
         ratio_ay = float(np.mean(plausible_ay)) if R_ay.size else 1.0
         metrics["turn_radius_from_ay_ratio"] = ratio_ay
         metrics["turn_radius_from_ay_med"] = float(np.nanmedian(R_ay)) if R_ay.size else float("nan")
 
-        # On décide du check final sur le critère gyro (plus robuste)
         checks["turn_radius_plausible"] = ratio_gz > 0.7
     else:
         checks["lateral_consistency"] = True
@@ -108,8 +106,8 @@ def _compute_checklist(df: pd.DataFrame, hz_target: float = 10.0) -> tuple[dict,
 
 
 def _realism_lite(df: pd.DataFrame, hz_target: float = 10.0) -> dict:
-    """Vérifications de réalisme légères, sans dépendre de check_realism externe.
-    Retourne un dict avec les clés: available, ok, checks, summary.
+    """Vérifications de réalisme légères, sans dépendre d'outils externes.
+    Retourne un dict avec: available, ok, checks, summary, failed, metrics.
     """
     out: dict = {"available": True, "ok": True, "checks": {}}
 
@@ -136,7 +134,7 @@ def _realism_lite(df: pd.DataFrame, hz_target: float = 10.0) -> dict:
 
 class Validators:
     """
-    Valide la cohérence du DataFrame final et exécute les vérifications de réalisme *intégrées* (sans dépendre de check/check_realism.py).
+    Valide la cohérence du DataFrame final et exécute les vérifications de réalisme *intégrées*.
     Un rapport détaillé est stocké dans `ctx.artifacts['qa_realism']`.
 
     Configuration optionnelle via `cfg.validation` :
@@ -162,21 +160,16 @@ class Validators:
         # 1) Checks de base (légers)
         # -------------------------
         if pass_basic:
-            # Vérifie présence colonne timestamp
             if "timestamp" not in df.columns:
                 return Result(ok=False, message="timestamp manquant")
-            # Parsing UTC (ne crée aucune nouvelle timeline)
             ts = pd.to_datetime(df["timestamp"], utc=True, errors="coerce")
-            # Invalid datetimes ?
             if ts.isna().any():
                 n_bad = int(ts.isna().sum())
                 logger.warning("Timestamps invalides détectés: %d", n_bad)
                 if vcfg.get("fail_on_nan", False):
                     return Result(ok=False, message=f"{n_bad} timestamps invalides")
-            # Monotonicité
             if not ts.is_monotonic_increasing:
                 return Result(ok=False, message="timestamps non monotones")
-            # NaN globaux (autres colonnes)
             if df.isnull().any().any():
                 logger.warning("NaN détectés dans le DataFrame de sortie.")
                 ctx.artifacts["qa_basic"] = {"nan_detected": True}
@@ -185,8 +178,7 @@ class Validators:
             else:
                 ctx.artifacts["qa_basic"] = {"nan_detected": False}
 
-        # -------------------------
-        # Guarantee IMU columns required by realism checker
+        # --- Garantit les colonnes IMU numériques ---
         required_numeric_zeros = ["acc_x", "acc_y", "acc_z", "gyro_x", "gyro_y", "gyro_z"]
         df = df.copy()
         for col in required_numeric_zeros:
@@ -194,25 +186,26 @@ class Validators:
                 df[col] = 0.0
             else:
                 df[col] = pd.to_numeric(df[col], errors="coerce").fillna(0.0)
-        # -------------------------
-        # Ensure required columns for check_realism
-        # At minimum, 'event' is expected by the checker; create it if missing
+
+        # --- Colonne event si absente ---
         if "event" not in df.columns:
-            df = df.copy()
             df["event"] = ""
-        # propagate any additions back to context (Exporter will cast per schema)
+
+        # Propagation vers le contexte (Exporter fera le cast/schema)
         ctx.df = df
-        # 2) Check réalisme (intégré uniquement)
+
+        # -------------------------
+        # 2) Check réalisme intégré
+        # -------------------------
         try:
             qa_realism: Dict[str, Any] = _realism_lite(df, hz_target=float(ctx.meta.get("hz", 10)))
         except Exception as e:
             logger.exception("realism_lite a échoué: %s", e)
             qa_realism = {"available": True, "ok": False, "error": str(e), "summary": "KO"}
 
-        # --- Ajoute toujours la checklist standardisée pour affichage (✅/❌) ---
+        # --- Ajout checklist standardisée pour affichage (✅/❌) ---
         try:
             std_checks, std_metrics = _compute_checklist(df, hz_target=float(ctx.meta.get("hz", 10)))
-            # fusion non destructive
             chk = qa_realism.get("checks") or {}
             if not isinstance(chk, dict):
                 chk = {}
@@ -228,17 +221,14 @@ class Validators:
             logger.debug("checklist standard non ajoutée: %s", e)
 
         def _summarize_failure(d: dict) -> str:
-            # prefer explicit 'failed' list
             failed = d.get("failed")
             if isinstance(failed, (list, tuple)) and failed:
                 return ", ".join(map(str, failed[:5]))
-            # else derive from boolean checks map if present
             checks = d.get("checks")
             if isinstance(checks, dict):
                 bad = [k for k, v in checks.items() if v is False]
                 if bad:
                     return ", ".join(bad[:5])
-            # else fall back to errors/warnings/messages
             for key in ("errors", "warnings", "issues", "messages"):
                 val = d.get(key)
                 if isinstance(val, (list, tuple)) and val:
@@ -247,8 +237,7 @@ class Validators:
                     return val
             return "raison inconnue"
 
-        # Stocke un résumé lisible et explicite
-        # Si 'ok' absent, dérive-le depuis la checklist standard
+        # Résumé & statut
         if "ok" not in qa_realism:
             failed_from_checks = [k for k, v in (qa_realism.get("checks") or {}).items() if v is False]
             qa_realism["failed"] = failed_from_checks
@@ -256,25 +245,28 @@ class Validators:
 
         if qa_realism.get("ok", True):
             summary = "OK"
+            status_level = "ok"
         else:
             reason = _summarize_failure(qa_realism)
-            # si rien d'explicite, tente avec checklist fusionnée
             if reason == "raison inconnue":
                 bad = [k for k, v in (qa_realism.get("checks") or {}).items() if v is False]
                 if bad:
                     reason = ", ".join(bad[:5])
             summary = f"KO: {reason}"
+            status_level = "ko"
             logger.warning("Realism KO — causes: %s", reason)
         qa_realism["summary"] = summary
+        qa_realism["status_level"] = status_level  # utile au template HTML
 
         ctx.artifacts["qa_realism"] = qa_realism
         ctx.artifacts["qa_realism_brief"] = {
             "ok": qa_realism.get("ok", True),
             "summary": qa_realism.get("summary", ""),
             "failed": qa_realism.get("failed", []),
+            "status_level": qa_realism.get("status_level", "ok"),
         }
 
-        # Pour l'afficheur du runner : une vue compacte
+        # Pour l'afficheur du runner : vue compacte
         ctx.artifacts["qa_checklist"] = {
             "checks": qa_realism.get("checks", {}),
             "metrics": qa_realism.get("metrics", {}),
@@ -299,7 +291,6 @@ class Validators:
                 f"{_mark(checks_disp.get('turn_radius_plausible', True))} 📐 Rayon de virage plausible",
             ]
 
-            # Compact metrics block
             metrics_lines: list[str] = []
 
             def _fmt(label: str, key: str):
@@ -327,16 +318,14 @@ class Validators:
             status = "✅ OK" if qa_realism.get("ok", True) else f"❌ KO — {qa_realism.get('summary', '')}"
             pretty = "\n".join(rows + (["[Metrics]"] + metrics_lines if metrics_lines else []))
 
-            # Expose a ready-to-print artifact for the runner
             ctx.artifacts["qa_pretty"] = {
                 "status": status,
                 "text": pretty,
             }
         except Exception:
-            # Non-blocking: emoji rendering is best-effort
+            # Non-bloquant : rendu émojis best-effort
             pass
 
-        # Politique de fail contrôlée par config
         if fail_on_realism and not qa_realism.get("ok", True):
             return Result(ok=False, message=f"Realism check failed: {qa_realism.get('summary', 'KO')}")
 

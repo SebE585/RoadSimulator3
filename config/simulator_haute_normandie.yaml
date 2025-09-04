@@ -118,10 +118,12 @@ initial_stop_locker:
 
 stages:
   - SpeedSync
-  - MidStopsLocker        # << nouveau stage
+  - InitialStopLocker      # << nouveau stage (début à 0)
+  - MidStopsLocker         # << nouveau stage (stops intermédiaires)
   - AltitudeStage
   - ImuProjector
   - Exporter
+
 
 mid_stops_locker:
   speed_thr_mps: 0.5
