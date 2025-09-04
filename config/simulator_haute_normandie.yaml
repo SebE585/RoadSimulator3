@@ -1,0 +1,140 @@
+outdir: "data/simulations/VL-HN_20250903"
+start_time_utc: "2025-09-03T12:00:00Z"
+
+osrm:
+  base_url: "http://localhost:5003"
+  profile: "driving"
+  client: "http"
+
+sim:
+  hz: 10
+
+road_enrich:
+  stream_url_base: "http://localhost:5002/nearest_road_batch_stream"
+
+stop_smoother:
+  v_in: 0.25
+  t_in: 2.0
+  v_out: 0.30
+  t_out: 4.0
+  lock_pos: true
+
+final_stop_locker:
+  tail_s: 12.0
+
+stops:
+  # Dépôt (Rouen centre)
+  - id: DEPOT_ROUEN
+    lat: 49.4431
+    lon: 1.0993
+    service_s: 0
+
+  # Mont-Saint-Aignan — fenêtre tardive => WAIT probable selon ETA
+  - id: MSA
+    lat: 49.4576
+    lon: 1.0686
+    service_s: 180
+    tw_start: "2025-09-03T12:10:00Z"
+
+  # Barentin — pas de TW, simple STOP 2 min
+  - id: BARENTIN
+    lat: 49.5418
+    lon: 0.9556
+    service_s: 120
+
+  # Yvetot — fenêtre plus tard => WAIT quasi sûr
+  - id: YVETOT
+    lat: 49.6167
+    lon: 0.7531
+    service_s: 180
+    tw_start: "2025-09-03T12:45:00Z"
+
+  # Le Havre — dernier stop (pas de TW), STOP 3 min
+  - id: LE_HAVRE
+    lat: 49.4944
+    lon: 0.1079
+    service_s: 180
+
+events_tagger:
+  dvdt_thr_mps2: 0.30   # plus sensible pour détecter la décélération finale
+  head_window_s: 12.0
+  tail_window_s: 20.0   # fenêtre plus large en fin de trajet
+
+noise_injector:
+  sigma_acc: 0.06       # augmente un peu la variance inertielle
+  sigma_gyro: 0.008     # et la variance gyro
+
+speed_limiter:
+  source_unit: "kmh"
+  margin_kmh: 5.0   # large tolérance pour éviter d’écraser la vitesse déclarée
+  ramp_s: 0.0        # pas de rampe si on ne retouche pas la géométrie
+
+speed_smoother:
+  window_s: 1.0        # moyenne glissante centrée
+  min_periods: 1
+
+geo_spike_filter:
+  vmax_kmh: 160.0   # plus restrictif pour traquer les sauts
+  hard_jump_m: 500.0 # seuil dur en mètres
+
+legs_retimer:
+  speed_by_type:
+    motorway: 110
+    trunk: 100
+    primary: 70
+    secondary: 50
+    tertiary: 40
+    residential: 30
+    service: 20
+    unclassified: 50
+    unknown: 50
+  default_kmh: 50
+  use_column_target_speed: true   # si RoadEnricher a déjà écrit target_speed
+  min_dt: 0.05
+
+plugins:
+  insert:
+    - name: AltitudeStage         # ou le .name exposé par le plugin
+      after: SpeedSync            # ancre (nom de classe d’un stage “natif”)
+
+imu_projector:
+  smooth_window_s: 0.6
+  include_gravity: true
+  use_slope_percent: true
+  clamp_ax_mps2: 4.0
+  min_speed_for_lateral: 0.3
+  min_turn_radius_m: 12.0
+  pitch_rate_max_rad_s: 0.6
+
+speed_sync:
+  keep_start_zero: true
+  head_window_s: 2.0
+  start_zero_thr_mps: 0.8   # un peu plus large que le check (0.6 m/s)
+
+initial_stop_locker:
+  head_s: 2.0           # fige les 2 premières secondes
+  lock_pos: true        # recopie lat/lon du 1er point → vitesse recalculée = 0
+  start_zero_thr_mps: null   # <<< force inconditionnellement le verrou
+
+exporter:
+  report:
+    enabled: true
+    standalone_map: true   # important -> carte autonome (pas de CORS)
+    map_sample_hz: 1.0     # trajectoire à ~1 Hz
+    inline_data: true      # embarque aussi les séries pour les graphes
+    charts_sample_hz: 1.0  # graphes ~1 Hz
+
+stages:
+  - SpeedSync
+  - MidStopsLocker        # << nouveau stage
+  - AltitudeStage
+  - ImuProjector
+  - Exporter
+
+mid_stops_locker:
+  speed_thr_mps: 0.5
+  min_stop_s: 15.0
+  margin_before_s: 1.0
+  margin_after_s: 1.0
+  write_event: true
+  respect_existing_stop: true

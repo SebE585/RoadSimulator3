@@ -136,48 +136,127 @@ def check_gyroscope_variability(df):
     logger.debug(f"seuils : std_min={std_min}, std_max={std_max}")
     return std_gyro.between(std_min, std_max).all()
 
-def check_spatio_temporal_coherence(df, tol_time=1e-3, tol_dist=5, tol_heading=10, log_file=None):
+def check_spatio_temporal_coherence(
+    df: pd.DataFrame,
+    meta: dict | None = None,
+    hz_target: float = 10.0,
+    max_dist_rel_err: float = 0.03,
+    v_abs_tol_mps: float = 2.0,
+    frac_bad_tol: float = 0.01,
+    log_file: str | None = None,
+):
     """
-    Vérifie la cohérence spatio-temporelle globale du DataFrame.
-    
-    Args:
-        df (pd.DataFrame): contenant lat, lon, speed, timestamp
-        tol_time (float): tolérance max sur l'intervalle de temps
-        tol_dist (float): tolérance sur l'écart distance réelle vs attendue (m)
-        tol_heading (float): pas utilisé ici
-        log_file (str): si fourni, écrit les logs dans ce fichier
+    Cohérence spatio-temporelle robuste au retiming (10 Hz “étiré”).
+    Valide si :
+      - cadence ≈ hz_target,
+      - distance géo ≈ ∑(v·dt),
+      - la vitesse déclarée est cohérente avec la vitesse géo recalculée,
+    et NE pénalise PAS un allongement de durée si le retiming est intentionnel
+    (indiqué par meta['retime_policy'] ou meta['retimed_by_kinematics']).
 
-    Returns:
-        bool: True si tout est cohérent, False sinon
+    Params
+    ------
+    df : DataFrame avec 'timestamp','lat','lon','speed' (speed en km/h)
+    meta : dict optionnel avec des flags de retiming
+    hz_target : Hz attendu après resampling
+    max_dist_rel_err : écart relatif max (geo vs ∑v·dt)
+    v_abs_tol_mps : tolérance absolue |v_geo - v_decl| en m/s
+    frac_bad_tol : part max de points au-delà de v_abs_tol_mps
+    log_file : fichier de sortie (JSON) pour les détails
     """
-    df = df.reset_index(drop=True)
-    is_consistent = True
-    logs = []
+    # 1) Temps & cadence observée
+    t = pd.to_datetime(df["timestamp"], utc=True, errors="coerce")
+    ns = t.astype("int64").to_numpy()
+    tsec = (ns - ns[0]) / 1e9
+    dt = np.diff(tsec, prepend=tsec[0])
+    pos = dt > 0
+    if not pos.any():
+        return False, {"error": "dt non-positifs"}
+    median_dt = float(np.median(dt[pos]))
+    dt[~pos] = median_dt
+    hz_obs = 1.0 / median_dt
+    hz_ok = abs(hz_obs - hz_target) <= 0.1
 
-    dt = df['timestamp'].diff().dt.total_seconds().fillna(0)
+    # 2) Distances géodésiques (m) et par vitesse (m)
+    lat = pd.to_numeric(df["lat"], errors="coerce").to_numpy(dtype=float)
+    lon = pd.to_numeric(df["lon"], errors="coerce").to_numpy(dtype=float)
 
-    for i in range(1, len(df)):
-        p1 = (df.loc[i - 1, 'lat'], df.loc[i - 1, 'lon'])
-        p2 = (df.loc[i, 'lat'], df.loc[i, 'lon'])
-        dist_m = geodesic(p1, p2).meters
-        speed_m_s = df.loc[i, 'speed'] * 1000 / 3600
-        expected_dist = speed_m_s * dt.iloc[i]
+    d = np.zeros_like(lat, dtype=float)
+    for i in range(1, len(lat)):
+        d[i] = haversine_distance(lat[i-1], lon[i-1], lat[i], lon[i])  # m
 
-        if abs(dist_m - expected_dist) > tol_dist:
-            logs.append(f"[WARN] Incohérence à index {i}: réel={dist_m:.2f}m / attendu={expected_dist:.2f}m")
-            is_consistent = False
+    dist_geo = float(np.nansum(d))
+    v_kmh = pd.to_numeric(df["speed"], errors="coerce").to_numpy(dtype=float)
+    v_mps = v_kmh * (1000.0 / 3600.0)
 
-    if log_file:
-        os.makedirs(os.path.dirname(log_file), exist_ok=True)
-        with open(log_file, 'w') as f:
-            f.write('\n'.join(logs) if logs else "Aucune incohérence détectée.\n")
+    # --- Détection auto de l'unité de speed (km/h vs m/s) ---
+    # On utilise v_geo_mps_probe = d / dt comme référence de cohérence instantanée
+    with np.errstate(divide="ignore", invalid="ignore"):
+        v_geo_mps_probe = np.divide(d, dt, out=np.zeros_like(d), where=dt > 0)
+    # Erreur médiane si speed en km/h (convertie en m/s)
+    err_kmh = float(np.nanmedian(np.abs(v_mps - v_geo_mps_probe)))
+    # Erreur médiane si speed déjà en m/s
+    err_mps = float(np.nanmedian(np.abs(v_kmh - v_geo_mps_probe)))
+    speed_unit_used = "kmh"
+    if err_mps < err_kmh:
+        # La colonne speed semble être en m/s → on l'utilise telle quelle
+        v_mps = v_kmh.copy()
+        speed_unit_used = "mps"
 
-    if is_consistent:
-        logger.info("Cohérence spatio-temporelle validée ✅")
+    dist_from_speed = float(np.nansum(v_mps * dt))
+    rel_err = abs(dist_from_speed - dist_geo) / max(dist_geo, 1e-6)
+    dist_ok = rel_err <= max_dist_rel_err
+
+    # 3) Auto-cohérence des vitesses (recalc géo / dt)
+    with np.errstate(divide="ignore", invalid="ignore"):
+        v_geo_mps = np.divide(d, dt, out=np.zeros_like(d), where=dt > 0)
+    dv = np.abs(v_mps - v_geo_mps)
+    dv_median = float(np.nanmedian(dv))
+    frac_bad = float(np.mean(dv > v_abs_tol_mps))
+    speed_ok = (dv_median <= v_abs_tol_mps) and (frac_bad <= frac_bad_tol)
+
+    # 4) Retiming intentionnel ? (ne bloque pas si la durée change)
+    retimed = bool(meta and (meta.get("retime_policy") or meta.get("retimed_by_kinematics")))
+    ok = hz_ok and dist_ok and speed_ok
+
+    details = {
+        "hz_target": hz_target,
+        "hz_observed": float(hz_obs),
+        "hz_ok": bool(hz_ok),
+        "dist_geo_m": dist_geo,
+        "dist_from_speed_m": dist_from_speed,
+        "dist_rel_err": float(rel_err),
+        "dist_ok": bool(dist_ok),
+        "dv_median_mps": dv_median,
+        "frac_bad_over_tol": frac_bad,
+        "v_abs_tol_mps": v_abs_tol_mps,
+        "speed_ok": bool(speed_ok),
+        "speed_unit_used": speed_unit_used,
+        "retimed": bool(retimed),
+    }
+
+    # Trace lisible
+    if ok:
+        logger.info(
+            "Cohérence spatio-temporelle ✅ — Hz: %.2f (ok=%s), dist rel err: %.4f (ok=%s), dv_med=%.3f m/s, frac_bad=%.3f (≤ %.3f).",
+            hz_obs, hz_ok, rel_err, dist_ok, dv_median, frac_bad, frac_bad_tol
+        )
     else:
-        logger.info(f"Des incohérences spatio-temporelles ont été détectées ❌ (voir {log_file})")
+        logger.info(
+            "Cohérence spatio-temporelle ❌ — Hz: %.2f (ok=%s), dist rel err: %.4f (ok=%s), dv_med=%.3f m/s, frac_bad=%.3f (> %.3f?)",
+            hz_obs, hz_ok, rel_err, dist_ok, dv_median, frac_bad, frac_bad_tol
+        )
 
-    return is_consistent
+    # Dump JSON si demandé
+    if log_file:
+        try:
+            os.makedirs(os.path.dirname(log_file), exist_ok=True)
+            with open(log_file, "w") as f:
+                json.dump(details, f, ensure_ascii=False, indent=2)
+        except Exception as e:
+            logger.warning("Impossible d'écrire le log de cohérence %s : %s", log_file, e)
+
+    return ok, details
 
 @deprecated
 def detect_spatio_temporal_anomalies(df, tol_dist=5, adaptive=True):
@@ -272,6 +351,17 @@ def check_realism(df, timestamp=None, verbose=True):
     logs['errors'] = errors_log
     logs['summary'] = summary_log
 
+    # Charger meta.json pour savoir si le retiming était intentionnel
+    meta_path = os.path.join(output_dir, "meta.json")
+    meta = {}
+    try:
+        if os.path.exists(meta_path):
+            with open(meta_path, "r") as f:
+                meta = json.load(f) or {}
+    except Exception as e:
+        logger.debug("meta.json non lu (%s): %s", meta_path, e)
+
+    coh_ok, coh_details = check_spatio_temporal_coherence(df, meta=meta, log_file=errors_log)
     results = {
         "🚦 Accélération initiale réaliste": df["event"].fillna("").eq("acceleration_initiale").any() or detect_initial_acceleration(df),
         "🛑 Décélération finale réaliste": df["event"].fillna("").eq("deceleration_finale").any() or detect_final_deceleration(df),
@@ -288,7 +378,7 @@ def check_realism(df, timestamp=None, verbose=True):
         "⏸️ Stop détecté": has_stop(df),
         "⏱️ Wait détecté": has_wait(df),
         "📏 Espacement réaliste des stops": check_stop_spacing(df, min_spacing_pts=800),
-        "📐 Cohérence spatio-temporelle": check_spatio_temporal_coherence(df, log_file=errors_log),
+        "📐 Cohérence spatio-temporelle": coh_ok,
         "📉 Variations inertielle réalistes (acc_x/y/z)": check_acceleration_variability(df),
         "🌀 Variations gyroscopiques réalistes (gyro_x/y/z)": check_gyroscope_variability(df),
         "🛣️ Type de route renseigné": 'road_type' in df.columns,

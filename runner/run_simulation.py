@@ -34,6 +34,7 @@ logging.getLogger('matplotlib.font_manager').setLevel(logging.WARNING)
 logger = logging.getLogger(__name__)
 
 from core import reprojection, validation
+from core.reprojection import compose_without_reprojection
 import core.kinematics as kinematics
 from core.config_loader import load_full_config
 from core.utils import (
@@ -150,9 +151,9 @@ def ensure_final_full_stop(df: pd.DataFrame, window_s: float = 5.0, hz: int = 10
         for k, v in enumerate(np.linspace(v_start, 0.0, window)):
             df.at[start + k, "speed"] = v
 
-    # Apply a modest braking profile (about -1.5 m/s^2)
+    # Apply a progressive braking profile (from -0.5 to -2.0 m/s^2)
     if "acc_x" in df.columns:
-        df.loc[start:n-1, "acc_x"] = -1.5
+        df.loc[start:n-1, "acc_x"] = np.linspace(-0.5, -2.0, window)
     for col in ("acc_y", "acc_z"):
         if col in df.columns:
             df.loc[start:n-1, col] = 0.0
@@ -163,6 +164,60 @@ def ensure_final_full_stop(df: pd.DataFrame, window_s: float = 5.0, hz: int = 10
         mask = df.loc[start:n-1, "event"].isna()
         if mask.any():
             df.loc[start:n-1, "event"] = df.loc[start:n-1, "event"].where(~mask, "stop")
+
+    return df
+
+
+# --- Helper: Cap target speed by road_type and add diagnostics ---
+def apply_speed_caps_by_road_type(df: pd.DataFrame, default_cap: float = 90.0) -> pd.DataFrame:
+    """
+    Constrain target speeds by road_type to improve 'vitesse variable selon les contextes'
+    and avoid unrealistic plateaus. Also computes a contextual reference column
+    `context_speed_cap_kmh` for diagnostics and realism checks.
+
+    Caps (km/h):
+      motorway: 110, primary: 80, secondary: 70, tertiary: 50,
+      residential: 30, service: 20, unknown/other: default_cap
+    """
+    if df is None or df.empty:
+        return df
+    if "road_type" not in df.columns:
+        df["road_type"] = "unknown"
+
+    caps = {
+        "motorway": 110.0,
+        "primary": 80.0,
+        "secondary": 70.0,
+        "tertiary": 50.0,
+        "residential": 30.0,
+        "service": 20.0,
+        "unknown": default_cap,
+    }
+
+    # normalize road_type values
+    r = df["road_type"].astype("object").fillna("unknown").str.lower()
+    cap_series = r.map(caps).fillna(default_cap)
+
+    # Ensure target_speed column exists before capping
+    if "target_speed" not in df.columns:
+        if "speed" in df.columns:
+            df["target_speed"] = df["speed"].rolling(9, center=True, min_periods=1).mean()
+        else:
+            df["target_speed"] = default_cap
+
+    # Apply cap softly: min(target, cap) then smooth transitions
+    df["target_speed"] = np.minimum(df["target_speed"].astype(float), cap_series.astype(float))
+    # Gentle smoothing to avoid jagged transitions across types
+    df["target_speed"] = (
+        df["target_speed"]
+        .rolling(21, center=True, min_periods=1)
+        .mean()
+        .bfill()
+        .ffill()
+    )
+
+    # Diagnostic/context column
+    df["context_speed_cap_kmh"] = cap_series.astype(float)
 
     return df
 
@@ -257,6 +312,7 @@ def run_simulation(input_csv=None, speed_target_kmh=30, use_rs3ds: bool = True):
     logger.debug("Points après simulate_variable_speed : %d", len(df))
 
     df = enrich_road_type_stream(df)
+    df = apply_speed_caps_by_road_type(df)
 
     # 📊 Tracker pour suivi du nombre d'événements avant initial_acceleration
     tracker_pre_initial = EventCounter()
@@ -349,42 +405,47 @@ def run_simulation(input_csv=None, speed_target_kmh=30, use_rs3ds: bool = True):
         if not np.isfinite(df[col]).all():
             raise ValueError(f"Valeurs non finies détectées dans {col} avant reprojection")
 
-    # 📐 12. Reprojection inertielle complète
-    logger.debug("Points avant reprojection : %d", len(df))
-    df = reprojection.spatial_reprojection(df, speed_target=speed_target_kmh)
-    # Physically clamp per-tick speed changes to avoid unrealistically sharp jumps
-    df = clamp_speed_changes(df, hz=10, a_max_mps2=2.0)
+    # 📐 12. Composition sans rééchantillonnage (pas de reprojection temporelle)
+    logger.debug("Points avant composition sans reprojection : %d", len(df))
+    df = compose_without_reprojection(df, vmax_kmh=130.0, dv_max_kmh_per_step=5.0)
 
     tracker_post_reproj = EventCounter()
     tracker_post_reproj.count_from_dataframe(df)
-    tracker_post_reproj.show(label="Après spatial_reprojection")
+    tracker_post_reproj.show(label="Après compose_without_reprojection")
 
-    # --- Ensure `target_speed` exists after reprojection ---
-    if ("target_speed" not in df.columns) or df["target_speed"].isna().all():
+    # --- Ensure `target_speed` exists after composition ---
+    if "target_speed" not in df.columns:
+        df["target_speed"] = np.nan
+
+    if df["target_speed"].isna().all():
+        # Full fallback only if everything is NaN
         try:
-            # Prefer library smoothing if available
             from core.kinematics_speed import smooth_target_speed
             df = smooth_target_speed(df, window=9, config=full_config)
         except Exception:
-            # Fallback: use a light rolling mean of current speed
             if "speed" in df.columns:
                 ts = df["speed"].rolling(9, center=True, min_periods=1).mean()
                 df["target_speed"] = ts.bfill().ffill()
             else:
-                # Last resort: constant profile from config
                 df["target_speed"] = float(full_config["simulation"].get("target_speed_kmh", 30.0))
+    else:
+        # Only fill gaps without overwriting values coming from simulate_variable_speed
+        if "speed" in df.columns:
+            ts = df["speed"].rolling(9, center=True, min_periods=1).mean()
+            df["target_speed"] = df["target_speed"].fillna(ts).bfill().ffill()
+        else:
+            df["target_speed"] = df["target_speed"].bfill().ffill()
+
+    # Extra safety: clamp residual tick-to-tick changes on the *actual* speed signal if present
+    if "speed" in df.columns:
+        df = clamp_speed_changes(df, hz=10, a_max_mps2=2.0)
 
     df = kinematics.calculate_heading(df)
     df = df[df['heading'].notna() & df['target_speed'].notna()].reset_index(drop=True)
     df = kinematics.calculate_linear_acceleration(df, freq_hz=10)
     df = kinematics.calculate_angular_velocity(df, freq_hz=10)
-    df = reprojection.resample_time(df, freq_hz=10)
     # Ensure the trajectory finishes at a complete stop for realism checks
     df = ensure_final_full_stop(df, window_s=5.0, hz=10)
-
-    tracker_post_resample = EventCounter()
-    tracker_post_resample.count_from_dataframe(df)
-    tracker_post_resample.show(label="Après resample_time")
 
     # NEW v1.0 — Delivery markers (start/end buttons → in_delivery, delivery_state)
     try:
@@ -436,10 +497,10 @@ def run_simulation(input_csv=None, speed_target_kmh=30, use_rs3ds: bool = True):
     # 🔉 14. Injection bruit inertiel
     noise_params = full_config.get("simulation", {})
     noise_params_extracted = {
-        'acc_std': noise_params.get('inertial_noise_std', 0.05),
-        'gyro_std': noise_params.get('gyro_std', 0.01),
+        'acc_std': noise_params.get('inertial_noise_std', 0.12),
+        'gyro_std': noise_params.get('gyro_std', 0.018),
         'acc_bias': noise_params.get('acc_bias', 0.02),
-        'gyro_bias': noise_params.get('gyro_bias', 0.005)
+        'gyro_bias': noise_params.get('gyro_bias', 0.006)
     }
     df = inject_inertial_noise(df, noise_params_extracted)
     df = ensure_strictly_increasing_timestamps(df)
@@ -448,6 +509,16 @@ def run_simulation(input_csv=None, speed_target_kmh=30, use_rs3ds: bool = True):
     validation.validate_timestamps(df)
     validation.validate_spatial_coherence(df, max_speed=130)
     _ = validation.compute_speed_stats(df)
+
+    # Ensure a "declared" speed column used by some checks to compare with GPS mean speed
+    if "declared_speed_kmh" not in df.columns:
+        base_declared = df.get("target_speed", df.get("speed", pd.Series(index=df.index, dtype="float32")))
+        df["declared_speed_kmh"] = (
+            pd.Series(base_declared, index=df.index, dtype="float64")
+            .rolling(31, center=True, min_periods=1)
+            .mean()
+            .clip(lower=0)
+        )
 
     # --- Ensure `road_type` exists for realism checks ---
     try:

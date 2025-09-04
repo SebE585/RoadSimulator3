@@ -1,0 +1,52 @@
+# config/rs3.yaml
+version: 1
+
+simulation:
+  hz: 10
+  target_speed_kmh: 40.0
+
+  # Itinéraire de base : liste de [lat, lon]
+  # (tu peux modifier/étendre les points)
+  cities_coords:
+    - [49.4431, 1.0993]   # Rouen (centre)
+    - [49.4637, 1.0890]   # Mont-Saint-Aignan
+    - [49.4695, 1.1187]   # Bois-Guillaume
+    - [49.4410, 1.1512]   # Darnétal
+
+steps:
+  # OSRM existant dans RS3
+  fetch_route: core.osrm.fetchers:fetch_route_standard
+
+  # Injection d’événements existante dans RS3
+  inject_events: simulator.events.adapter:inject_events_standard
+
+# Paramètres pour le client OSRM (mets ton port)
+osrm:
+  base_url: "http://localhost:5003"
+  profile: "car"
+  # Ajoute-les si ta version les supporte (sinon ils seront ignorés)
+  # overview: "full"
+  # geometries: "geojson"
+
+# Exemple minimal d'événements (adapter selon tes besoins)
+events:
+  stops:
+    max_events: 20
+    min_separation_s: 60
+
+  fleet:
+    door_open:
+      tag_column: "event"
+      max_events: 20
+      min_duration_s: 5
+    exit_vehicle:
+      tag_column: "event"
+      prob: 0.5
+      min_pause_s: 10
+    delivery_start:
+      tag_column: "event"
+      link_to: "stop"
+      jitter_s: 2.0
+
+paths:
+  schema_path: "schemas/rs3_v1.yaml"

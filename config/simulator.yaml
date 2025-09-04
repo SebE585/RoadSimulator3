@@ -1,0 +1,32 @@
+# config/simulator.yaml
+outdir: "data/simulations/VL-TEST_20250903"
+start_time_utc: "2025-09-03T12:00:00Z"
+osrm:
+  base_url: "http://localhost:5003"   # ou commente pour fallback synthétique
+  profile: "driving"
+
+sim:
+  hz: 10
+
+stop_smoother:
+  v_in: 0.25
+  t_in: 2.0
+  v_out: 0.6
+  t_out: 2.5
+  lock_pos: true
+
+stops:
+  - id: DEPOT
+    lat: 48.8566
+    lon: 2.3522
+    service_s: 0
+  - id: C1
+    lat: 48.864
+    lon: 2.33
+    service_s: 180
+    tw_start: "2025-09-03T12:10:00Z"
+    tw_end:   "2025-09-03T12:30:00Z"
+  - id: C2
+    lat: 48.871
+    lon: 2.31
+    service_s: 120
