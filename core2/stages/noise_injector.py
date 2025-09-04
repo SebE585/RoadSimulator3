@@ -1,7 +1,7 @@
 # core2/stages/noise_injector.py
 from __future__ import annotations
 import numpy as np
-from ..contracts import Result
+from rs3_contracts.api import ContextSpec, Result, Stage
 from ..context import Context
 
 class NoiseInjector:

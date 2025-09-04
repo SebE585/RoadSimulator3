@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 from dataclasses import dataclass
 import logging
-from ..contracts import Result
+from rs3_contracts.api import ContextSpec, Result, Stage
 from ..context import Context
 
 G = 9.80665  # m/s²

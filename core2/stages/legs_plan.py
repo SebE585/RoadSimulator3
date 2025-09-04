@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import List, Dict, Any, Optional
 from datetime import datetime, timezone
-from ..contracts import Result
+from rs3_contracts.api import ContextSpec, Result, Stage
 from ..context import Context
 
 @dataclass

@@ -7,7 +7,7 @@ from typing import Any, Dict
 import pandas as pd
 import numpy as np
 
-from ..contracts import Result
+from rs3_contracts.api import ContextSpec, Result, Stage
 from ..context import Context
 
 logger = logging.getLogger(__name__)

@@ -11,7 +11,7 @@ requires-python = ">=3.10"
 license = { text = "AGPL-3.0-only" }
 authors = [{name = "Sébastien Edet", email = "sebastien.edet@gmail.com"}]
 dependencies = [
-  # place tes deps runtime ici, pas de git privé cassé
+  "rs3-contracts>=1.0.0,<2",
 ]
 
 [project.optional-dependencies]

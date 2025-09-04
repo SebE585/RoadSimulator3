@@ -1,8 +1,2 @@
-# core2/contracts.py
-from __future__ import annotations
-from dataclasses import dataclass
-
-@dataclass
-class Result:
-    ok: bool = True
-    message: str = ""
+# Deprecated shim: use rs3_contracts.api directly
+from rs3_contracts.api import ContextSpec, Result, Stage  # noqa: F401

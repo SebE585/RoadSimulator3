@@ -4,7 +4,7 @@ from __future__ import annotations
 import numpy as np
 import pandas as pd
 
-from ..contracts import Result
+from rs3_contracts.api import ContextSpec, Result, Stage
 from ..context import Context
 
 

@@ -39,6 +39,7 @@ roadsimulator3.egg-info/top_level.txt
 runner/__init__.py
 runner/generate_outputs_from_csv.py
 runner/run_simulation.py
+runner/run_simulation2.py
 runner/simulate_and_check.py
 simulator/__init__.py
 simulator/cleaning.py

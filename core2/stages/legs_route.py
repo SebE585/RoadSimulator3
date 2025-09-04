@@ -20,7 +20,7 @@ try:
 except Exception:
     retime_polyline_by_speed = None  # fallback si module absent
 
-from ..contracts import Result
+from rs3_contracts.api import ContextSpec, Result, Stage
 from ..context import Context
 
 def _haversine_m(lat1, lon1, lat2, lon2) -> float:

@@ -9,6 +9,7 @@ Description-Content-Type: text/markdown
 License-File: LICENSE
 License-File: LICENSE-DOCS
 License-File: NOTICE.md
+Requires-Dist: rs3-contracts<2,>=1.0.0
 Provides-Extra: dev
 Requires-Dist: pytest>=8; extra == "dev"
 Requires-Dist: black>=24; extra == "dev"
