@@ -25,18 +25,23 @@ class FinalStopLocker:
     def run(self, ctx: Context) -> Result:
         df = ctx.df
         if df is None or df.empty:
-            return Result(ok=False, message="df vide")
+            return Result((False, "df vide"))
         if "timestamp" not in df.columns:
-            return Result(ok=False, message="timestamp manquant")
+            return Result((False, "timestamp manquant"))
+        if not {"lat", "lon"}.issubset(df.columns):
+            # Pas de lat/lon → rien à figer : ne pas échouer la pipeline
+            ctx.df = df
+            return Result((True, "lat/lon absents, no-op"))
 
         out = df.copy()
         ts = pd.to_datetime(out["timestamp"], utc=True, errors="coerce")
         if ts.isna().any():
-            return Result(ok=False, message="timestamps invalides")
+            return Result((False, "timestamps invalides"))
 
         tsec = (ts.astype("int64").to_numpy() - ts.astype("int64").to_numpy()[0]) / 1e9
         if len(tsec) < 2:
-            return Result()
+            ctx.df = out
+            return Result((True, "moins de 2 points, no-op"))
 
         # Indices de la fenêtre terminale
         t_end = tsec[-1]
@@ -61,5 +66,4 @@ class FinalStopLocker:
                 out.iat[idx_tail[0], out.columns.get_loc("event")] = "freinage_final"
 
         ctx.df = out
-        return Result()
-
+        return Result((True, "OK"))

@@ -77,11 +77,11 @@ class LegsRetimer:
     def run(self, ctx: Context) -> Result:
         df = ctx.df
         if df is None or df.empty:
-            return Result(ok=False, message="df vide")
+            return Result((False, "df vide"))
 
         req_cols = {"lat", "lon", "timestamp"}
         if not req_cols.issubset(df.columns):
-            return Result(ok=False, message=f"colonnes manquantes: {list(req_cols - set(df.columns))}")
+            return Result((False, f"colonnes manquantes: {list(req_cols - set(df.columns))}"))
 
         out = df.copy()
 
@@ -153,4 +153,4 @@ class LegsRetimer:
 
         # Note: 'speed' sera recalculée plus tard par SpeedSync (post-retiming)
         ctx.df = out
-        return Result()
+        return Result((True, "OK"))

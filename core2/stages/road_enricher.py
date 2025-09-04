@@ -182,7 +182,7 @@ class RoadEnricher:
     def run(self, ctx: Context) -> Result:
         df = ctx.df
         if df is None or df.empty:
-            return Result(ok=False, message="df vide")
+            return Result((False, "df vide"))
 
         # Base URL configurable
         stream_base = (
@@ -201,7 +201,7 @@ class RoadEnricher:
                 else:
                     df[c] = df.get(c, None)
             ctx.df = df
-            return Result()
+            return Result((True, "OK"))
         except Exception as e:
             logger.warning(f"[RoadEnricher] Fallback (erreur enrichissement): {e}")
             # Fallback: a minima road_type="unknown"
@@ -213,4 +213,4 @@ class RoadEnricher:
             if "target_speed" not in df.columns:
                 df["target_speed"] = None
             ctx.df = df
-            return Result()
+            return Result((True, f"fallback: {e}"))

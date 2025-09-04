@@ -32,7 +32,7 @@ class LegsPlan:
         vcfg = ctx.cfg
         stops_cfg: List[Dict[str, Any]] = vcfg.get("stops", [])
         if len(stops_cfg) < 2:
-            return Result(ok=False, message="Au moins 2 stops requis (départ et arrivée).")
+            return Result((False, "Au moins 2 stops requis (départ et arrivée)."))
 
         stops: List[Stop] = []
         for s in stops_cfg:
@@ -65,4 +65,4 @@ class LegsPlan:
             "start_time_utc": t0.isoformat().replace("+00:00", "Z")
         }
         ctx.artifacts["legs_plan"] = plan
-        return Result()
+        return Result((True, "OK"))

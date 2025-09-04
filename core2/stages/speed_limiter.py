@@ -4,7 +4,7 @@ from __future__ import annotations
 import pandas as pd
 import numpy as np
 
-from rs3_contracts.api import ContextSpec, Result, Stage
+from rs3_contracts.api import Result
 from ..context import Context
 
 
@@ -38,14 +38,14 @@ class SpeedLimiter:
     def run(self, ctx: Context) -> Result:
         df = ctx.df
         if df is None or df.empty:
-            return Result(ok=False, message="df vide")
+            return Result((False, "df vide"))
 
         if "speed" not in df.columns:
-            return Result(ok=False, message="speed manquante")
+            return Result((False, "speed manquante"))
 
         if "target_speed" not in df.columns:
             # Rien à faire si pas de cible
-            return Result()
+            return Result((True, "no target_speed: no-op"))
 
         out = df.copy()
 
@@ -86,4 +86,4 @@ class SpeedLimiter:
 
         out["speed"] = v_final
         ctx.df = out
-        return Result()
+        return Result((True, "OK"))

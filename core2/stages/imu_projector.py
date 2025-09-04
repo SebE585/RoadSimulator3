@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 from dataclasses import dataclass
 import logging
-from rs3_contracts.api import ContextSpec, Result, Stage
+from rs3_contracts.api import Result
 from ..context import Context
 
 G = 9.80665  # m/s²
@@ -56,15 +56,15 @@ class IMUProjector:
     def run(self, ctx: Context) -> Result:
         df = ctx.df
         if df is None or df.empty:
-            return Result(ok=False, message="df vide")
+            return Result((False, "df vide"))
         need = {"timestamp", "lat", "lon", "speed"}
         if not need.issubset(df.columns):
-            return Result(ok=False, message=f"colonnes manquantes: {sorted(need - set(df.columns))}")
+            return Result((False, f"colonnes manquantes: {sorted(need - set(df.columns))}"))
 
         out = df.copy()
         idx = pd.to_datetime(out["timestamp"], utc=True, errors="coerce")
         if idx.isna().any():
-            return Result(ok=False, message="timestamps invalides")
+            return Result((False, "timestamps invalides"))
         out = out.set_index(idx).sort_index()
         if "timestamp" in out.columns:
             out = out.drop(columns=["timestamp"])
@@ -230,4 +230,4 @@ class IMUProjector:
 
         out = out.reset_index()
         ctx.df = out
-        return Result()
+        return Result((True, "OK"))

@@ -117,7 +117,7 @@ class LegsRoute:
     def run(self, ctx: Context) -> Result:
         plan = ctx.artifacts.get("legs_plan")
         if not plan:
-            return Result(ok=False, message="legs_plan manquant")
+            return Result((False, "legs_plan manquant"))
 
         legs = plan["legs"]
         osrm_cfg = ctx.cfg.get("osrm", {})
@@ -158,7 +158,7 @@ class LegsRoute:
                         df_leg = df_leg.loc[~dup].reset_index(drop=True)
                 for col in ("lat","lon","t_rel_s"):
                     if col not in df_leg.columns:
-                        return Result(ok=False, message=f"Leg {leg['idx']}: colonne manquante {col}")
+                        return Result((False, f"Leg {leg['idx']}: colonne manquante {col}"))
                 if "speed" not in df_leg.columns:
                     df_leg["speed"] = 0.0
                 if "t_rel_s" not in df_leg.columns:
@@ -262,7 +262,7 @@ class LegsRoute:
                         df_leg = df_leg.loc[~dup].reset_index(drop=True)
                 for col in ("lat","lon","t_rel_s"):
                     if col not in df_leg.columns:
-                        return Result(ok=False, message=f"Leg {leg['idx']}: colonne manquante {col}")
+                        return Result((False, f"Leg {leg['idx']}: colonne manquante {col}"))
                 if "speed" not in df_leg.columns:
                     df_leg["speed"] = 0.0
                 if "t_rel_s" not in df_leg.columns:
@@ -293,4 +293,4 @@ class LegsRoute:
 
         ctx.artifacts["legs_traces"] = traces
         ctx.artifacts["legs_summary"] = summaries
-        return Result()
+        return Result((True, "OK"))

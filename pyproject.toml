@@ -12,6 +12,10 @@ license = { text = "AGPL-3.0-only" }
 authors = [{name = "Sébastien Edet", email = "sebastien.edet@gmail.com"}]
 dependencies = [
   "rs3-contracts>=1.0.0,<2",
+  "pandas>=2.2",
+  "numpy>=1.24",
+  "PyYAML>=6.0",
+  "requests>=2.31",
 ]
 
 [project.optional-dependencies]
@@ -21,4 +25,13 @@ dev = ["pytest>=8", "black>=24", "flake8>=7", "ruff>=0.5"]
 rs3-simulate = "runner.run_simulation:main"
 
 [tool.setuptools]
-packages = ["core", "simulator", "runner"]
+package-dir = {"" = "."}
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = [
+  "core", "core.*",
+  "core2", "core2.*",
+  "simulator", "simulator.*",
+  "runner", "runner.*",
+]

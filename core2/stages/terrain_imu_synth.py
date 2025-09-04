@@ -3,7 +3,7 @@ from __future__ import annotations
 import numpy as np
 import pandas as pd
 from dataclasses import dataclass
-from rs3_contracts.api import ContextSpec, Result, Stage
+from rs3_contracts.api import Result
 from ..context import Context
 
 G = 9.80665  # m/s²
@@ -45,6 +45,10 @@ class TerrainIMUSynth:
     use_slope_percent: bool = True     # sinon dérive grade depuis altitude_m
     clamp_ax_mps2: float | None = 5.0  # limite douce |dv/dt| (~0.5 g) ; None pour désactiver
 
+    min_speed_for_lateral: float = 0.3  # m/s; désactive acc_y/gyro_z quand quasi immobile
+    min_turn_radius_m: float = 8.0      # borne courbure pour éviter dpsi/dt irréaliste
+    pitch_rate_max_rad_s: float = 0.7   # borne douce pour gyro_y (variation de pente)
+
     name: str = "TerrainIMUSynth"
 
     def run(self, ctx: Context) -> Result:
@@ -73,16 +77,18 @@ class TerrainIMUSynth:
         lon = pd.to_numeric(out["lon"], errors="coerce").to_numpy(dtype=float)
         v   = pd.to_numeric(out["speed"], errors="coerce").to_numpy(dtype=float)  # m/s
 
-        # Axe temps réel (robuste aux petites irrégularités)
-        ns0 = out.index.asi8
-        tsec = (ns0 - ns0[0]) / 1e9
-        dt_s = np.diff(tsec, prepend=tsec[0])
-        pos = dt_s > 0
+        # Axe temps robuste → dt_s strictement positif et temps cumulé
+        ns = out.index.asi8.astype(np.float64)
+        dt_s = np.diff(ns, prepend=ns[0]) / 1e9
+        pos = np.isfinite(dt_s) & (dt_s > 0)
         if not pos.any():
             dt_s[:] = dt_nom
         else:
-            median_dt = float(np.median(dt_s[pos]))
-            dt_s[~pos] = median_dt
+            med = float(np.median(dt_s[pos]))
+            dt_s[~pos] = med
+            dt_s = np.maximum(dt_s, max(1e-3, 0.2 * dt_nom))
+        tsec = np.cumsum(dt_s)
+        tsec[0] = 0.0
 
         # --- Cap & taux de lacet (gyro_z) ---
         bearing = np.zeros_like(v)
@@ -90,7 +96,7 @@ class TerrainIMUSynth:
             bearing[1:] = _bearing_rad(lat[:-1], lon[:-1], lat[1:], lon[1:])
         psi = np.unwrap(bearing)
         psi = _movemean(psi, win_n)
-        gyro_z = np.gradient(psi, dt_s)              # rad/s
+        gyro_z = np.gradient(psi, tsec, edge_order=1)  # rad/s
 
         # --- Pente θ (rad) ---
         if self.use_slope_percent and "slope_percent" in out.columns:
@@ -110,21 +116,34 @@ class TerrainIMUSynth:
 
         theta = np.arctan(grade)
         theta = _movemean(theta, win_n)
-        gyro_y = np.gradient(theta, dt_s)            # rad/s (variation de pente)
-        gyro_x = np.zeros_like(gyro_y)               # pas d’info de roulis
+        gyro_y = np.gradient(theta, tsec, edge_order=1)  # rad/s (variation de pente)
+        # Borne douce pour éviter explosions numériques ponctuelles
+        gyro_y = np.clip(
+            gyro_y,
+            -float(self.pitch_rate_max_rad_s),
+            float(self.pitch_rate_max_rad_s),
+        )
+        gyro_x = np.zeros_like(gyro_y)  # pas d’info de roulis
 
         # --- Accélérations spécifiques ---
         v_s = _movemean(v, win_n)
-        acc_x = np.gradient(v_s, dt_s)               # m/s² (longitudinal)
+        acc_x = np.gradient(v_s, tsec, edge_order=1)  # m/s² (longitudinal)
         if self.clamp_ax_mps2:
             amax = abs(float(self.clamp_ax_mps2))
             acc_x = np.clip(acc_x, -amax, amax)
 
+        # Garde‑fous latéraux: désactive quasi immobile et borne courbure
+        moving = v_s > float(self.min_speed_for_lateral)
+        Rmin = max(1.0, float(self.min_turn_radius_m))
+        psi_dot_max = np.where(v_s > 0, v_s / Rmin, 0.0)
+        gyro_z = np.clip(gyro_z, -psi_dot_max, psi_dot_max)
+        gyro_z[~moving] = 0.0
+        acc_y = v_s * gyro_z
+        acc_y[~moving] = 0.0
+        acc_z = np.zeros_like(acc_x)
+
         if self.include_gravity:
             acc_x = acc_x + G * np.sin(theta)        # projette la gravité si demandé
-
-        acc_y = v_s * gyro_z                          # m/s² (centripète ~ v * dψ/dt)
-        acc_z = np.zeros_like(acc_x)                  # pas de bosses synthétisées
 
         # Nettoyage NaN/inf et cast
         for arr in (acc_x, acc_y, acc_z, gyro_x, gyro_y, gyro_z):

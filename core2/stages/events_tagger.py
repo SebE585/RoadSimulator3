@@ -34,9 +34,9 @@ class EventsTagger:
     def run(self, ctx: Context) -> Result:
         df = ctx.df
         if df is None or df.empty:
-            return Result(ok=False, message="df vide")
+            return Result((False, "df vide"))
         if "timestamp" not in df.columns:
-            return Result(ok=False, message="timestamp manquant")
+            return Result((False, "timestamp manquant"))
 
         out = df.copy()
 
@@ -62,7 +62,7 @@ class EventsTagger:
         if ts.isna().any():
             # On ne bloque pas la pipeline : tag par flags seulement
             ctx.df = out
-            return Result()
+            return Result((True, "flags-only (timestamps invalides)"))
 
         ns = ts.astype("int64").to_numpy()
         tsec = (ns - ns[0]) / 1e9  # secondes relatives
@@ -95,4 +95,4 @@ class EventsTagger:
                 out.iat[idx_global, out.columns.get_loc("event")] = "freinage_final"
 
         ctx.df = out
-        return Result()
+        return Result((True, "OK"))

@@ -40,11 +40,11 @@ class GeoSpikeFilter:
     def run(self, ctx: Context) -> Result:
         df = ctx.df
         if df is None or df.empty:
-            return Result(ok=False, message="df vide")
+            return Result((False, "df vide"))
         if "timestamp" not in df.columns:
-            return Result(ok=False, message="timestamp manquant")
+            return Result((False, "timestamp manquant"))
         if not {"lat", "lon"}.issubset(df.columns):
-            return Result(ok=False, message="lat/lon manquants")
+            return Result((False, "lat/lon manquants"))
 
         out = df.copy()
 
@@ -67,7 +67,7 @@ class GeoSpikeFilter:
 
         ts = pd.to_datetime(out["timestamp"], utc=True, errors="coerce")
         if ts.isna().any():
-            return Result(ok=False, message="timestamps invalides")
+            return Result((False, "timestamps invalides"))
 
         ns = ts.astype("int64").to_numpy()
         tsec = (ns - ns[0]) / 1e9
@@ -165,4 +165,4 @@ class GeoSpikeFilter:
                 _recompute_speed_inplace(out)
 
         ctx.df = out
-        return Result()
+        return Result((True, "OK"))

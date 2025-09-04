@@ -3,7 +3,7 @@ from __future__ import annotations
 import numpy as np
 import pandas as pd
 from dataclasses import dataclass
-from rs3_contracts.api import ContextSpec, Result, Stage
+from rs3_contracts.api import Result
 from ..context import Context
 
 
@@ -25,10 +25,10 @@ class InitialStopLocker:
     def run(self, ctx: Context) -> Result:
         df = ctx.df
         if df is None or df.empty:
-            return Result(ok=False, message="df vide")
+            return Result((False, "df vide"))
 
         if "timestamp" not in df.columns or "speed" not in df.columns:
-            return Result(ok=False, message="timestamp/speed manquants")
+            return Result((False, "timestamp/speed manquants"))
 
         hz = float(ctx.meta.get("hz", 10.0))
         n_head = max(1, int(round(self.head_s * hz)))
@@ -42,7 +42,7 @@ class InitialStopLocker:
             do_lock = head_med < float(self.start_zero_thr_mps)
 
         if not do_lock:
-            return Result()  # rien à faire
+            return Result((True, "OK"))  # rien à faire
 
         # 1) vitesse = 0 en tête
         if "speed" in out.columns:
@@ -65,4 +65,4 @@ class InitialStopLocker:
             out.loc[out.index[:n_head], "event"] = "STOP"
 
         ctx.df = out
-        return Result()
+        return Result((True, "OK"))

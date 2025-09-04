@@ -7,7 +7,7 @@ from typing import Any, Dict
 import pandas as pd
 import numpy as np
 
-from rs3_contracts.api import ContextSpec, Result, Stage
+from rs3_contracts.api import Result
 from ..context import Context
 
 logger = logging.getLogger(__name__)
@@ -147,7 +147,7 @@ class Validators:
     def run(self, ctx: Context) -> Result:
         df = ctx.df
         if df is None or df.empty:
-            return Result(ok=False, message="df vide")
+            return Result((False, "df vide"))
 
         vcfg: Dict[str, Any] = {}
         if isinstance(ctx.cfg, dict):
@@ -161,20 +161,20 @@ class Validators:
         # -------------------------
         if pass_basic:
             if "timestamp" not in df.columns:
-                return Result(ok=False, message="timestamp manquant")
+                return Result((False, "timestamp manquant"))
             ts = pd.to_datetime(df["timestamp"], utc=True, errors="coerce")
             if ts.isna().any():
                 n_bad = int(ts.isna().sum())
                 logger.warning("Timestamps invalides détectés: %d", n_bad)
                 if vcfg.get("fail_on_nan", False):
-                    return Result(ok=False, message=f"{n_bad} timestamps invalides")
+                    return Result((False, f"{n_bad} timestamps invalides"))
             if not ts.is_monotonic_increasing:
-                return Result(ok=False, message="timestamps non monotones")
+                return Result((False, "timestamps non monotones"))
             if df.isnull().any().any():
                 logger.warning("NaN détectés dans le DataFrame de sortie.")
                 ctx.artifacts["qa_basic"] = {"nan_detected": True}
                 if vcfg.get("fail_on_nan", False):
-                    return Result(ok=False, message="NaN détectés")
+                    return Result((False, "NaN détectés"))
             else:
                 ctx.artifacts["qa_basic"] = {"nan_detected": False}
 
@@ -327,6 +327,6 @@ class Validators:
             pass
 
         if fail_on_realism and not qa_realism.get("ok", True):
-            return Result(ok=False, message=f"Realism check failed: {qa_realism.get('summary', 'KO')}")
+            return Result((False, f"Realism check failed: {qa_realism.get('summary', 'KO')}"))
 
-        return Result()
+        return Result((True, "OK"))

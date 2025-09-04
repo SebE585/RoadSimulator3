@@ -46,6 +46,20 @@ class PipelineSimulator:
             logger.info("[STAGE %d/%d] %s — start", i, len(self.stages), stage_name)
             try:
                 res = stage.run(ctx)
+                res = Result(res)
+                # Ensure failing stages always carry a message to ease debugging
+                if not res.ok:
+                    # Si le message est vide ou whitespace, on ajoute un message par défaut
+                    if not isinstance(res.msg, str) or not res.msg.strip():
+                        res = Result((False, f"{stage_name} failed without message"))
+                    logger.debug(
+                        "[STAGE %d/%d] %s — raw result normalized to: ok=%s msg=%r",
+                        i,
+                        len(self.stages),
+                        stage_name,
+                        res.ok,
+                        res.msg,
+                    )
             except Exception as exc:  # noqa: BLE001 — convert to Result
                 logger.exception(
                     "[STAGE %d/%d] %s — CRASH: %s", i, len(self.stages), stage_name, exc

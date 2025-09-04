@@ -30,7 +30,7 @@ class LegsStitch:
     def run(self, ctx: Context) -> Result:
         traces = ctx.artifacts.get("legs_traces", [])
         if not traces:
-            return Result(ok=False, message="legs_traces manquant")
+            return Result((False, "legs_traces manquant"))
 
         # Cadence visée
         hz = int(ctx.cfg.get("sim", {}).get("hz", 10))
@@ -266,4 +266,4 @@ class LegsStitch:
             "total_hold_s": total_hold_dur_s,
         }
 
-        return Result()
+        return Result((True, "OK"))

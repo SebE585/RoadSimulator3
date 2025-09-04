@@ -2,7 +2,7 @@
 from __future__ import annotations
 import pandas as pd
 from datetime import timedelta
-from rs3_contracts.api import ContextSpec, Result, Stage
+from rs3_contracts.api import Result
 from ..context import Context
 
 class StopWaitInjector:
@@ -20,9 +20,13 @@ class StopWaitInjector:
         hz = int(ctx.meta.get("hz", 10))
 
         if not plan or df is None or df.empty:
-            return Result(ok=False, message="legs_plan/df manquant")
+            return Result((False, "legs_plan/df manquant"))
+        if "timestamp" not in df.columns:
+            return Result((False, "timestamp manquant"))
 
-        stops = plan["stops"]
+        stops = plan.get("stops") if isinstance(plan, dict) else None
+        if not stops:
+            return Result((False, "plan.stops manquant"))
         t0 = pd.to_datetime(df["timestamp"].iloc[0], utc=True)
 
         def t_to_idx(t: pd.Timestamp) -> int:
@@ -108,4 +112,4 @@ class StopWaitInjector:
         ]
         ctx.artifacts["wait_intervals"] = [(a.isoformat(), b.isoformat()) for (a, b) in wait_intervals]
         ctx.artifacts["stop_intervals"] = [(a.isoformat(), b.isoformat()) for (a, b) in stop_intervals]
-        return Result()
+        return Result((True, "OK"))

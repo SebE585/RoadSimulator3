@@ -1,4 +1,8 @@
 rs3-contracts<2,>=1.0.0
+pandas>=2.2
+numpy>=1.24
+PyYAML>=6.0
+requests>=2.31
 
 [dev]
 pytest>=8

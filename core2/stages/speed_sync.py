@@ -2,7 +2,7 @@ from __future__ import annotations
 import numpy as np
 import pandas as pd
 from dataclasses import dataclass
-from rs3_contracts.api import ContextSpec, Result, Stage
+from rs3_contracts.api import Result
 from ..context import Context
 
 
@@ -141,7 +141,7 @@ class SpeedSync:
                 grid[col] = (
                     pd.to_numeric(out[col], errors="coerce")
                       .reindex(union_index).ffill()
-                      .reindex(target_index).ffill()
+                      .reindex(target_index).ffill().bfill()
                 )
             else:
                 grid[col] = (
@@ -207,4 +207,4 @@ class SpeedSync:
         ctx.meta["samples_after_speed_sync"] = int(len(out))
         ctx.meta["duration_after_speed_sync_s"] = float(duration_target_s)
 
-        return Result()
+        return Result((True, "OK"))

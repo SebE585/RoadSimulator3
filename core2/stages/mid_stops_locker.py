@@ -7,7 +7,7 @@ from typing import Iterable, Tuple
 import numpy as np
 import pandas as pd
 
-from rs3_contracts.api import ContextSpec, Result, Stage
+from rs3_contracts.api import Result
 from ..context import Context
 
 
@@ -73,9 +73,9 @@ class MidStopsLocker:
     def run(self, ctx: Context) -> Result:
         df = ctx.df
         if df is None or df.empty:
-            return Result(ok=False, message="df vide")
+            return Result((False, "df vide"))
         if "timestamp" not in df.columns:
-            return Result(ok=False, message="timestamp manquant")
+            return Result((False, "timestamp manquant"))
 
         # Cadence (samples/s)
         hz = float(ctx.meta.get("hz", 10.0) or 10.0)
@@ -93,7 +93,7 @@ class MidStopsLocker:
             v = (pd.to_numeric(out["speed_kmh"], errors="coerce").astype(float).fillna(0.0) / 3.6).to_numpy()
         else:
             # pas de colonne vitesse -> rien à faire proprement
-            return Result(ok=True, message="pas de colonne vitesse")
+            return Result((True, "pas de colonne vitesse"))
 
         stop_mask = _get_stop_wait_mask(out)
         if not stop_mask.any():
@@ -102,7 +102,7 @@ class MidStopsLocker:
             if "speed_kmh" in out.columns:
                 out["speed_kmh"] = out["speed"] * 3.6
             ctx.df = out
-            return Result()
+            return Result((True, "OK"))
 
         n = len(v)
         v_new = v.copy()
@@ -143,4 +143,4 @@ class MidStopsLocker:
             out["speed_kmh"] = out["speed"] * 3.6
 
         ctx.df = out
-        return Result()
+        return Result((True, "OK"))

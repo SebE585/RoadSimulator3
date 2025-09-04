@@ -10,6 +10,10 @@ License-File: LICENSE
 License-File: LICENSE-DOCS
 License-File: NOTICE.md
 Requires-Dist: rs3-contracts<2,>=1.0.0
+Requires-Dist: pandas>=2.2
+Requires-Dist: numpy>=1.24
+Requires-Dist: PyYAML>=6.0
+Requires-Dist: requests>=2.31
 Provides-Extra: dev
 Requires-Dist: pytest>=8; extra == "dev"
 Requires-Dist: black>=24; extra == "dev"

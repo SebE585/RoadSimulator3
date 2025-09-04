@@ -11,7 +11,7 @@ import numpy as np
 import pandas as pd
 import yaml
 
-from rs3_contracts.api import ContextSpec, Result, Stage
+from rs3_contracts.api import Result
 from ..context import Context
 
 
@@ -40,8 +40,8 @@ def _compute_summary(df: pd.DataFrame, ctx: Context, hz_meta: float | None) -> d
         duration_s = float(ctx.meta.get("duration_after_speed_sync_s") or ctx.meta.get("duration_expected_s") or 0)
 
     # Distance (haversine cumulée)
-    lat = pd.to_numeric(df.get("lat", pd.Series([])), errors="coerce").astype(float).to_numpy()
-    lon = pd.to_numeric(df.get("lon", pd.Series([])), errors="coerce").astype(float).to_numpy()
+    lat = pd.to_numeric(df.get("lat", pd.Series([], dtype=float)), errors="coerce").astype(float).to_numpy()
+    lon = pd.to_numeric(df.get("lon", pd.Series([], dtype=float)), errors="coerce").astype(float).to_numpy()
     dist_m = 0.0
     if len(lat) > 1:
         d = _haversine_series_m(lat[:-1], lon[:-1], lat[1:], lon[1:])
@@ -586,42 +586,46 @@ class Exporter:
             outdir = f"data/simulations/simulated_{ts}"
         os.makedirs(outdir, exist_ok=True)
 
-        df = ctx.df
-        # Harmonise la timeline + colonnes minimales
-        if isinstance(ctx.cfg, dict):
-            df = _apply_start_time(df, ctx.cfg)
-        df = _ensure_event_column(df)
-
-        # Schéma RS3 (si dispo)
-        schema = _load_schema(ctx.cfg if isinstance(ctx.cfg, dict) else {})
-        if schema:
-            df = _apply_schema(df, schema)
-
-        # Sauvegardes tabulaires / méta
-        csv_path = os.path.join(outdir, "timeline.csv")
-        df.to_csv(csv_path, index=False)
-
-        art = {k: _sanitize(v) for k, v in ctx.artifacts.items()}
-        with open(os.path.join(outdir, "artifacts.json"), "w", encoding="utf-8") as f:
-            json.dump(art, f, ensure_ascii=False, indent=2)
-
-        meta = _sanitize({**ctx.meta, "outdir": outdir})
-        with open(os.path.join(outdir, "meta.json"), "w", encoding="utf-8") as f:
-            json.dump(meta, f, ensure_ascii=False, indent=2)
-
-        # Rapports (100% inline → pas de CORS)
         try:
-            rep_cfg = {}
+            df = ctx.df
+            # Harmonise la timeline + colonnes minimales
             if isinstance(ctx.cfg, dict):
-                rep_cfg = (ctx.cfg.get("exporter", {}).get("report", {})) or {}
-            report_path, map_path = _generate_outputs(ctx, df, outdir, cfg=rep_cfg)
-            if report_path:
-                print(f"[Report] HTML → {report_path}")
-            if map_path:
-                print(f"[Report] Map  → {map_path}")
-        except Exception as e:
-            logger.debug("[Exporter] Rapport non généré: %s", e)
+                df = _apply_start_time(df, ctx.cfg)
+            df = _ensure_event_column(df)
 
-        # Met à jour le df dans le contexte (post-cast schéma)
-        ctx.df = df
-        return Result()
+            # Schéma RS3 (si dispo)
+            schema = _load_schema(ctx.cfg if isinstance(ctx.cfg, dict) else {})
+            if schema:
+                df = _apply_schema(df, schema)
+
+            # Sauvegardes tabulaires / méta
+            csv_path = os.path.join(outdir, "timeline.csv")
+            df.to_csv(csv_path, index=False)
+
+            art = {k: _sanitize(v) for k, v in ctx.artifacts.items()}
+            with open(os.path.join(outdir, "artifacts.json"), "w", encoding="utf-8") as f:
+                json.dump(art, f, ensure_ascii=False, indent=2)
+
+            meta = _sanitize({**ctx.meta, "outdir": outdir})
+            with open(os.path.join(outdir, "meta.json"), "w", encoding="utf-8") as f:
+                json.dump(meta, f, ensure_ascii=False, indent=2)
+
+            # Rapports (100% inline → pas de CORS)
+            try:
+                rep_cfg = {}
+                if isinstance(ctx.cfg, dict):
+                    rep_cfg = (ctx.cfg.get("exporter", {}).get("report", {})) or {}
+                report_path, map_path = _generate_outputs(ctx, df, outdir, cfg=rep_cfg)
+                if report_path:
+                    print(f"[Report] HTML → {report_path}")
+                if map_path:
+                    print(f"[Report] Map  → {map_path}")
+            except Exception as e:
+                logger.debug("[Exporter] Rapport non généré: %s", e)
+
+            # Met à jour le df dans le contexte (post-cast schéma)
+            ctx.df = df
+            return Result((True, "OK"))
+        except Exception as e:
+            logger.exception("[Exporter] Crash: %s", e)
+            return Result((False, f"Exception in Exporter: {e}"))

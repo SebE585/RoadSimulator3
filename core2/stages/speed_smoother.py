@@ -2,9 +2,8 @@
 from __future__ import annotations
 
 import pandas as pd
-import numpy as np
 
-from rs3_contracts.api import ContextSpec, Result, Stage
+from rs3_contracts.api import Result
 from ..context import Context
 
 
@@ -30,32 +29,48 @@ class SpeedSmoother:
     def run(self, ctx: Context) -> Result:
         df = ctx.df
         if df is None or df.empty:
-            return Result(ok=False, message="df vide")
+            return Result((False, "df vide"))
         if "speed" not in df.columns:
-            return Result(ok=False, message="speed manquante")
+            return Result((False, "speed manquante"))
 
         out = df.copy()
 
         if "timestamp" in out.columns:
             ts = pd.to_datetime(out["timestamp"], utc=True, errors="coerce")
-            out = out.set_index(ts)
-            # Rolling temporel centré
-            win = f"{max(self.window_s, 0.05)}s"
-            out["speed"] = (
-                out["speed"]
-                .rolling(win, center=True, min_periods=self.min_periods)
-                .mean()
-                .interpolate(method="time")
-                .bfill()
-                .ffill()
-            )
-            out = out.reset_index(drop=True)
+            # Si timestamps invalides ou non monotones → fallback Hz
+            if ts.isna().any() or not ts.is_monotonic_increasing:
+                hz = int(ctx.meta.get("hz", 10) or 10)
+                n = max(int(round(self.window_s * hz)), 1)
+                out["speed"] = (
+                    pd.to_numeric(out["speed"], errors="coerce")
+                    .astype(float)
+                    .rolling(n, center=True, min_periods=self.min_periods)
+                    .mean()
+                    .bfill()
+                    .ffill()
+                    .to_numpy()
+                )
+            else:
+                out = out.set_index(ts)
+                # Rolling temporel centré
+                win = f"{max(self.window_s, 0.05)}s"
+                out["speed"] = (
+                    pd.to_numeric(out["speed"], errors="coerce")
+                    .astype(float)
+                    .rolling(win, center=True, min_periods=self.min_periods)
+                    .mean()
+                    .interpolate(method="time")
+                    .bfill()
+                    .ffill()
+                )
+                out = out.reset_index(drop=True)
         else:
             # Fallback hz si timestamp absent
-            hz = int(ctx.meta.get("hz", 10))
+            hz = int(ctx.meta.get("hz", 10) or 10)
             n = max(int(round(self.window_s * hz)), 1)
             out["speed"] = (
-                pd.Series(out["speed"], dtype=float)
+                pd.to_numeric(out["speed"], errors="coerce")
+                .astype(float)
                 .rolling(n, center=True, min_periods=self.min_periods)
                 .mean()
                 .bfill()
@@ -64,4 +79,4 @@ class SpeedSmoother:
             )
 
         ctx.df = out
-        return Result()
+        return Result((True, "OK"))
