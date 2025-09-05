@@ -70,7 +70,7 @@ speed_limiter:
   ramp_s: 0.0        # pas de rampe si on ne retouche pas la géométrie
 
 speed_smoother:
-  window_s: 1.0        # moyenne glissante centrée
+  window_s: 1.2        # moyenne glissante centrée (lissage +20%)
   min_periods: 1
 
 geo_spike_filter:
@@ -92,16 +92,21 @@ legs_retimer:
   use_column_target_speed: true   # si RoadEnricher a déjà écrit target_speed
   min_dt: 0.05
 
+# Plugins allow the insertion of additional processing stages into the simulation pipeline.
+# Each plugin can modify or enhance the data as it flows through the stages.
+# This modular approach enables flexible extension and customization of the simulation behavior.
 plugins:
   insert:
-    - name: AltitudeStage         # ou le .name exposé par le plugin
-      after: SpeedSync            # ancre (nom de classe d’un stage “natif”)
+    - name: AltitudeStage         # or the .name exposed by the plugin
+      after: SpeedSync            # anchor (class name of a native stage)
+      # AltitudeStage is inserted after SpeedSync to ensure altitude data is applied
+      # once speed synchronization is complete, maintaining data consistency.
 
 imu_projector:
-  smooth_window_s: 0.6
+  smooth_window_s: 1.5
   include_gravity: true
   use_slope_percent: true
-  clamp_ax_mps2: 4.0
+  clamp_ax_mps2: 4.5
   min_speed_for_lateral: 0.3
   min_turn_radius_m: 12.0
   pitch_rate_max_rad_s: 0.6

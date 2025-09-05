@@ -10,7 +10,7 @@ test:
 	pytest
 
 simulate:
-	python -m runner.run_simulation --config config/example.yaml
+	python -m runner.run_simulation2 --config "$(PWD)/config/simulator_haute_normandie.yaml"
 
 clean:
 	rm -rf logs outputs .pytest_cache __pycache__
