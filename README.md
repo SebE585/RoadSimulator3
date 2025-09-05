@@ -136,7 +136,6 @@ python tools/validate_dataset.py --csv data/simulations/last_trace.csv --strict-
 | timestamp       | datetime  | ISO 8601 (10 Hz)                        |
 | lat             | float     | Latitude (WGS84)                        |
 | lon             | float     | Longitude (WGS84)                       |
-| altitude_m      | float     | Altitude (m)                            |
 | speed           | float     | Vitesse (m/s)                           |
 | acc_x           | float     | Accélération X (m/s²)                   |
 | acc_y           | float     | Accélération Y (m/s²)                   |
@@ -144,12 +143,7 @@ python tools/validate_dataset.py --csv data/simulations/last_trace.csv --strict-
 | gyro_x          | float     | Gyroscope X (rad/s)                     |
 | gyro_y          | float     | Gyroscope Y (rad/s)                     |
 | gyro_z          | float     | Gyroscope Z (rad/s)                     |
-| in_delivery     | bool      | Véhicule en phase de livraison          |
-| delivery_state  | category  | État de livraison                       |
 | event           | category  | Type d’événement                        |
-| event_infra     | category  | Événement lié à l’infrastructure        |
-| event_behavior  | category  | Événement lié au comportement           |
-| event_context   | category  | Événement contextuel                     |
 
 ---
 
