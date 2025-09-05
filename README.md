@@ -1,4 +1,4 @@
-# 🚗 RoadSimulator3
+🚗 RoadSimulator3
 
 [![LinkedIn](https://img.shields.io/badge/LinkedIn-Sebastien_Edet-blue)](https://www.linkedin.com/in/sebastienedet/)
 [![AGPL License](https://img.shields.io/badge/License-AGPL-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
@@ -69,7 +69,13 @@ find data/srtm -name "*.zip" -exec unzip -o {} -d data/srtm \;
 
 ### 3) OSMnx-service
 
-Aucune donnée à préparer : le service consomme l’extrait OSRM pour l’itinéraire et interroge OSMnx / cache interne pour enrichir les types de voies.
+Ce service requiert des fichiers **GraphML** pré-générés pour les zones couvertes.  
+Téléchargez ou générez vos graphes routiers (via OSMnx) et placez-les dans `data/osmnx/`.  
+Exemple :
+```bash
+mkdir -p data/osmnx
+python tools/build_graphml.py --pbf data/osm/france-normandie-latest.osm.pbf --out data/osmnx/normandie.graphml
+```
 
 ---
 
@@ -114,12 +120,6 @@ Selon la configuration, le pipeline exécute :
 ---
 
 ## 🧪 Exemples supplémentaires
-
-- **Simulation de flotte** (si disponible) :
-
-```bash
-make fleet PROFILE=parcels VEHICLES=VL-01,VL-02
-```
 
 - **Validation dataset** :
 
