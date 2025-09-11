@@ -1,0 +1,109 @@
+site_name: RoadSimulator3
+site_description: "Simulateur inertiel 10 Hz basé OSM/OSRM/OSMnx — RS3"
+site_url: https://roadsimulator3.fr/docs/
+repo_url: https://github.com/SebE585/RoadSimulator3
+repo_name: SebE585/RoadSimulator3
+edit_uri: blob/main/docs/
+
+theme:
+  name: material
+  features:
+    - navigation.instant
+    - navigation.tracking
+    - navigation.sections
+    - content.code.copy
+    - content.tabs.link
+    - search.suggest
+    - toc.follow
+  language: fr
+  logo: static/icons/rs3.svg
+  favicon: static/icons/rs3.svg
+
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.tabbed
+  - pymdownx.critic
+  - pymdownx.highlight
+  - pymdownx.emoji
+  - attr_list
+  - tables
+  - footnotes
+  - toc:
+      permalink: true
+
+plugins:
+  - search
+  - mkdocstrings:
+      handlers:
+        python:
+          options:
+            docstring_style: google
+            show_root_toc_entry: false
+            separate_signature: true
+            filters: ["!^_"]        # cacher internes
+            preload_modules:
+              - roadsimulator3      # si nom de package
+  - mermaid2
+  - git-revision-date-localized:
+      enable_creation_date: true
+  - tags
+  # Optionnel:
+  # - mike                      # versioning de docs
+  # - literate-nav             # si nav auto
+  # - awesome-pages            # si nav par fichiers .pages
+
+nav:
+  - Accueil: index.md
+  - Avant-propos:
+    - Objectifs: 00-avant-propos/objectifs.md
+    - Contributions: 00-avant-propos/contributions.md
+    - Licences & portée: 00-avant-propos/licences-et-portee.md
+  - Fondations:
+    - Concepts: 10-fondations/concepts.md
+    - Prérequis: 10-fondations/prerequis.md
+    - Données externes: 10-fondations/donnees-externes.md
+  - Prise en main:
+    - Installation: 20-prise-en-main/installation.md
+    - Services (Docker): 20-prise-en-main/services.md
+    - Quickstart: 20-prise-en-main/quickstart.md
+    - Configuration: 20-prise-en-main/configuration.md
+  - Architecture:
+    - Vue d’ensemble: 30-architecture/vue-densemble.md
+    - Pipeline: 30-architecture/pipeline.md
+    - Schéma dataset: 30-architecture/schema-dataset.md
+    - Rapports: 30-architecture/rapports.md
+  - Plugins:
+    - Introduction: 40-plugins/introduction.md
+    - Altitude (AGPL): 40-plugins/altitude.md
+    - Fleet (MIT): 40-plugins/fleet.md
+  - Guides:
+    - Tutoriel simple: 50-guides/tutoriel-simple.md
+    - Simulation batch: 50-guides/simulation-batch.md
+    - Validation qualité: 50-guides/validation-qualite.md
+    - Indicateurs avancés: 50-guides/indicateurs-avances.md
+  - Référence:
+    - CLI: 60-reference/cli-runner.md
+    - API Core: 60-reference/api-core.md
+    - API Core2: 60-reference/api-core2.md
+    - Formats de sortie: 60-reference/formats-sortie.md
+    - Contrats: 60-reference/contrats.md
+  - Développement:
+    - Contribution: 70-developpement/contribution.md
+    - Roadmap: 70-developpement/roadmap.md
+    - Sécurité: 70-developpement/securite.md
+    - Changelog: 70-developpement/changelog.md
+  - Annexes:
+    - FAQ: 80-annexes/faq.md
+    - Glossaire: 80-annexes/glossaire.md
+    - Bibliographie: 80-annexes/bibliographie.md
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/SebE585/RoadSimulator3
+    - icon: fontawesome/solid/globe
+      link: https://roadsimulator3.fr   # ton blog
+    - icon: fontawesome/brands/linkedin
+      link: https://www.linkedin.com/in/sebastien-edet/

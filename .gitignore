@@ -2,7 +2,7 @@
 data/
 logs/
 outputs/
-docs/
+site/
 cache/
 
 # === Fichiers temporaires Python ===

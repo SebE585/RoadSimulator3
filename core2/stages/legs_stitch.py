@@ -6,7 +6,67 @@ import logging
 from rs3_contracts.api import ContextSpec, Result, Stage
 from ..context import Context
 
+
 logger = logging.getLogger(__name__)
+
+def _sanitize_dt_index(df: pd.DataFrame) -> pd.DataFrame:
+    """Ensure a strictly increasing, tz-aware (UTC) unique DatetimeIndex.
+    - Coerce to datetime
+    - Localize/convert to UTC
+    - Sort
+    - Disambiguate duplicates by adding +1ns offsets per duplicate group
+    - Drop any residual duplicates (belt and suspenders)
+    """
+    if df.index.name != "timestamp":
+        # Allow sanitation both before and after setting name; we'll enforce name later
+        pass
+
+    dfx = df.copy()
+
+    # 1) Coerce to datetime index
+    if not isinstance(dfx.index, pd.DatetimeIndex):
+        dfx.index = pd.to_datetime(dfx.index, errors="coerce")
+
+    # Remove NaT if any got introduced
+    if getattr(dfx.index, "hasnans", False):
+        dfx = dfx[~dfx.index.isna()]
+
+    # 2) Ensure tz-aware UTC
+    tz = getattr(dfx.index, "tz", None)
+    if tz is None:
+        try:
+            dfx.index = dfx.index.tz_localize("UTC")
+        except Exception:
+            # If already tz-aware but tz attr missing, best-effort convert
+            dfx.index = dfx.index.tz_convert("UTC")
+    else:
+        try:
+            dfx.index = dfx.index.tz_convert("UTC")
+        except Exception:
+            dfx.index = dfx.index.tz_localize("UTC")
+
+    # 3) Sort
+    if not dfx.index.is_monotonic_increasing:
+        dfx = dfx.sort_index(kind="mergesort")
+
+    # 4) Disambiguate duplicates by shifting each subsequent occurrence by +1ns
+    if not dfx.index.is_unique:
+        s = dfx.index.to_series()
+        offs = s.groupby(s).cumcount()
+        if int(offs.sum()) > 0:
+            dfx.index = (s + pd.to_timedelta(offs, unit="ns")).to_numpy()
+
+    # 5) Drop any residual duplicates (very defensive)
+    if not dfx.index.is_unique:
+        dfx = dfx[~pd.Index(dfx.index).duplicated(keep="first")]
+
+    # 6) Final sort to guarantee monotonicity
+    if not dfx.index.is_monotonic_increasing:
+        dfx = dfx.sort_index(kind="mergesort")
+
+    # Preserve standard index name
+    dfx.index.name = "timestamp"
+    return dfx
 
 def _haversine_series_m(lat1, lon1, lat2, lon2):
     R = 6371000.0
@@ -184,6 +244,8 @@ class LegsStitch:
         df = df.set_index(t_index)
         df.index = df.index.tz_convert("UTC")
         df.index.name = "timestamp"
+        # Sanitize index to avoid duplicate timestamps which break pandas.reindex
+        df = _sanitize_dt_index(df)
 
         # ---- Remaillage exact à hz sur la durée totale théorique ----
         n_samples = int(np.floor(total_dur_s * hz)) + 1
@@ -194,7 +256,9 @@ class LegsStitch:
         )
 
         # Interpoler uniquement les colonnes numériques; propager les colonnes non numériques (event/stop_id...)
-        union_index = df.index.union(target_index)
+        # Build a strictly increasing, unique union index
+        union_index = pd.DatetimeIndex(df.index).union(target_index, sort=True)
+        union_index = pd.DatetimeIndex(union_index.unique()).sort_values()
         num_cols = df.select_dtypes(include=[np.number]).columns.tolist()
         obj_cols = [c for c in df.columns if c not in num_cols]
 
