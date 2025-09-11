@@ -110,7 +110,7 @@ class LegsStitch:
         if start_iso:
             t0 = pd.to_datetime(start_iso, utc=True)
         else:
-            t0 = pd.Timestamp.utcnow().tz_localize("UTC")
+            t0 = pd.Timestamp.now(tz="UTC")
 
         # Durée totale de déplacement (mouvement) d'après OSRM si dispo
         summaries = ctx.artifacts.get("legs_summary", [])
