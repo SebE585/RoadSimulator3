@@ -16,6 +16,8 @@ dependencies = [
   "numpy>=1.24",
   "PyYAML>=6.0",
   "requests>=2.31",
+  "deprecated>=1.2",
+  "tqdm>=4.66",
 ]
 
 [project.optional-dependencies]
