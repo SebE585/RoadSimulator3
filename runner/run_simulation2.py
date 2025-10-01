@@ -249,6 +249,26 @@ def main():
     with open(cfg_path, "r", encoding="utf-8") as f:
         cfg = yaml.safe_load(f) or {}
 
+    # Expand any strftime tokens in all config strings
+    import datetime
+    def _strftime_expand(obj):
+        """
+        Recursively replace any strftime tokens in all string values with current UTC datetime.
+        """
+        now = datetime.datetime.utcnow()
+        if isinstance(obj, dict):
+            return {k: _strftime_expand(v) for k, v in obj.items()}
+        elif isinstance(obj, list):
+            return [_strftime_expand(x) for x in obj]
+        elif isinstance(obj, str):
+            try:
+                return now.strftime(obj)
+            except Exception:
+                return obj
+        else:
+            return obj
+    cfg = _strftime_expand(cfg)
+
     # Permet d'overrider le chemin du schéma dataset sans toucher au YAML
     if args.schema:
         cfg = dict(cfg)

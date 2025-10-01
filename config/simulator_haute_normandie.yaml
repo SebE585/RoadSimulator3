@@ -97,10 +97,11 @@ legs_retimer:
 # This modular approach enables flexible extension and customization of the simulation behavior.
 plugins:
   insert:
-    - name: AltitudeStage         # or the .name exposed by the plugin
-      after: SpeedSync            # anchor (class name of a native stage)
-      # AltitudeStage is inserted after SpeedSync to ensure altitude data is applied
-      # once speed synchronization is complete, maintaining data consistency.
+    - after: "MidStopsLocker"     # optionnel
+      before: "ImuProjector"      # ou "exporter" si tu veux l’IMU basé sur la pente lissée
+      stage: altitude             # nom de l’entry-point (pyproject)
+      kwargs:
+        config: "/Users/sebastien.edet/projects/rs3-plugin-altitude-agpl/service/config/altitude_ign.yaml"
 
 imu_projector:
   smooth_window_s: 1.5

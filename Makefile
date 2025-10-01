@@ -1,4 +1,4 @@
-.PHONY: install dev test simulate clean fmt lint ci publish tag help
+.PHONY: install dev test simulate clean fmt lint ci publish tag help dataset-telemachus dataset-telemachus-from
 
 install:
 	python -m pip install -r requirements.txt
@@ -10,7 +10,10 @@ test:
 	pytest
 
 simulate:
-	python -m runner.run_simulation2 --config "$(PWD)/config/simulator_haute_normandie.yaml"
+	. .venv/bin/activate && \
+		RS3_ALTITUDE_CFG="/Users/sebastien.edet/projects/rs3-plugin-altitude-agpl/service/config/altitude_ign.yaml" \
+		PYTHONPATH=. python -B -m runner.run_simulation2 \
+		  --config config/simulator_haute_normandie.yaml
 
 clean:
 	rm -rf logs outputs .pytest_cache __pycache__
@@ -55,3 +58,21 @@ tag:
 	@git tag -a v$(VERSION) -m "Release v$(VERSION)"
 	@git push github v$(VERSION)
 	@git push gitea  v$(VERSION)
+
+dataset-telemachus:
+	@echo "🚀 Simulation RS3 (base) via runner.run_simulation2 (export Telemachus inline)"
+	. .venv/bin/activate && \
+		RS3_ALTITUDE_CFG="/Users/sebastien.edet/projects/rs3-plugin-altitude-agpl/service/config/altitude_ign.yaml" \
+		PYTHONPATH=. python -B -m runner.run_simulation2 \
+		  --config config/simulator_telemachus.yaml
+	@SIM_DIR=$$(ls -dt data/simulations/TELEMACHUS_* data/simulations/simulated_* 2>/dev/null | head -1); \
+	 if [ -z "$$SIM_DIR" ]; then echo "❌ Aucun dossier data/simulations/{TELEMACHUS_*, simulated_*} trouvé"; exit 2; fi; \
+	 echo "✅ Dossier simulation détecté: $$SIM_DIR"; \
+	 if [ -d "$$SIM_DIR/telemachus" ]; then \
+	   echo "✅ Telemachus exporté inline dans: $$SIM_DIR/telemachus"; \
+	   ls -l "$$SIM_DIR/telemachus" || true; \
+	 else \
+	   echo "⚠️ Pas de sous-dossier 'telemachus' trouvé dans $$SIM_DIR"; \
+	   echo "Contenu du dossier pour debug:"; \
+	   ls -la "$$SIM_DIR"; \
+	 fi

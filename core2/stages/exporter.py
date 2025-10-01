@@ -249,6 +249,165 @@ def _apply_start_time(df: pd.DataFrame, cfg: dict) -> pd.DataFrame:
     out["timestamp"] = (t + delta).dt.strftime("%Y-%m-%dT%H:%M:%S.%fZ")
     return out
 
+# ========= Telemachus (v0.1) inline export =========
+
+def _build_telemachus_samples_no_derive(df: pd.DataFrame, tele_cfg: dict) -> pd.DataFrame:
+    """Mappe les colonnes présentes vers le schéma Telemachus 0.1 sans dérivation.
+    Conversions minimales autorisées: km/h -> m/s pour speed.
+    """
+    out = pd.DataFrame(index=df.index)
+
+    # ts (UTC ISO Z)
+    if "timestamp" in df.columns:
+        out["ts"] = _ensure_utc_iso_z(df["timestamp"])
+    else:
+        out["ts"] = pd.Series([None] * len(df), dtype="object")
+
+    # lat/lon
+    for src, dst in (("lat", "lat"), ("lon", "lon")):
+        if src in df.columns:
+            out[dst] = pd.to_numeric(df[src], errors="coerce")
+        else:
+            out[dst] = pd.Series([None] * len(df), dtype="float64")
+
+    # speed_mps: priorité aux colonnes déjà en m/s; conversion simple si *_kmh existe
+    speed_mps = None
+    for cand in ("speed_mps", "speed", "v_mps", "v"):
+        if cand in df.columns:
+            speed_mps = pd.to_numeric(df[cand], errors="coerce")
+            break
+    if speed_mps is None:
+        for cand in ("speed_kmh", "v_kmh", "speed_km_h"):
+            if cand in df.columns:
+                speed_mps = pd.to_numeric(df[cand], errors="coerce") * (1000.0/3600.0)
+                break
+    out["speed_mps"] = speed_mps if speed_mps is not None else pd.Series([None] * len(df), dtype="float64")
+
+    # acc
+    mapping_acc = {"acc_x": "ax_mps2", "acc_y": "ay_mps2", "acc_z": "az_mps2"}
+    for src, dst in mapping_acc.items():
+        if src in df.columns:
+            out[dst] = pd.to_numeric(df[src], errors="coerce")
+        else:
+            out[dst] = pd.Series([None] * len(df), dtype="float64")
+
+    # gyro (on suppose déjà en rad/s dans la pipeline RS3)
+    mapping_gyro = {"gyro_x": "gx_rad_s", "gyro_y": "gy_rad_s", "gyro_z": "gz_rad_s"}
+    for src, dst in mapping_gyro.items():
+        if src in df.columns:
+            out[dst] = pd.to_numeric(df[src], errors="coerce")
+        else:
+            out[dst] = pd.Series([None] * len(df), dtype="float64")
+
+    # heading / altitude / slope
+    if "heading" in df.columns:
+        out["heading_deg"] = pd.to_numeric(df["heading"], errors="coerce")
+    elif "heading_deg" in df.columns:
+        out["heading_deg"] = pd.to_numeric(df["heading_deg"], errors="coerce")
+    else:
+        out["heading_deg"] = pd.Series([None] * len(df), dtype="float64")
+
+    # altitude
+    alt_src = None
+    for cand in ("altitude_m", "z_m", "z", "elevation", "altitude"):
+        if cand in df.columns:
+            alt_src = cand; break
+    if alt_src:
+        out["altitude_m"] = pd.to_numeric(df[alt_src], errors="coerce")
+    else:
+        out["altitude_m"] = pd.Series([None] * len(df), dtype="float64")
+
+    # slope
+    slope_src = None
+    for cand in ("slope_percent", "slope_pct", "grade_percent"):
+        if cand in df.columns:
+            slope_src = cand; break
+    if slope_src:
+        out["slope_percent"] = pd.to_numeric(df[slope_src], errors="coerce")
+    else:
+        out["slope_percent"] = pd.Series([None] * len(df), dtype="float64")
+
+    # Identifiants
+    vehicle_id = (tele_cfg or {}).get("vehicle_id") or "VL-UNKNOWN"
+    trip_id = (tele_cfg or {}).get("trip_id")
+    out["vehicle_id"] = vehicle_id
+    if trip_id:
+        out["trip_id"] = trip_id
+
+    # Ordre recommandé
+    cols_order = [
+        "ts", "lat", "lon", "speed_mps",
+        "ax_mps2", "ay_mps2", "az_mps2",
+        "gx_rad_s", "gy_rad_s", "gz_rad_s",
+        "heading_deg", "altitude_m", "slope_percent",
+        "vehicle_id", "trip_id"
+    ]
+    # garde l'ordre connu puis ajoute extras si existants
+    known = [c for c in cols_order if c in out.columns]
+    extras = [c for c in out.columns if c not in known]
+    return out[known + extras]
+
+
+def _export_telemachus_inline(ctx: Context, df: pd.DataFrame, sim_outdir: str, tele_cfg: dict | None) -> None:
+    if not isinstance(tele_cfg, dict) or not tele_cfg.get("enabled", False):
+        return
+    version = str(tele_cfg.get("version", "0.1"))
+    vehicle_id = tele_cfg.get("vehicle_id", "VL-UNKNOWN")
+    trip_prefix = tele_cfg.get("trip_prefix", "TR")
+    write_parquet = bool(tele_cfg.get("write_parquet", True))
+    write_csv = bool(tele_cfg.get("write_csv", True))
+
+    # out dir
+    out_dir = tele_cfg.get("out_dir")
+    if out_dir:
+        out_dir = os.path.join(sim_outdir, out_dir) if not os.path.isabs(out_dir) else out_dir
+    else:
+        out_dir = os.path.join(sim_outdir, "telemachus")
+    os.makedirs(out_dir, exist_ok=True)
+
+    # trip_id par défaut
+    if "trip_id" in tele_cfg and tele_cfg["trip_id"]:
+        trip_id = str(tele_cfg["trip_id"]) 
+    else:
+        trip_id = f"{trip_prefix}-{Path(sim_outdir).name}"
+
+    # construit samples sans dérivation
+    tele_local_cfg = {"vehicle_id": vehicle_id, "trip_id": trip_id}
+    samples = _build_telemachus_samples_no_derive(df, tele_local_cfg)
+
+    # écritures
+    artifacts = {"parquet": None, "csv": None}
+    if write_parquet:
+        try:
+            pqt = os.path.join(out_dir, "samples.parquet")
+            samples.to_parquet(pqt, index=False)
+            artifacts["parquet"] = pqt
+        except Exception as e:
+            logger.info("[Telemachus] Parquet indisponible (%s)", e)
+    if write_csv or not artifacts["parquet"]:
+        csvp = os.path.join(out_dir, "samples.csv")
+        samples.to_csv(csvp, index=False)
+        artifacts["csv"] = csvp
+
+    # dataset.json
+    meta = {
+        "format": "Telemachus",
+        "version": version,
+        "generated_at_utc": datetime.utcnow().isoformat() + "Z",
+        "vehicle_id": vehicle_id,
+        "trip_id": trip_id,
+        "artifacts": artifacts,
+        "source": {
+            "project": "RoadSimulator3",
+            "rs3_outdir": sim_outdir,
+            "rs3_timeline": os.path.join(sim_outdir, "timeline.csv"),
+        },
+    }
+    with open(os.path.join(out_dir, "dataset.json"), "w", encoding="utf-8") as f:
+        json.dump(meta, f, indent=2, ensure_ascii=False)
+
+    print(f"[Telemachus] samples → {artifacts['parquet'] or artifacts['csv']}")
+
 def _ensure_event_column(df: pd.DataFrame) -> pd.DataFrame:
     """Crée 'event' à partir de flags (STOP/WAIT) si absent."""
     if "event" in df.columns and df["event"].notna().any():
@@ -622,6 +781,15 @@ class Exporter:
                     print(f"[Report] Map  → {map_path}")
             except Exception as e:
                 logger.debug("[Exporter] Rapport non généré: %s", e)
+
+            # -- Telemachus inline export (option B: unit conversion only)
+            try:
+                tele_cfg = {}
+                if isinstance(ctx.cfg, dict):
+                    tele_cfg = (ctx.cfg.get("telemachus") or {})
+                _export_telemachus_inline(ctx, df, outdir, tele_cfg)
+            except Exception as e:
+                logger.exception("[Exporter] Telemachus export error: %s", e)
 
             # Met à jour le df dans le contexte (post-cast schéma)
             ctx.df = df
