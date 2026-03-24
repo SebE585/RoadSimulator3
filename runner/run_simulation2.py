@@ -30,6 +30,9 @@ from core2.stages.geo_spike_filter import GeoSpikeFilter
 from core2.stages.legs_retimer import LegsRetimer
 from core2.plugin_loader import discover_external_stages
 from core2.stages.initial_stop_locker import InitialStopLocker
+from core2.stages.multi_rate_sampler import MultiRateSampler
+from core2.stages.device_rotator import DeviceRotator
+from core2.stages.event_injector import EventInjector
 
 
 logger = logging.getLogger(__name__)
@@ -77,6 +80,37 @@ def build_pipeline(cfg):
     geo_spike_filter_cfg = cfg.get("geo_spike_filter", {}) if isinstance(cfg, dict) else {}
     legs_retimer_cfg = cfg.get("legs_retimer", {}) if isinstance(cfg, dict) else {}
     speed_sync_cfg = cfg.get("speed_sync", {}) if isinstance(cfg, dict) else {}
+
+    def _multi_rate_cfg(c: dict) -> dict:
+        """Extrait la config multi-rate depuis sensors.* dans le YAML."""
+        sensors = c.get("sensors", {}) if isinstance(c, dict) else {}
+        return {
+            "gps_hz": float(sensors.get("gps_hz", 1.0)),
+            "imu_hz": float(sensors.get("imu_hz", 10.0)),
+            "gyro_enabled": bool(sensors.get("gyro_enabled", True)),
+        }
+
+    def _device_rotation_cfg(c: dict) -> dict:
+        """Extrait la config rotation device depuis device_rotation.* dans le YAML."""
+        rot = c.get("device_rotation", {}) if isinstance(c, dict) else {}
+        return {
+            "roll_deg": float(rot.get("roll_deg", 0.0)),
+            "pitch_deg": float(rot.get("pitch_deg", 0.0)),
+            "yaw_deg": float(rot.get("yaw_deg", 0.0)),
+        }
+
+    def _event_injector_cfg(c: dict) -> dict:
+        """Extrait la config injection d'événements depuis inject_events.* dans le YAML."""
+        inj = c.get("inject_events", {}) if isinstance(c, dict) else {}
+        return {
+            "n_harsh_brake": int(inj.get("n_harsh_brake", 0)),
+            "n_harsh_accel": int(inj.get("n_harsh_accel", 0)),
+            "n_speed_bump": int(inj.get("n_speed_bump", 0)),
+            "n_pothole": int(inj.get("n_pothole", 0)),
+            "n_curb": int(inj.get("n_curb", 0)),
+            "n_sharp_turn": int(inj.get("n_sharp_turn", 0)),
+            "n_door_open": int(inj.get("n_door_open", 0)),
+        }
 
     extras = discover_external_stages(cfg)
 
@@ -223,11 +257,14 @@ def build_pipeline(cfg):
             "sigma_acc": 0.02,
             "sigma_gyro": 0.001
         } | noise_injector_cfg)),
+        DeviceRotator(**_device_rotation_cfg(cfg)),
         EventsTagger(**({
             "dvdt_thr_mps2": 0.5,
             "head_window_s": 10.0,
             "tail_window_s": 10.0
         } | events_tagger_cfg)),
+        EventInjector(**_event_injector_cfg(cfg)),
+        MultiRateSampler(**_multi_rate_cfg(cfg)),
         Validators(),
         Exporter(),
     ]
@@ -251,11 +288,12 @@ def main():
 
     # Expand any strftime tokens in all config strings
     import datetime
+    from datetime import timezone
     def _strftime_expand(obj):
         """
         Recursively replace any strftime tokens in all string values with current UTC datetime.
         """
-        now = datetime.datetime.utcnow()
+        now = datetime.datetime.now(timezone.utc)
         if isinstance(obj, dict):
             return {k: _strftime_expand(v) for k, v in obj.items()}
         elif isinstance(obj, list):
