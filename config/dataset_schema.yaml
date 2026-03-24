@@ -1,36 +1,37 @@
-# RS3 Dataset Schema (v1.0)
+# RS3 Dataset Schema (v1.1)
 # Source of truth for columns: order, dtype, unit, nullability, description.
-version: "1.0"
+# NaN values are valid for multi-rate data (GPS 1Hz, IMU 10Hz).
+version: "1.1"
 columns:
   - name: timestamp
     dtype: datetime
     format: iso8601
     nullable: false
-    description: "UTC timestamp at 10 Hz."
+    description: "UTC timestamp at pipeline Hz (10 Hz)."
 
   - name: lat
     dtype: float64
     unit: degree
-    nullable: false
-    description: "WGS84 latitude."
+    nullable: true
+    description: "WGS84 latitude. NaN between GPS ticks if GPS < pipeline Hz."
 
   - name: lon
     dtype: float64
     unit: degree
-    nullable: false
-    description: "WGS84 longitude."
+    nullable: true
+    description: "WGS84 longitude. NaN between GPS ticks if GPS < pipeline Hz."
 
   - name: speed
     dtype: float32
     unit: m/s
-    nullable: false
-    description: "Vehicle ground speed."
+    nullable: true
+    description: "Vehicle ground speed. NaN between GPS ticks."
 
   - name: acc_x
     dtype: float32
     unit: "m/s^2"
     nullable: false
-    description: "IMU longitudinal acceleration."
+    description: "IMU longitudinal acceleration (includes device rotation if applied)."
 
   - name: acc_y
     dtype: float32
@@ -47,27 +48,27 @@ columns:
   - name: gyro_x
     dtype: float32
     unit: "rad/s"
-    nullable: false
-    description: "IMU angular rate around X (roll rate). Always present."
+    nullable: true
+    description: "IMU angular rate X (roll). NaN if gyro disabled."
 
   - name: gyro_y
     dtype: float32
     unit: "rad/s"
-    nullable: false
-    description: "IMU angular rate around Y (pitch rate). Always present."
+    nullable: true
+    description: "IMU angular rate Y (pitch). NaN if gyro disabled."
 
   - name: gyro_z
     dtype: float32
     unit: "rad/s"
-    nullable: false
-    description: "IMU angular rate around Z (yaw rate). Always present."
+    nullable: true
+    description: "IMU angular rate Z (yaw). NaN if gyro disabled."
 
   - name: event
     dtype: category
     nullable: true
-    description: "Liste ou tag d'événements associés à ce timestamp."
+    description: "Event tag at this timestamp."
 
   - name: road_type
     dtype: category
     nullable: true
-    description: "Type de route selon OSM/OSRM (ex: motorway, residential, unknown)."
+    description: "Road type from OSM/OSRM."

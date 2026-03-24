@@ -179,13 +179,21 @@ class Validators:
                 ctx.artifacts["qa_basic"] = {"nan_detected": False}
 
         # --- Garantit les colonnes IMU numériques ---
-        required_numeric_zeros = ["acc_x", "acc_y", "acc_z", "gyro_x", "gyro_y", "gyro_z"]
+        # acc : toujours requis (fillna 0)
+        # gyro : respecter les NaN (gyro désactivé par MultiRateSampler)
         df = df.copy()
-        for col in required_numeric_zeros:
+        for col in ["acc_x", "acc_y", "acc_z"]:
             if col not in df.columns:
                 df[col] = 0.0
             else:
                 df[col] = pd.to_numeric(df[col], errors="coerce").fillna(0.0)
+        for col in ["gyro_x", "gyro_y", "gyro_z"]:
+            if col not in df.columns:
+                df[col] = 0.0
+            elif not df[col].isna().all():
+                # Gyro actif : fillna 0 pour les valeurs manquantes ponctuelles
+                df[col] = pd.to_numeric(df[col], errors="coerce").fillna(0.0)
+            # Si tout NaN (gyro désactivé) : on laisse NaN
 
         # --- Colonne event si absente ---
         if "event" not in df.columns:

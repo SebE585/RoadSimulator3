@@ -127,7 +127,7 @@ class LegsRetimer:
         # 4) Reconstruit l'axe de temps absolu depuis t0 (sans resampling)
         ts0 = pd.to_datetime(out["timestamp"].iloc[0], utc=True, errors="coerce")
         if pd.isna(ts0):
-            ts0 = pd.Timestamp.utcnow().tz_localize("UTC")
+            ts0 = pd.Timestamp.now(tz="UTC")
 
         out["t_abs_s"] = t_rel
         out["timestamp"] = ts0 + pd.to_timedelta(out["t_abs_s"], unit="s")

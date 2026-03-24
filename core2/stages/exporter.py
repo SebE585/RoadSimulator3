@@ -3,7 +3,7 @@ from __future__ import annotations
 import os
 import json
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -198,9 +198,13 @@ def _apply_schema(df: pd.DataFrame, schema: dict) -> pd.DataFrame:
 
         # Cast
         if dtype == "float32":
-            df_out[name] = pd.to_numeric(df_out[name], errors="coerce").astype("float32").fillna(0.0)
+            df_out[name] = pd.to_numeric(df_out[name], errors="coerce").astype("float32")
+            if not nullable:
+                df_out[name] = df_out[name].fillna(0.0)
         elif dtype == "float64":
-            df_out[name] = pd.to_numeric(df_out[name], errors="coerce").astype("float64").fillna(0.0)
+            df_out[name] = pd.to_numeric(df_out[name], errors="coerce").astype("float64")
+            if not nullable:
+                df_out[name] = df_out[name].fillna(0.0)
         elif dtype == "category":
             df_out[name] = df_out[name].astype("object")
         elif dtype == "datetime64[ns, UTC]":
@@ -393,7 +397,7 @@ def _export_telemachus_inline(ctx: Context, df: pd.DataFrame, sim_outdir: str, t
     meta = {
         "format": "Telemachus",
         "version": version,
-        "generated_at_utc": datetime.utcnow().isoformat() + "Z",
+        "generated_at_utc": datetime.now(timezone.utc).isoformat(),
         "vehicle_id": vehicle_id,
         "trip_id": trip_id,
         "artifacts": artifacts,
@@ -470,7 +474,7 @@ def _sample_track_for_map(
     if "timestamp" in df.columns:
         t = pd.to_datetime(df["timestamp"], utc=True, errors="coerce")
     else:
-        t = pd.date_range(periods=len(lat), freq="100L", start=pd.Timestamp.utcnow().floor("s"), tz="UTC")
+        t = pd.date_range(periods=len(lat), freq="100ms", start=pd.Timestamp.now(tz="UTC").floor("s"))
     n = len(lat)
 
     # Stride depuis Hz meta/timeline
@@ -741,7 +745,7 @@ class Exporter:
     def run(self, ctx: Context) -> Result:
         outdir = ctx.cfg.get("outdir")
         if not outdir:
-            ts = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
+            ts = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
             outdir = f"data/simulations/simulated_{ts}"
         os.makedirs(outdir, exist_ok=True)
 
