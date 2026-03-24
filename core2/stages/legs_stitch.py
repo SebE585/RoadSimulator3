@@ -271,7 +271,7 @@ class LegsStitch:
 
         # Objects -> forward/back fill (no time interpolate on object dtype)
         if obj_cols:
-            obj_part = df[obj_cols].reindex(union_index).ffill().bfill().reindex(target_index)
+            obj_part = df[obj_cols].reindex(union_index).ffill().bfill().infer_objects(copy=False).reindex(target_index)
         else:
             obj_part = pd.DataFrame(index=target_index)
 
