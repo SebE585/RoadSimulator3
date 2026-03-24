@@ -368,6 +368,43 @@ if st.button("Lancer la simulation", disabled=not can_run, type="primary"):
             except Exception as exc:
                 st.error(f"Erreur API: {exc}")
 
+# ── Analyser dans Telemachus (1 clic) ─────────────────────────────────────
+
+outdir = st.session_state.sim_outdir
+if outdir and Path(outdir).exists():
+    csv_candidates = list(Path(outdir).glob("timeline.csv"))
+    if csv_candidates and st.button("📡 Analyser dans Telemachus", type="secondary"):
+        import subprocess
+        telemachus_runner = Path(__file__).resolve().parent.parent.parent / "telemachus-platform" / "webui" / "run_pipeline.py"
+        if telemachus_runner.exists():
+            with st.spinner("Analyse Telemachus en cours..."):
+                import tempfile, json
+                result_json = tempfile.mktemp(suffix=".json")
+                proc = subprocess.run(
+                    [sys.executable, str(telemachus_runner), str(csv_candidates[0]), result_json,
+                     "--dem-url", "http://51.91.125.143:8200"],
+                    capture_output=True, text=True, timeout=120,
+                )
+                if proc.returncode == 0 and Path(result_json).exists():
+                    with open(result_json) as f:
+                        tel_results = json.load(f)
+                    st.success("Analyse Telemachus terminée")
+                    for r in tel_results["results"]:
+                        icon = "✅" if r["ok"] else "❌"
+                        st.text(f'{icon} {r["label"]} — {r["msg"]} ({r["elapsed_ms"]}ms)')
+                    kpis = tel_results["artifacts"].get("d3_kpis", {})
+                    rot = tel_results["artifacts"].get("imu_rotation", {})
+                    yaw = tel_results["artifacts"].get("imu_yaw", {})
+                    tcols = st.columns(4)
+                    tcols[0].metric("Distance", f"{kpis.get('distance_km', 0):.1f} km")
+                    tcols[1].metric("Score", f"{kpis.get('driving_score', 0)}/100")
+                    tcols[2].metric("SQS", f"{tel_results['artifacts'].get('sqs', {}).get('sqs', 0):.2f}")
+                    tcols[3].metric("Yaw estimé", f"{yaw.get('yaw_deg', '?')}°")
+                else:
+                    st.error(f"Erreur Telemachus: {proc.stderr[-500:]}")
+        else:
+            st.warning("telemachus-platform non trouvé à côté de RoadSimulator3")
+
 # ── Rapport qualité ─────────────────────────────────────────────────────────
 
 ctx = st.session_state.sim_ctx
