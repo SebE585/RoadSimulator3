@@ -1,0 +1,97 @@
+# simulator_test_imu.yaml
+# Config de test : redressement IMU + upsampling 10Hz
+# Génère une trace avec device rotation (15° roll, 8° pitch, 20° yaw)
+# + événements variés pour valider la chaîne Telemachus
+#
+# Usage:
+#   python -m runner.run_simulation2 --config config/simulator_test_imu.yaml
+#
+# Puis injecter la sortie dans Telemachus UI pour valider :
+#   - IMU Calibration (doit retrouver les biais)
+#   - GPS Upsampling (si on force le GPS à 1Hz)
+#   - Event Detection (doit retrouver les événements injectés)
+
+outdir: "data/simulations/TEST-IMU_%Y%m%d_%H%M%S"
+start_time_utc: "2025-09-03T08:00:00Z"
+
+osrm:
+  base_url: "http://51.91.125.143:5000"
+  profile: "driving"
+
+sim:
+  hz: 10
+
+# ── Capteurs : GPS 1Hz, IMU 10Hz, gyro activé ──────────────────────────────
+sensors:
+  gps_hz: 1       # Simule un GPS réel à 1 Hz
+  imu_hz: 10      # Accéléromètre + gyro à 10 Hz
+  gyro_enabled: true
+
+# ── Rotation device : simule un boîtier mal orienté ────────────────────────
+# Roll 15° = légèrement penché latéralement
+# Pitch 8° = légèrement incliné avant/arrière
+# Yaw 20° = décalé par rapport à l'axe du véhicule
+device_rotation:
+  roll_deg: 15.0
+  pitch_deg: 8.0
+  yaw_deg: 20.0
+
+# ── Bruit capteur réaliste (FMC880) ────────────────────────────────────────
+noise_injector:
+  sigma_acc: 0.03     # m/s² — bruit accéléromètre typique MEMS
+  sigma_gyro: 0.002   # rad/s — bruit gyroscope typique MEMS
+
+# ── Événements à injecter ──────────────────────────────────────────────────
+inject_events:
+  n_harsh_brake: 3    # 3 freinages brusques
+  n_harsh_accel: 2    # 2 accélérations brusques
+  n_speed_bump: 4     # 4 dos d'âne
+  n_pothole: 2        # 2 nids de poule
+  n_curb: 1           # 1 montée de trottoir
+  n_sharp_turn: 3     # 3 virages serrés
+  n_door_open: 2      # 2 ouvertures de porte (aux arrêts)
+
+# ── Route : parcours varié Romilly → Fleury → Radepont → retour ───────────
+# Mix urbain/rural/sinueux pour tester tous les cas
+stop_smoother:
+  v_in: 0.25
+  t_in: 2.0
+  v_out: 0.6
+  t_out: 2.5
+  lock_pos: true
+
+stops:
+  - id: DEPOT
+    lat: 49.3347
+    lon: 1.3830
+    service_s: 0
+  - id: C1_FLEURY
+    lat: 49.3540
+    lon: 1.3400
+    service_s: 45
+    tw_start: "2025-09-03T08:10:00Z"
+    tw_end:   "2025-09-03T08:25:00Z"
+  - id: C2_RADEPONT
+    lat: 49.3600
+    lon: 1.3100
+    service_s: 60
+    tw_start: "2025-09-03T08:30:00Z"
+    tw_end:   "2025-09-03T08:50:00Z"
+  - id: C3_PONT_ARCHE
+    lat: 49.3050
+    lon: 1.1600
+    service_s: 30
+    tw_start: "2025-09-03T09:00:00Z"
+    tw_end:   "2025-09-03T09:20:00Z"
+  - id: DEPOT
+    lat: 49.3347
+    lon: 1.3830
+    service_s: 0
+
+# ── Telemachus export (pour injection directe dans l'analyzer) ─────────────
+telemachus:
+  enabled: true
+  version: "0.1"
+  vehicle_id: "VL-TEST-IMU"
+  write_parquet: true
+  write_csv: true
