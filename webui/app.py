@@ -215,10 +215,18 @@ csv_file = list(Path(outdir).glob("timeline.csv")) if outdir and Path(outdir).ex
 act = st.columns([1, 1, 2])
 if csv_file:
     with act[0]:
-        st.download_button("📥 CSV", data=csv_file[0].read_bytes(), file_name="timeline.csv",
-                           mime="text/csv", key="dl_csv", use_container_width=True)
-        # Copier pour Telemachus
+        # D0 Parquet prioritaire, sinon CSV
+        d0_file = list(Path(outdir).glob("d0.parquet"))
+        if d0_file:
+            st.download_button("📥 D0 Parquet", data=d0_file[0].read_bytes(), file_name="d0.parquet",
+                               mime="application/octet-stream", key="dl_d0", use_container_width=True)
+        else:
+            st.download_button("📥 CSV", data=csv_file[0].read_bytes(), file_name="timeline.csv",
+                               mime="text/csv", key="dl_csv", use_container_width=True)
+        # Copier pour Telemachus (D0 parquet + CSV fallback)
         try:
+            if d0_file:
+                shutil.copy2(d0_file[0], Path("/opt/shared/traces/rs3_latest_d0.parquet"))
             shutil.copy2(csv_file[0], Path("/opt/shared/traces/rs3_latest.csv"))
         except Exception:
             pass
