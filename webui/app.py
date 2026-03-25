@@ -728,6 +728,6 @@ if outdir and Path(outdir).exists():
 
 # ── Footer ──────────────────────────────────────────────────────────────────
 
-st.markdown("[📡 Analyser dans Telemachus](http://telemachus.daxosdata.com) · [📄 Teleforge](https://teleforge.daxosdata.com)")
+st.markdown("[📡 Analyser dans Telemachus](https://telemachus.roadsimulator3.fr) · [📄 Recherche](https://research.roadsimulator3.fr)")
 
 theme_footer("RoadSimulator3 — Telemachus certified output")
