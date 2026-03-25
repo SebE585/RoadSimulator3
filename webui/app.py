@@ -34,7 +34,7 @@ apply_theme()
 
 DEFAULT_CENTER = [49.38, 1.25]  # Entre Romilly-sur-Andelle et Rouen
 DEFAULT_ZOOM = 11
-OSRM_BASE_URL = "http://localhost:5003"
+OSRM_BASE_URL = "http://localhost:5000"
 
 # Couleurs événements pour la carte
 EVENT_COLORS = {
@@ -171,7 +171,9 @@ with col_config:
     start_date = st.date_input("Date de départ", value=datetime.now(timezone.utc).date())
     start_time = st.time_input("Heure de départ (UTC)",
                                 value=datetime.now(timezone.utc).time().replace(second=0, microsecond=0))
-    osrm_url = st.text_input("OSRM URL", value=OSRM_BASE_URL)
+    with st.expander("Services carto"):
+        osrm_url = st.text_input("OSRM URL", value=OSRM_BASE_URL)
+        st.caption("Serveur : localhost:5000. Local : 51.91.125.143:5000")
 
     st.divider()
 
