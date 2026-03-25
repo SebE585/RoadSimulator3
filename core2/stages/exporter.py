@@ -731,6 +731,102 @@ def _generate_outputs(ctx: Context, df: pd.DataFrame, outdir: str, cfg: dict | N
 
     return report_path, map_path
 
+
+# ═══════════════════════════════════════════════════════════════════════════
+# D0 Export — RFC-0013 compliant
+# ═══════════════════════════════════════════════════════════════════════════
+
+def _export_d0(ctx, df: pd.DataFrame, outdir: str) -> str | None:
+    """
+    Exporte un fichier D0 conforme RFC-0013.
+    Colonnes D0 uniquement — pas de road_type, event, target_speed.
+    Format : Parquet + CSV.
+    """
+    d0 = pd.DataFrame()
+
+    # Timestamp (obligatoire)
+    if "timestamp" in df.columns:
+        d0["ts"] = df["timestamp"]
+    elif "ts" in df.columns:
+        d0["ts"] = df["ts"]
+
+    # GPS (obligatoire, NaN entre ticks si multi-rate)
+    for src, dst in [("lat", "lat"), ("lon", "lon")]:
+        d0[dst] = pd.to_numeric(df[src], errors="coerce") if src in df.columns else np.nan
+
+    # Speed (obligatoire)
+    for cand in ("speed_mps", "speed", "v_mps"):
+        if cand in df.columns:
+            d0["speed_mps"] = pd.to_numeric(df[cand], errors="coerce")
+            break
+    if "speed_mps" not in d0.columns:
+        d0["speed_mps"] = np.nan
+
+    # Heading (recommandé)
+    if "heading" in df.columns:
+        d0["heading_deg"] = pd.to_numeric(df["heading"], errors="coerce")
+    elif "heading_deg" in df.columns:
+        d0["heading_deg"] = pd.to_numeric(df["heading_deg"], errors="coerce")
+    else:
+        # Calculer depuis lat/lon
+        if "lat" in d0.columns and d0["lat"].notna().sum() > 1:
+            dlat = d0["lat"].diff()
+            dlon = d0["lon"].diff()
+            d0["heading_deg"] = np.degrees(np.arctan2(dlon, dlat)) % 360
+            d0.loc[d0["lat"].isna(), "heading_deg"] = np.nan
+
+    # Altitude GPS (recommandé)
+    # Note: RS3 n'a pas d'altitude GPS native, on peut utiliser altitude_m si dispo
+    if "altitude_m" in df.columns:
+        d0["altitude_gps_m"] = pd.to_numeric(df["altitude_m"], errors="coerce")
+
+    # Accéléromètre (obligatoire)
+    for src, dst in [("acc_x", "ax_mps2"), ("acc_y", "ay_mps2"), ("acc_z", "az_mps2")]:
+        if src in df.columns:
+            d0[dst] = pd.to_numeric(df[src], errors="coerce")
+        else:
+            d0[dst] = 0.0
+
+    # Gyroscope (optionnel — NaN si absent ou désactivé)
+    for src, dst in [("gyro_x", "gx_rad_s"), ("gyro_y", "gy_rad_s"), ("gyro_z", "gz_rad_s")]:
+        if src in df.columns and not df[src].isna().all():
+            d0[dst] = pd.to_numeric(df[src], errors="coerce")
+        # Si tout NaN ou absent → ne pas inclure la colonne (RFC-0013 §3.3)
+
+    # GPS valid marker
+    if "gps_valid" in df.columns:
+        d0["gps_valid"] = df["gps_valid"]
+
+    # Device & trip
+    cfg = ctx.cfg if isinstance(ctx.cfg, dict) else {}
+    tele_cfg = cfg.get("telemachus", {}) or {}
+    d0["device_id"] = tele_cfg.get("vehicle_id", cfg.get("vehicle_id", "RS3-SIM"))
+    d0["trip_id"] = tele_cfg.get("trip_id", f"RS3_{os.path.basename(outdir)}")
+
+    # Écrire
+    d0_parquet = os.path.join(outdir, "d0.parquet")
+    d0_csv = os.path.join(outdir, "d0.csv")
+    d0.to_parquet(d0_parquet, index=False)
+    d0.to_csv(d0_csv, index=False)
+
+    logger.info("[D0 Export] %d lignes → %s (%d colonnes)", len(d0), d0_parquet, len(d0.columns))
+
+    # Sauver aussi le ground truth (ce que RS3 a injecté) pour validation P014
+    gt = {}
+    if ctx.meta.get("device_rotation_deg"):
+        gt["device_rotation"] = ctx.meta["device_rotation_deg"]
+    if isinstance(cfg.get("inject_events"), dict):
+        gt["inject_events"] = cfg["inject_events"]
+    if isinstance(cfg.get("sensors"), dict):
+        gt["sensors"] = cfg["sensors"]
+    if gt:
+        gt_path = os.path.join(outdir, "ground_truth.json")
+        with open(gt_path, "w") as f:
+            json.dump(gt, f, indent=2, default=str)
+
+    return d0_parquet
+
+
 class Exporter:
     """
     Exporte:
@@ -764,6 +860,9 @@ class Exporter:
             # Sauvegardes tabulaires / méta
             csv_path = os.path.join(outdir, "timeline.csv")
             df.to_csv(csv_path, index=False)
+
+            # ── D0 export (RFC-0013 compliant) ──────────────────────────
+            _export_d0(ctx, df, outdir)
 
             art = {k: _sanitize(v) for k, v in ctx.artifacts.items()}
             with open(os.path.join(outdir, "artifacts.json"), "w", encoding="utf-8") as f:
