@@ -149,5 +149,5 @@ echo "  -> nginx reloaded with RS3 vhost"
 REMOTE
 
 info "Deployment complete."
-info "RS3 UI should be live at http://rs3.daxosdata.com"
-info "To enable SSL: sudo certbot --nginx -d rs3.daxosdata.com"
+info "RS3 UI should be live at http://simulate.roadsimulator3.fr"
+info "To enable SSL: sudo certbot --nginx -d simulate.roadsimulator3.fr"
