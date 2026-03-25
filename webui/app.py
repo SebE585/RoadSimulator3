@@ -9,6 +9,8 @@ from __future__ import annotations
 
 import io
 import json
+import subprocess
+import sys
 import uuid
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
