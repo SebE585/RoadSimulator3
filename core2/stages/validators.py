@@ -65,7 +65,9 @@ def _compute_checklist(df: pd.DataFrame, hz_target: float = 10.0) -> tuple[dict,
     metrics["std_ax"] = std_ax
     metrics["std_gz"] = std_gz
     checks["ax_variability"] = std_ax > 0.02   # m/s²
-    checks["gz_variability"] = std_gz > 0.002  # rad/s
+    # Skip gz_variability si gyro désactivé (tout NaN ou tout 0)
+    gyro_present = "gyro_z" in df.columns and not df["gyro_z"].isna().all() and not (df["gyro_z"].fillna(0) == 0).all()
+    checks["gz_variability"] = std_gz > 0.002 if gyro_present else True  # pass si absent
 
     # --- Cohérence latérale sur virages (ay ≈ v * gz) + rayon plausible ---
     ay = pd.to_numeric(df.get("acc_y", 0.0), errors="coerce").fillna(0.0).to_numpy()
