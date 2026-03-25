@@ -372,91 +372,46 @@ if st.button("Lancer la simulation", disabled=not can_run, type="primary"):
             except Exception as exc:
                 st.error(f"Erreur API: {exc}")
 
-# ── Analyser dans Telemachus (1 clic) ─────────────────────────────────────
+# ══════════════════════════════════════════════════════════════════════════════
+# POST-SIMULATION — Tabs organisés
+# ══════════════════════════════════════════════════════════════════════════════
 
+ctx = st.session_state.sim_ctx
 outdir = st.session_state.sim_outdir
-if outdir and Path(outdir).exists():
-    csv_candidates = list(Path(outdir).glob("timeline.csv"))
+sim_df = st.session_state.sim_df
+
+if ctx is not None:
+    st.divider()
+
+    # Préparer le fichier partagé pour Telemachus
+    csv_candidates = list(Path(outdir).glob("timeline.csv")) if outdir and Path(outdir).exists() else []
     if csv_candidates:
-        # Copier le CSV dans le dossier partagé pour Telemachus
         import shutil
         shared_dir = Path("/opt/shared/traces")
         if not shared_dir.exists():
-            shared_dir = Path(outdir)  # fallback local
-        shared_csv = shared_dir / f"rs3_latest.csv"
+            shared_dir = Path(outdir)
         try:
-            shutil.copy2(csv_candidates[0], shared_csv)
+            shutil.copy2(csv_candidates[0], shared_dir / "rs3_latest.csv")
         except Exception:
-            shared_csv = csv_candidates[0]
+            pass
 
+    # Actions rapides
+    act_cols = st.columns(3)
+    with act_cols[0]:
+        if csv_candidates:
+            st.download_button("📥 Télécharger CSV", data=csv_candidates[0].read_bytes(),
+                               file_name="timeline.csv", mime="text/csv", key="dl_timeline")
+    with act_cols[1]:
         tel_url = "https://telemachus.roadsimulator3.fr"
-        st.markdown(
-            f'<a href="{tel_url}" target="_blank" style="display:inline-block;'
-            f'padding:0.5em 1.5em;background:#0066CC;color:white;border-radius:8px;'
-            f'text-decoration:none;font-weight:600">📡 Ouvrir dans Telemachus →</a>'
-            f'<br><small style="color:#888">Fichier prêt : uploadez <code>{shared_csv.name}</code> '
-            f'dans Telemachus ({len(pd.read_csv(csv_candidates[0], nrows=1).columns)} colonnes)</small>',
-            unsafe_allow_html=True,
-        )
+        st.markdown(f'<a href="{tel_url}" target="_blank" style="display:inline-block;'
+                    f'padding:0.4em 1.2em;background:#0066CC;color:white;border-radius:6px;'
+                    f'text-decoration:none;font-weight:600;font-size:0.9em">'
+                    f'📡 Analyser dans Telemachus</a>', unsafe_allow_html=True)
+    with act_cols[2]:
+        rot_meta = ctx.meta.get("device_rotation_deg")
+        if rot_meta and any(v != 0 for v in rot_meta.values()):
+            st.caption(f"Rotation : {rot_meta['roll']}° / {rot_meta['pitch']}° / {rot_meta['yaw']}°")
 
-        # Download direct du CSV
-        st.download_button(
-            "📥 Télécharger timeline.csv",
-            data=csv_candidates[0].read_bytes(),
-            file_name="timeline.csv",
-            mime="text/csv",
-            key="dl_timeline",
-        )
-
-# ── Rapport qualité ─────────────────────────────────────────────────────────
-
-ctx = st.session_state.sim_ctx
-if ctx is not None:
-    st.divider()
-    st.subheader("Rapport qualité")
-
-    qa_pretty = ctx.artifacts.get("qa_pretty", {})
-    qa_realism = ctx.artifacts.get("qa_realism", {})
-
-    if qa_pretty:
-        status = qa_pretty.get("status", "")
-        text = qa_pretty.get("text", "")
-        is_ok = qa_realism.get("ok", True) if qa_realism else True
-
-        if is_ok:
-            st.success(status)
-        else:
-            st.warning(status)
-
-        if text:
-            st.code(text, language=None)
-
-    # Métriques clés
-    qa_checklist = ctx.artifacts.get("qa_checklist", {})
-    metrics = qa_checklist.get("metrics", {})
-    if metrics:
-        mcols = st.columns(4)
-        metric_labels = {
-            "v_median_mps": ("Vitesse médiane", "m/s"),
-            "ax_std_mps2": ("Std acc_x", "m/s2"),
-            "gz_std_rad_s": ("Std gyro_z", "rad/s"),
-            "hz_observed": ("Hz observé", "Hz"),
-        }
-        for i, (key, (label, unit)) in enumerate(metric_labels.items()):
-            if key in metrics:
-                val = metrics[key]
-                mcols[i % 4].metric(label, f"{val:.3f} {unit}")
-
-    # Rotation appliquée
-    rot_meta = ctx.meta.get("device_rotation_deg")
-    if rot_meta and any(v != 0 for v in rot_meta.values()):
-        st.info(f"Rotation device appliquée : roll={rot_meta['roll']}° pitch={rot_meta['pitch']}° yaw={rot_meta['yaw']}°")
-
-# ══════════════════════════════════════════════════════════════════════════════
-# ── RÉSULTATS VISUELS ─────────────────────────────────────────────────────────
-# ══════════════════════════════════════════════════════════════════════════════
-
-sim_df = st.session_state.sim_df
 if sim_df is not None and not sim_df.empty:
     st.divider()
     st.subheader("Résultats")
@@ -488,7 +443,7 @@ if sim_df is not None and not sim_df.empty:
                 unsafe_allow_html=True,
             )
 
-    tab_map, tab_acc, tab_gyro = st.tabs(["Carte du trajet", "Accéléromètre", "Gyroscope"])
+    tab_map, tab_acc, tab_gyro, tab_qa = st.tabs(["Carte", "Accéléromètre", "Gyroscope", "Qualité"])
 
     # ── Tab carte : véhicule animé ───────────────────────────────────────
     with tab_map:
@@ -678,56 +633,62 @@ if sim_df is not None and not sim_df.empty:
         else:
             st.info("Gyroscope désactivé ou pas de données gyro.")
 
-# ── Téléchargement ──────────────────────────────────────────────────────────
+    # ── Tab qualité ──────────────────────────────────────────────────────
+    with tab_qa:
+        qa_pretty = ctx.artifacts.get("qa_pretty", {})
+        qa_realism = ctx.artifacts.get("qa_realism", {})
+
+        if qa_pretty:
+            status = qa_pretty.get("status", "")
+            text = qa_pretty.get("text", "")
+            is_ok = qa_realism.get("ok", True) if qa_realism else True
+            if is_ok:
+                st.success(status)
+            else:
+                st.warning(status)
+            if text:
+                st.code(text, language=None)
+
+        qa_checklist = ctx.artifacts.get("qa_checklist", {})
+        metrics = qa_checklist.get("metrics", {})
+        if metrics:
+            qm = st.columns(4)
+            for i, (key, (label, unit)) in enumerate({
+                "v_median_mps": ("Vitesse médiane", "m/s"),
+                "ax_std_mps2": ("Std acc_x", "m/s²"),
+                "gz_std_rad_s": ("Std gyro_z", "rad/s"),
+                "hz_observed": ("Hz observé", "Hz"),
+            }.items()):
+                if key in metrics:
+                    qm[i % 4].metric(label, f"{metrics[key]:.3f} {unit}")
+
+# ── Téléchargement (formats additionnels) ──────────────────────────────────
 
 outdir = st.session_state.sim_outdir
 if outdir and Path(outdir).exists():
-    st.divider()
-    st.subheader("Téléchargement")
+    with st.expander("Autres formats de téléchargement"):
+        out_path = Path(outdir)
+        parquet_files = list(out_path.glob("*.parquet"))
+        csv_files = list(out_path.glob("*.csv"))
+        json_files = list(out_path.glob("*.json"))
 
-    out_path = Path(outdir)
-    parquet_files = list(out_path.glob("*.parquet"))
-    csv_files = list(out_path.glob("*.csv"))
-    json_files = list(out_path.glob("*.json"))
-
-    st.markdown(f"**Dossier:** `{outdir}`")
-
-    dl_cols = st.columns(4)
-
-    with dl_cols[0]:
-        for pf in parquet_files:
-            st.download_button(f"Parquet: {pf.name}", data=pf.read_bytes(),
-                               file_name=pf.name, mime="application/octet-stream", key=f"dl_pq_{pf.name}")
-
-    with dl_cols[1]:
-        if csv_files:
+        dl_cols = st.columns(4)
+        with dl_cols[0]:
+            for pf in parquet_files:
+                st.download_button(f"Parquet: {pf.name}", data=pf.read_bytes(),
+                                   file_name=pf.name, mime="application/octet-stream", key=f"dl_pq_{pf.name}")
+        with dl_cols[1]:
             for cf in csv_files:
                 st.download_button(f"CSV: {cf.name}", data=cf.read_bytes(),
                                    file_name=cf.name, mime="text/csv", key=f"dl_csv_{cf.name}")
-        elif parquet_files:
-            for pf in parquet_files:
-                df_conv = pd.read_parquet(pf)
-                buf = io.StringIO()
-                df_conv.to_csv(buf, index=False)
-                st.download_button(f"CSV: {pf.stem}.csv", data=buf.getvalue().encode(),
-                                   file_name=f"{pf.stem}.csv", mime="text/csv", key=f"dl_c_{pf.name}")
-
-    with dl_cols[2]:
-        if json_files:
+        with dl_cols[2]:
             for jf in json_files:
                 st.download_button(f"JSON: {jf.name}", data=jf.read_bytes(),
                                    file_name=jf.name, mime="application/json", key=f"dl_json_{jf.name}")
-        elif parquet_files:
-            for pf in parquet_files:
-                df_conv = pd.read_parquet(pf)
-                jbuf = df_conv.to_json(orient="records", date_format="iso")
-                st.download_button(f"JSON: {pf.stem}.json", data=jbuf.encode(),
-                                   file_name=f"{pf.stem}.json", mime="application/json", key=f"dl_j_{pf.name}")
-
-    with dl_cols[3]:
-        if yaml_str:
-            st.download_button("YAML config", data=yaml_str.encode(),
-                               file_name="simulator_web.yaml", mime="text/yaml", key="dl_yaml")
+        with dl_cols[3]:
+            if yaml_str:
+                st.download_button("YAML config", data=yaml_str.encode(),
+                                   file_name="simulator_web.yaml", mime="text/yaml", key="dl_yaml")
 
 # ── Footer ──────────────────────────────────────────────────────────────────
 
