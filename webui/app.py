@@ -291,7 +291,10 @@ if sim_df is not None and not sim_df.empty:
     with tab_qa:
         qa = ctx.artifacts.get("qa_pretty", {})
         if qa:
-            st.success(qa.get("status", "")) if ctx.artifacts.get("qa_realism", {}).get("ok", True) else st.warning(qa.get("status", ""))
+            if ctx.artifacts.get("qa_realism", {}).get("ok", True):
+                st.success(qa.get("status", ""))
+            else:
+                st.warning(qa.get("status", ""))
             if qa.get("text"):
                 st.code(qa["text"], language=None)
         metrics = ctx.artifacts.get("qa_checklist", {}).get("metrics", {})
