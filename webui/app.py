@@ -100,13 +100,44 @@ with col_cfg:
             "s", min_value=0, value=s["service_s"], step=10, key=f"svc_{i}", label_visibility="collapsed")
 
     st.divider()
-    st.markdown("**Capteurs**")
-    sc = st.columns(3)
-    gps_hz = sc[0].select_slider("GPS", [1, 2, 5, 10], value=1)
-    imu_hz = sc[1].select_slider("Acc", [5, 10], value=10)
-    gyro_on = sc[2].checkbox("Gyro", value=True)
 
-    st.markdown("**Événements**")
+    # ── GPS ──────────────────────────────────────
+    st.markdown("**📡 GPS**")
+    gc = st.columns(2)
+    gps_hz = gc[0].select_slider("Fréquence", [1, 2, 5, 10], value=1, key="gps_hz")
+    gps_noise_on = gc[1].checkbox("Bruit GPS réaliste", value=True)
+
+    if gps_noise_on:
+        gn = st.columns(3)
+        sigma_pos = gn[0].slider("Jitter (m)", 0.0, 10.0, 2.0, 0.5, key="sig_pos")
+        n_blackouts = gn[1].number_input("Blackouts tunnel", 0, 10, 0, key="n_bo")
+        cold_drift = gn[2].slider("Drift démarrage (m)", 0.0, 30.0, 0.0, 5.0, key="cold")
+    else:
+        sigma_pos, n_blackouts, cold_drift = 0.0, 0, 0.0
+
+    st.divider()
+
+    # ── IMU ──────────────────────────────────────
+    st.markdown("**🔧 IMU (Accéléromètre + Gyroscope)**")
+    ic = st.columns(3)
+    imu_hz = ic[0].select_slider("Fréquence", [5, 10], value=10, key="imu_hz")
+    sigma_acc = ic[1].slider("Bruit acc (m/s²)", 0.0, 0.1, 0.02, 0.005, key="sig_acc")
+    gyro_on = ic[2].checkbox("Gyroscope activé", value=True)
+    sigma_gyro = 0.001 if gyro_on else 0.0
+
+    st.divider()
+
+    # ── Rotation device ──────────────────────────
+    st.markdown("**🔄 Orientation du boîtier**")
+    rc = st.columns(3)
+    rot_roll = rc[0].number_input("Roll°", -45., 45., 0., 1., key="rot_r")
+    rot_pitch = rc[1].number_input("Pitch°", -45., 45., 0., 1., key="rot_p")
+    rot_yaw = rc[2].number_input("Yaw°", -180., 180., 0., 1., key="rot_y")
+
+    st.divider()
+
+    # ── Événements ───────────────────────────────
+    st.markdown("**⚡ Événements à injecter**")
     ev1, ev2, ev3 = st.columns(3)
     n_brake = ev1.number_input("Freinages", 0, 20, 0, key="nb")
     n_accel = ev1.number_input("Accélérations", 0, 20, 0, key="na")
@@ -114,12 +145,6 @@ with col_cfg:
     n_pothole = ev2.number_input("Nids de poule", 0, 20, 0, key="np")
     n_turn = ev3.number_input("Virages", 0, 20, 0, key="nt")
     n_door = ev3.number_input("Ouv. porte", 0, 20, 0, key="nd")
-
-    with st.expander("Rotation device"):
-        rc = st.columns(3)
-        rot_roll = rc[0].number_input("Roll°", -45., 45., 0., 1.)
-        rot_pitch = rc[1].number_input("Pitch°", -45., 45., 0., 1.)
-        rot_yaw = rc[2].number_input("Yaw°", -180., 180., 0., 1.)
 
     with st.expander("Services carto"):
         osrm_url = st.text_input("OSRM", value=OSRM_URL)
@@ -150,7 +175,18 @@ def _build_cfg():
         "sim": {"hz": 10},
         "sensors": {"gps_hz": gps_hz, "imu_hz": imu_hz, "gyro_enabled": gyro_on},
         "device_rotation": {"roll_deg": rot_roll, "pitch_deg": rot_pitch, "yaw_deg": rot_yaw},
-        "noise_injector": {"sigma_acc": 0.02, "sigma_gyro": 0.001 if gyro_on else 0.0},
+        "noise_injector": {"sigma_acc": sigma_acc, "sigma_gyro": sigma_gyro},
+        "gps_noise": {
+            "sigma_pos_m": sigma_pos,
+            "sigma_speed_mps": sigma_pos * 0.05,  # proportionnel au jitter position
+            "jump_probability": 0.003 if gps_noise_on else 0,
+            "jump_max_m": 50,
+            "blackout_count": n_blackouts,
+            "blackout_min_s": 5,
+            "blackout_max_s": 20,
+            "cold_start_drift_m": cold_drift,
+            "cold_start_decay_s": 30,
+        },
         "inject_events": {"n_harsh_brake": n_brake, "n_harsh_accel": n_accel, "n_speed_bump": n_bump,
                           "n_pothole": n_pothole, "n_sharp_turn": n_turn, "n_door_open": n_door},
         "stops": stops_yaml,
