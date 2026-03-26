@@ -33,6 +33,7 @@ from core2.stages.initial_stop_locker import InitialStopLocker
 from core2.stages.multi_rate_sampler import MultiRateSampler
 from core2.stages.device_rotator import DeviceRotator
 from core2.stages.event_injector import EventInjector
+from core2.stages.driving_dynamics import DrivingDynamics
 
 
 logger = logging.getLogger(__name__)
@@ -252,10 +253,11 @@ def build_pipeline(cfg):
             "tail_s": 8.0
         } | final_stop_locker_cfg)),
         speed_sync_stage,
+        DrivingDynamics(**((cfg.get("driving_dynamics", {}) or {}))),
         IMUProjector(),
         NoiseInjector(**({
-            "sigma_acc": 0.02,
-            "sigma_gyro": 0.001
+            "sigma_acc": 0.05,
+            "sigma_gyro": 0.002
         } | noise_injector_cfg)),
         DeviceRotator(**_device_rotation_cfg(cfg)),
         EventsTagger(**({

@@ -167,6 +167,10 @@ class IMUProjector:
         if include_gravity:
             acc_x = acc_x + G * np.sin(theta)
 
+        # Driving dynamics jitter (from DrivingDynamics stage, if present)
+        if "_driving_jitter_ax" in out.columns:
+            acc_x = acc_x + out["_driving_jitter_ax"].to_numpy(dtype=float)
+
         # Garde‑fou courbure: |psi_dot| <= v / R_min
         Rmin = max(1.0, float(min_turn_radius_m))
         psi_dot_max = np.where(v_s > 0, v_s / Rmin, 0.0)
@@ -174,6 +178,10 @@ class IMUProjector:
         gyro_z = np.clip(gyro_z, -psi_dot_max, psi_dot_max)
         acc_y = v_s * gyro_z
         acc_y[~moving] = 0.0
+
+        # Driving dynamics lateral jitter
+        if "_driving_jitter_ay" in out.columns:
+            acc_y = acc_y + out["_driving_jitter_ay"].to_numpy(dtype=float)
 
         # acc_z spécifique
         if include_gravity:
