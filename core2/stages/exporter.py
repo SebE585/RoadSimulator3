@@ -762,23 +762,53 @@ def _export_d0(ctx, df: pd.DataFrame, outdir: str) -> str | None:
     if "speed_mps" not in d0.columns:
         d0["speed_mps"] = np.nan
 
-    # Heading (recommandé)
+    # Heading (recommandé) — calculer sur les ticks GPS valides uniquement
     if "heading" in df.columns:
         d0["heading_deg"] = pd.to_numeric(df["heading"], errors="coerce")
     elif "heading_deg" in df.columns:
         d0["heading_deg"] = pd.to_numeric(df["heading_deg"], errors="coerce")
     else:
-        # Calculer depuis lat/lon
-        if "lat" in d0.columns and d0["lat"].notna().sum() > 1:
-            dlat = d0["lat"].diff()
-            dlon = d0["lon"].diff()
-            d0["heading_deg"] = np.degrees(np.arctan2(dlon, dlat)) % 360
-            d0.loc[d0["lat"].isna(), "heading_deg"] = np.nan
+        d0["heading_deg"] = np.nan
+        gps_valid = d0["lat"].notna()
+        if gps_valid.sum() > 1:
+            lat_gps = d0.loc[gps_valid, "lat"]
+            lon_gps = d0.loc[gps_valid, "lon"]
+            dlat = lat_gps.diff()
+            dlon = lon_gps.diff()
+            heading = np.degrees(np.arctan2(dlon.values, dlat.values)) % 360
+            d0.loc[gps_valid, "heading_deg"] = heading
+            # NaN à l'arrêt (speed < 0.5 m/s)
+            if "speed_mps" in d0.columns:
+                stopped = gps_valid & (d0["speed_mps"].fillna(0) < 0.5)
+                d0.loc[stopped, "heading_deg"] = np.nan
 
-    # Altitude GPS (recommandé)
-    # Note: RS3 n'a pas d'altitude GPS native, on peut utiliser altitude_m si dispo
-    if "altitude_m" in df.columns:
-        d0["altitude_gps_m"] = pd.to_numeric(df["altitude_m"], errors="coerce")
+    # Altitude GPS : PAS dans D0 — c'est la promesse du D1 (DEM enrichment)
+    # Même si le FMC880 remonte une altitude NMEA, elle est trop imprécise (±30m)
+    # Le DEM à 1m de résolution est la source de vérité → D1
+
+    # HDOP simulé (recommandé) — valeurs réalistes FMC880
+    rng_hdop = np.random.default_rng(43)
+    hdop_base = rng_hdop.lognormal(mean=0.3, sigma=0.3, size=len(d0)).clip(0.8, 5.0)
+    d0["hdop"] = np.nan
+    d0.loc[d0["lat"].notna(), "hdop"] = hdop_base[:d0["lat"].notna().sum()].round(1)
+
+    # Satellites simulé (recommandé) — 6-12 typique FMC880
+    rng_sat = np.random.default_rng(44)
+    n_sat = rng_sat.integers(6, 13, size=d0["lat"].notna().sum())
+    d0["n_satellites"] = np.nan
+    d0.loc[d0["lat"].notna(), "n_satellites"] = n_sat
+
+    # Bruit GPS position (jitter réaliste ±2m sur lat/lon)
+    gps_mask = d0["lat"].notna()
+    if gps_mask.sum() > 0:
+        rng_gps = np.random.default_rng(45)
+        n_gps = gps_mask.sum()
+        # ±2m ≈ ±0.000018° en latitude
+        d0.loc[gps_mask, "lat"] += rng_gps.normal(0, 0.000018, n_gps)
+        d0.loc[gps_mask, "lon"] += rng_gps.normal(0, 0.000018 / np.cos(np.radians(49.0)), n_gps)
+        # Bruit vitesse GPS ±0.1 m/s
+        d0.loc[gps_mask, "speed_mps"] += rng_gps.normal(0, 0.1, n_gps).astype("float32")
+        d0.loc[gps_mask, "speed_mps"] = d0.loc[gps_mask, "speed_mps"].clip(0)
 
     # Accéléromètre (obligatoire)
     for src, dst in [("acc_x", "ax_mps2"), ("acc_y", "ay_mps2"), ("acc_z", "az_mps2")]:
@@ -791,7 +821,6 @@ def _export_d0(ctx, df: pd.DataFrame, outdir: str) -> str | None:
     for src, dst in [("gyro_x", "gx_rad_s"), ("gyro_y", "gy_rad_s"), ("gyro_z", "gz_rad_s")]:
         if src in df.columns and not df[src].isna().all():
             d0[dst] = pd.to_numeric(df[src], errors="coerce")
-        # Si tout NaN ou absent → ne pas inclure la colonne (RFC-0013 §3.3)
 
     # GPS valid marker
     if "gps_valid" in df.columns:
