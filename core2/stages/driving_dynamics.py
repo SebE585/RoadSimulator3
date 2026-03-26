@@ -50,8 +50,8 @@ class DrivingDynamics:
 
     # Jitter longitudinal (pédale) — Ornstein-Uhlenbeck
     # Stationary std = sigma_ax / sqrt(2*theta_ax) ≈ 1.5/sqrt(6) ≈ 0.61 m/s²
-    theta_ax: float = 3.0       # retour vers 0 en ~0.3s
-    sigma_ax: float = 1.0       # amplitude bruit — stationary std ≈ 0.41 m/s² ≈ 0.04g
+    theta_ax: float = 4.0       # retour vers 0 en ~0.25s (plus rapide)
+    sigma_ax: float = 0.8       # amplitude bruit — stationary std ≈ 0.28 m/s²
 
     # Jitter latéral (volant) — Ornstein-Uhlenbeck
     # Stationary std = sigma_ay / sqrt(2*theta_ay) ≈ 1.0/sqrt(4) ≈ 0.50 m/s²
