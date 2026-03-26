@@ -805,27 +805,73 @@ def _export_d0(ctx, df: pd.DataFrame, outdir: str) -> str | None:
     jump_prob = float(gps_cfg.get("jump_probability", 0.001))  # 0.1% des ticks GPS = saut
     jump_max_m = float(gps_cfg.get("jump_max_m", 50.0))
 
+    # Cold start drift (décroissance exponentielle en début de trace)
+    cold_start_drift_m = float(gps_cfg.get("cold_start_drift_m", 0))
+    cold_start_decay_s = float(gps_cfg.get("cold_start_decay_s", 30))
+
+    # Tunnel blackout (segments de NaN GPS)
+    blackout_count = int(gps_cfg.get("blackout_count", 0))
+    blackout_min_s = float(gps_cfg.get("blackout_min_s", 5))
+    blackout_max_s = float(gps_cfg.get("blackout_max_s", 30))
+
     gps_mask = d0["lat"].notna()
     if gps_mask.sum() > 0:
         rng_gps = np.random.default_rng(45)
         n_gps = gps_mask.sum()
+        gps_indices = d0.index[gps_mask]
 
-        # Jitter position ±sigma_pos_m
-        sigma_deg = sigma_pos_m / 111_000
-        d0.loc[gps_mask, "lat"] += rng_gps.normal(0, sigma_deg, n_gps)
-        d0.loc[gps_mask, "lon"] += rng_gps.normal(0, sigma_deg / np.cos(np.radians(49.0)), n_gps)
+        # HDOP-correlated position noise: σ = sigma_pos_m * hdop / 1.5
+        hdop_vals = d0.loc[gps_mask, "hdop"].fillna(1.5).values
+        sigma_per_tick_m = sigma_pos_m * hdop_vals / 1.5
+        sigma_lat_deg = sigma_per_tick_m / 111_000
+        sigma_lon_deg = sigma_per_tick_m / (111_000 * np.cos(np.radians(49.0)))
+        d0.loc[gps_mask, "lat"] += rng_gps.normal(0, 1, n_gps) * sigma_lat_deg
+        d0.loc[gps_mask, "lon"] += rng_gps.normal(0, 1, n_gps) * sigma_lon_deg
 
         # Sauts GPS (multipath / coupure tunnel)
         n_jumps = int(n_gps * jump_prob)
         if n_jumps > 0:
-            jump_idx = rng_gps.choice(d0.index[gps_mask], size=n_jumps, replace=False)
+            jump_idx = rng_gps.choice(gps_indices, size=n_jumps, replace=False)
             jump_deg = jump_max_m / 111_000
             d0.loc[jump_idx, "lat"] += rng_gps.uniform(-jump_deg, jump_deg, n_jumps)
             d0.loc[jump_idx, "lon"] += rng_gps.uniform(-jump_deg, jump_deg, n_jumps)
 
+        # Cold start drift : biais décroissant sur les premières secondes
+        if cold_start_drift_m > 0 and cold_start_decay_s > 0:
+            drift_deg = cold_start_drift_m / 111_000
+            # Compute time offset from first GPS tick (in seconds)
+            ts_col = d0["ts"]
+            ts_parsed = pd.to_datetime(ts_col, utc=True, errors="coerce")
+            t0 = ts_parsed.loc[gps_indices[0]]
+            dt_s = (ts_parsed.loc[gps_mask] - t0).dt.total_seconds().values
+            decay = np.exp(-dt_s / cold_start_decay_s)
+            # Random fixed direction for the drift
+            drift_angle = rng_gps.uniform(0, 2 * np.pi)
+            d0.loc[gps_mask, "lat"] += drift_deg * decay * np.cos(drift_angle)
+            d0.loc[gps_mask, "lon"] += drift_deg * decay * np.sin(drift_angle) / np.cos(np.radians(49.0))
+
         # Bruit vitesse
         d0.loc[gps_mask, "speed_mps"] += rng_gps.normal(0, sigma_speed, n_gps).astype("float32")
         d0.loc[gps_mask, "speed_mps"] = d0.loc[gps_mask, "speed_mps"].clip(0)
+
+        # Tunnel blackout : mettre lat/lon/speed/heading à NaN sur des segments
+        if blackout_count > 0:
+            hz_est = float((ctx.cfg if isinstance(ctx.cfg, dict) else {}).get("sensors", {}).get("gps_hz", 10) or 10)
+            for _ in range(blackout_count):
+                dur_s = rng_gps.uniform(blackout_min_s, blackout_max_s)
+                dur_ticks = int(dur_s * hz_est)
+                max_start = max(0, len(gps_indices) - dur_ticks)
+                if max_start <= 0:
+                    continue
+                start_pos = rng_gps.integers(0, max_start)
+                bo_idx = gps_indices[start_pos : start_pos + dur_ticks]
+                d0.loc[bo_idx, ["lat", "lon", "speed_mps"]] = np.nan
+                if "heading_deg" in d0.columns:
+                    d0.loc[bo_idx, "heading_deg"] = np.nan
+                if "hdop" in d0.columns:
+                    d0.loc[bo_idx, "hdop"] = np.nan
+                if "n_satellites" in d0.columns:
+                    d0.loc[bo_idx, "n_satellites"] = np.nan
 
     # Accéléromètre (obligatoire)
     for src, dst in [("acc_x", "ax_mps2"), ("acc_y", "ay_mps2"), ("acc_z", "az_mps2")]:
@@ -865,6 +911,11 @@ def _export_d0(ctx, df: pd.DataFrame, outdir: str) -> str | None:
             "sigma_pos_m": sigma_pos_m,
             "sigma_speed_mps": sigma_speed,
             "jump_probability": jump_prob,
+            "cold_start_drift_m": cold_start_drift_m,
+            "cold_start_decay_s": cold_start_decay_s,
+            "blackout_count": blackout_count,
+            "blackout_min_s": blackout_min_s,
+            "blackout_max_s": blackout_max_s,
         },
         "n_points": len(d0),
         "columns": list(d0.columns),
