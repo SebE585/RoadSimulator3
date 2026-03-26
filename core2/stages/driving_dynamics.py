@@ -38,12 +38,12 @@ class DrivingDynamics:
     name: str = "driving_dynamics"
 
     # Micro-oscillations vitesse (croisière)
-    speed_oscillation_mps: float = 0.3     # ±0.3 m/s ≈ ±1 km/h
-    speed_oscillation_period_s: float = 3.0  # période 3s (naturel conducteur)
+    speed_oscillation_mps: float = 0.5     # ±0.5 m/s ≈ ±2 km/h
+    speed_oscillation_period_s: float = 2.5  # période 2.5s
 
     # Variabilité freinage/accélération
-    accel_jitter_mps2: float = 0.15         # ±0.15 m/s² de variation sur ax
-    accel_jitter_freq_hz: float = 2.0       # fréquence 2 Hz (micro-corrections pédale)
+    accel_jitter_mps2: float = 0.4          # ±0.4 m/s² — micro-corrections pédale réalistes
+    accel_jitter_freq_hz: float = 2.0       # fréquence 2 Hz
 
     # Variabilité latérale (entrée/sortie virage)
     lateral_jitter_mps2: float = 0.10       # ±0.10 m/s² de variation sur ay

@@ -245,7 +245,7 @@ def build_pipeline(cfg):
             "lock_pos": True
         } | stop_smoother_cfg)),
         SpeedSmoother(**({
-            "window_s": 1.5,
+            "window_s": 0.5,
             "min_periods": 1
         } | speed_smoother_cfg)),
         InitialStopLocker(**(cfg.get("initial_stop_locker", {}) or {})),
@@ -254,7 +254,7 @@ def build_pipeline(cfg):
         } | final_stop_locker_cfg)),
         speed_sync_stage,
         DrivingDynamics(**((cfg.get("driving_dynamics", {}) or {}))),
-        IMUProjector(),
+        IMUProjector(smooth_window_s=0.3),
         NoiseInjector(**({
             "sigma_acc": 0.05,
             "sigma_gyro": 0.002
