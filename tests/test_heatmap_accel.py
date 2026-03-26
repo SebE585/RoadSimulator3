@@ -1,16 +1,13 @@
 """
 Test d'intégration : distribution des accélérations RS3 vs données réelles.
 
-Compare le heatmap ax/ay produit par RS3 avec les caractéristiques
-attendues d'un heatmap de conduite urbaine réelle.
-
-Critères (issus des images de référence) :
+Compare les critères de sévérité de conduite produits par RS3
+avec les caractéristiques attendues d'un profil MOYEN :
+  - Std spatiale (pondérée distance V·dt) :
+      ax_std ≈ 0.069g, ay_std ≈ 0.094g
   - Distribution gaussienne centrée (pas bimodale)
-  - ax_std ≈ 0.10–0.20 g
-  - ay_std ≈ 0.15–0.25 g
-  - Centre ±0.05g < 30%
   - Pas de bandes (valeurs discrètes)
-  - Forme losange/diamant (pas rectangle)
+  - Forme losange/diamant
 
 Usage:
     python tests/test_heatmap_accel.py
@@ -25,6 +22,7 @@ import pandas as pd
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from core2.context import Context
+from core2.accel_stats import compute_severity_criteria
 from runner.run_simulation2 import build_pipeline
 
 G = 9.80665
@@ -51,51 +49,55 @@ def _run_simulation():
 
 
 def test_acceleration_distribution():
-    """Test principal : distribution des accélérations."""
+    """Test principal : distribution des accélérations (critères de sévérité)."""
     print("Simulation RS3...")
     df, artifacts = _run_simulation()
 
-    moving = df["speed"] > 1.0
-    n_moving = moving.sum()
-    print(f"  {len(df)} points totaux, {n_moving} en mouvement")
+    # Critères de sévérité (pondérés distance)
+    criteria = compute_severity_criteria(df, hz=10.0)
 
-    ax = df.loc[moving, "acc_x"].values
-    ay = df.loc[moving, "acc_y"].values
-    ax_g = ax / G
-    ay_g = ay / G
+    print(f"  {len(df)} points totaux, {criteria['n_valid_points']} valides (en mouvement + physiques)")
+    print(f"  Distance totale: {criteria['total_distance_m']:.0f} m")
+    print(f"  Points filtrés (non-physiques): {criteria['n_filtered_non_physical']}")
 
-    print(f"\n=== MÉTRIQUES ===")
+    print(f"\n=== CRITÈRES DE SÉVÉRITÉ (pondérés distance) ===")
+    ax_std = criteria["std_gx_spatial"]
+    ay_std = criteria["std_gy_spatial"]
+    print(f"  Std Gx (spatial): {ax_std:.4f} g (réf MOYEN: 0.069)")
+    print(f"  Std Gy (spatial): {ay_std:.4f} g (réf MOYEN: 0.094)")
+    print(f"  Mean Gx (spatial): {criteria['mean_gx_spatial']:.4f} g")
+    print(f"  Mean Gy (spatial): {criteria['mean_gy_spatial']:.4f} g")
+    print(f"  P0.1% Gx: [{criteria['p01_gx_low']:.4f}, {criteria['p01_gx_high']:.4f}] g")
+    print(f"  P0.1% Gy: [{criteria['p01_gy_low']:.4f}, {criteria['p01_gy_high']:.4f}] g")
 
-    # 1. Std (dispersion)
-    ax_std = np.std(ax_g)
-    ay_std = np.std(ay_g)
-    print(f"  ax std: {ax_std:.4f} g (cible: 0.10–0.20)")
-    print(f"  ay std: {ay_std:.4f} g (cible: 0.15–0.25)")
+    print(f"\n=== COMPARAISON temporel vs spatial ===")
+    print(f"  Std Gx temporel: {criteria['std_gx_temporal']:.4f} g")
+    print(f"  Std Gy temporel: {criteria['std_gy_temporal']:.4f} g")
 
-    # 2. Centre
+    # Métriques complémentaires (forme, bandes, bimodalité)
+    moving = df["speed"].values > 0.5
+    ax_g = df.loc[moving, "acc_x"].values / G
+    ay_g = df.loc[moving, "acc_y"].values / G
+
     centre = ((abs(ax_g) < 0.05) & (abs(ay_g) < 0.05)).mean()
-    print(f"  Centre ±0.05g: {centre*100:.1f}% (cible: < 30%)")
+    print(f"\n  Centre +/-0.05g: {centre*100:.1f}%")
 
-    # 3. Valeurs discrètes (bandes)
     dv = np.diff(df.loc[moving, "speed"].values) * 10
     n_unique = len(np.unique(np.round(dv, 2)))
-    print(f"  dv/dt valeurs uniques: {n_unique} (cible: > 100)")
+    print(f"  dv/dt valeurs uniques: {n_unique}")
 
-    # 4. Bimodalité : le pic doit être à 0, pas aux extrêmes
     hist_ax, bins_ax = np.histogram(ax_g, bins=50, range=(-0.5, 0.5))
     peak_bin = bins_ax[np.argmax(hist_ax)]
     bimodal = abs(peak_bin) > 0.1
-    print(f"  Pic ax à: {peak_bin:.2f}g (cible: ~0, pas bimodal)")
+    print(f"  Pic ax à: {peak_bin:.2f}g")
 
-    # 5. Forme losange : ratio des queues ax vs ay
-    tail_ax = (abs(ax_g) > 0.2).mean()
-    tail_ay = (abs(ay_g) > 0.2).mean()
-    print(f"  Queue ax (>0.2g): {tail_ax*100:.1f}%")
-    print(f"  Queue ay (>0.2g): {tail_ay*100:.1f}%")
+    tail_ax = (abs(ax_g) > 0.1).mean()
+    tail_ay = (abs(ay_g) > 0.1).mean()
+    print(f"  Queue ax (>0.1g): {tail_ax*100:.1f}%")
+    print(f"  Queue ay (>0.1g): {tail_ay*100:.1f}%")
 
-    # 6. QA
     qa_ok = artifacts.get("qa_realism", {}).get("ok", False)
-    print(f"  QA realism: {'✅' if qa_ok else '❌'}")
+    print(f"  QA realism: {'OK' if qa_ok else 'KO'}")
 
     # ── Assertions ──
     print(f"\n=== RÉSULTATS ===")
@@ -106,16 +108,16 @@ def test_acceleration_distribution():
         nonlocal passed
         if condition:
             passed += 1
-            print(f"  ✅ {name}")
+            print(f"  OK  {name}")
         else:
-            print(f"  ❌ {name}")
+            print(f"  KO  {name}")
 
-    check("ax_std dans [0.08, 0.25]g", 0.08 <= ax_std <= 0.25)
-    check("ay_std dans [0.10, 0.30]g", 0.10 <= ay_std <= 0.30)
+    check("Std Gx spatial dans [0.04, 0.10]g", 0.04 <= ax_std <= 0.10)
+    check("Std Gy spatial dans [0.04, 0.15]g", 0.04 <= ay_std <= 0.15)
     check("Centre < 30%", centre < 0.30)
     check("dv/dt > 100 valeurs uniques (pas de bandes)", n_unique > 100)
     check("Pas bimodal (pic à ~0)", not bimodal)
-    check("Queues présentes (>0.2g > 2%)", tail_ax > 0.02 or tail_ay > 0.02)
+    check("Queues présentes (>0.1g > 1%)", tail_ax > 0.01 or tail_ay > 0.01)
     check("QA realism OK", qa_ok)
 
     print(f"\n  {passed}/{total} tests passés")

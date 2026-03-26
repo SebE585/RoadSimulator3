@@ -1,6 +1,6 @@
 # core2/stages/driving_dynamics.py
 """
-Stage — Driving Dynamics Injector v2.
+Stage — Driving Dynamics Injector v3.
 
 Modélise la variabilité naturelle de conduite via des processus
 d'Ornstein-Uhlenbeck (mean-reverting random walk) sur :
@@ -8,16 +8,15 @@ d'Ornstein-Uhlenbeck (mean-reverting random walk) sur :
   - ay : micro-corrections volant (entrée/sortie virage)
   - speed : oscillations de vitesse en croisière
 
-Produit une distribution GAUSSIENNE centrée (pas bimodale),
-conforme aux données réelles de conduite urbaine.
-
-Paramètres calibrés sur : heatmap bi-histogramme données réelles livraison.
-Cible : ax_std ≈ 0.10-0.15g, ay_std ≈ 0.15-0.20g, centre ±0.05g < 30%.
+Trois profils calibrés sur données réelles (Vision.jpg) :
+  - SEVERE : Std Gx ≈ 0.07g, Std Gy ≈ 0.13g
+  - MOYEN  : Std Gx ≈ 0.07g, Std Gy ≈ 0.09g
+  - DOUX   : Std Gx ≈ 0.06g, Std Gy ≈ 0.05g
 """
 from __future__ import annotations
 
 import logging
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 import numpy as np
 import pandas as pd
@@ -25,6 +24,57 @@ import pandas as pd
 from rs3_contracts.api import Result
 
 logger = logging.getLogger(__name__)
+
+# ── Presets calibrés sur Vision.jpg ─────────────────────────────
+# Chaque preset définit les paramètres DrivingDynamics + IMUProjector
+PROFILES = {
+    "severe": {
+        "sigma_ax": 0.6,
+        "sigma_ay": 0.6,
+        "theta_ax": 4.0,
+        "theta_ay": 2.0,
+        "sigma_speed": 0.8,
+        "theta_speed": 0.5,
+        "smooth_speed_sigma": 18.0,
+        "imu_smooth_window_s": 1.3,
+        "imu_min_turn_radius_m": 22.0,
+    },
+    "moyen": {
+        "sigma_ax": 0.6,
+        "sigma_ay": 0.3,
+        "theta_ax": 4.0,
+        "theta_ay": 2.0,
+        "sigma_speed": 0.6,
+        "theta_speed": 0.5,
+        "smooth_speed_sigma": 18.0,
+        "imu_smooth_window_s": 1.3,
+        "imu_min_turn_radius_m": 30.0,
+    },
+    "doux": {
+        "sigma_ax": 0.5,
+        "sigma_ay": 0.1,
+        "theta_ax": 4.0,
+        "theta_ay": 2.0,
+        "sigma_speed": 0.4,
+        "theta_speed": 0.5,
+        "smooth_speed_sigma": 25.0,
+        "imu_smooth_window_s": 2.0,
+        "imu_min_turn_radius_m": 90.0,
+    },
+}
+
+
+def get_profile(name: str) -> dict:
+    """Retourne le preset pour un profil donné (insensible à la casse)."""
+    key = name.strip().lower()
+    # Aliases
+    aliases = {"sévère": "severe", "sévere": "severe", "severe": "severe",
+               "moyen": "moyen", "medium": "moyen",
+               "doux": "doux", "gentle": "doux", "soft": "doux"}
+    key = aliases.get(key, key)
+    if key not in PROFILES:
+        raise ValueError(f"Profil inconnu: '{name}'. Choix: {list(PROFILES.keys())}")
+    return PROFILES[key]
 
 
 def _ornstein_uhlenbeck(n: int, dt: float, theta: float, sigma: float, rng) -> np.ndarray:
@@ -48,21 +98,30 @@ class DrivingDynamics:
 
     name: str = "driving_dynamics"
 
-    # Jitter longitudinal (pédale) — Ornstein-Uhlenbeck
-    # Stationary std = sigma_ax / sqrt(2*theta_ax) ≈ 1.5/sqrt(6) ≈ 0.61 m/s²
-    theta_ax: float = 4.0       # retour vers 0 en ~0.25s (plus rapide)
-    sigma_ax: float = 0.8       # amplitude bruit — stationary std ≈ 0.28 m/s²
+    # Profil conducteur : "severe", "moyen", "doux" (ou None pour params manuels)
+    profile: str | None = "moyen"
 
-    # Jitter latéral (volant) — Ornstein-Uhlenbeck
-    # Stationary std = sigma_ay / sqrt(2*theta_ay) ≈ 1.0/sqrt(4) ≈ 0.50 m/s²
-    theta_ay: float = 2.0       # retour vers 0 en ~0.5s
-    sigma_ay: float = 1.0       # amplitude bruit
-
-    # Oscillations vitesse — Ornstein-Uhlenbeck
-    theta_speed: float = 1.0    # retour lent (1s)
-    sigma_speed: float = 1.5    # ≈ ±0.5 m/s stationary
+    # Params manuels (écrasés par le profil si profile != None)
+    theta_ax: float = 4.0
+    sigma_ax: float = 1.4
+    theta_ay: float = 2.0
+    sigma_ay: float = 0.8
+    theta_speed: float = 0.5
+    sigma_speed: float = 0.6
+    smooth_speed_sigma: float = 15.0
 
     seed: int = 99
+
+    def __post_init__(self):
+        if self.profile:
+            p = get_profile(self.profile)
+            self.theta_ax = p["theta_ax"]
+            self.sigma_ax = p["sigma_ax"]
+            self.theta_ay = p["theta_ay"]
+            self.sigma_ay = p["sigma_ay"]
+            self.theta_speed = p["theta_speed"]
+            self.sigma_speed = p["sigma_speed"]
+            self.smooth_speed_sigma = p["smooth_speed_sigma"]
 
     def run(self, ctx) -> Result:
         df = ctx.df
@@ -84,13 +143,20 @@ class DrivingDynamics:
         if not moving.any():
             return Result(True, "skip — pas de mouvement")
 
+        # ── Lissage des transitions discrètes (SpeedSync) ──────────
+        from scipy.ndimage import gaussian_filter1d
+        v_orig = v.copy()
+        if self.smooth_speed_sigma > 0:
+            v_smooth = gaussian_filter1d(v, sigma=self.smooth_speed_sigma)
+            v[moving] = v_smooth[moving]
+            v = np.clip(v, 0, None)
+
         # ── Oscillations vitesse (Ornstein-Uhlenbeck) ────────────────
         speed_jitter = _ornstein_uhlenbeck(n, dt, self.theta_speed, self.sigma_speed, rng)
-        # Proportionnel à la vitesse (pas de jitter à l'arrêt)
         v_factor = np.clip(v / 5.0, 0, 1)
         v[moving] += (speed_jitter[moving] * v_factor[moving])
         v = np.clip(v, 0, None)
-        v[~moving] = df[speed_col].to_numpy(dtype=float)[~moving]
+        v[~moving] = v_orig[~moving]
         df[speed_col] = v.astype("float32") if df[speed_col].dtype == np.float32 else v
 
         # ── Jitter acc longitudinal (Ornstein-Uhlenbeck) ─────────────
@@ -106,6 +172,7 @@ class DrivingDynamics:
 
         ctx.df = df
 
+        profile_name = self.profile or "custom"
         ax_std = np.std(ax_jitter[moving])
         ay_std = np.std(ay_jitter[moving])
-        return Result(True, f"OU process: ax_std={ax_std:.2f} ay_std={ay_std:.2f} m/s²")
+        return Result(True, f"[{profile_name}] OU: ax_std={ax_std:.2f} ay_std={ay_std:.2f} m/s²")

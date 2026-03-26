@@ -238,4 +238,17 @@ class IMUProjector:
 
         out = out.reset_index()
         ctx.df = out
+
+        # Critères de sévérité de conduite (pondérés distance)
+        try:
+            from ..accel_stats import compute_severity_criteria
+            sev = compute_severity_criteria(ctx.df, hz=hz)
+            ctx.artifacts["severity_criteria"] = sev
+            logger.info(
+                "[IMU] severity: Std Gx=%.4fg Std Gy=%.4fg (spatial), dist=%.0fm",
+                sev["std_gx_spatial"], sev["std_gy_spatial"], sev["total_distance_m"],
+            )
+        except Exception as exc:
+            logger.warning("[IMU] severity criteria computation failed: %s", exc)
+
         return Result((True, "OK"))

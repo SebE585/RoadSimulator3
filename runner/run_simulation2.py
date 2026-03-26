@@ -33,10 +33,34 @@ from core2.stages.initial_stop_locker import InitialStopLocker
 from core2.stages.multi_rate_sampler import MultiRateSampler
 from core2.stages.device_rotator import DeviceRotator
 from core2.stages.event_injector import EventInjector
-from core2.stages.driving_dynamics import DrivingDynamics
+from core2.stages.driving_dynamics import DrivingDynamics, get_profile, PROFILES
 
 
 logger = logging.getLogger(__name__)
+
+
+def _build_imu_projector(cfg: dict) -> IMUProjector:
+    """Configure IMUProjector selon le profil conducteur (driving_dynamics.profile)."""
+    dd_cfg = cfg.get("driving_dynamics", {}) or {}
+    imu_cfg = cfg.get("imu_projector", {}) or {}
+
+    profile_name = dd_cfg.get("profile", "moyen")
+    if profile_name:
+        try:
+            p = get_profile(profile_name)
+        except ValueError:
+            p = PROFILES["moyen"]
+        smooth_w = p["imu_smooth_window_s"]
+        min_r = p["imu_min_turn_radius_m"]
+    else:
+        smooth_w = 1.0
+        min_r = 20.0
+
+    # Le YAML imu_projector peut toujours override
+    smooth_w = float(imu_cfg.get("smooth_window_s", smooth_w))
+    min_r = float(imu_cfg.get("min_turn_radius_m", min_r))
+
+    return IMUProjector(smooth_window_s=smooth_w, min_turn_radius_m=min_r)
 
 
 def _resolve_config_path(raw: str) -> Path:
@@ -254,7 +278,7 @@ def build_pipeline(cfg):
         } | final_stop_locker_cfg)),
         speed_sync_stage,
         DrivingDynamics(**((cfg.get("driving_dynamics", {}) or {}))),
-        IMUProjector(smooth_window_s=0.3),
+        _build_imu_projector(cfg),
         NoiseInjector(**({
             "sigma_acc": 0.05,
             "sigma_gyro": 0.002
