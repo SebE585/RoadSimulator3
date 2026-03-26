@@ -798,16 +798,33 @@ def _export_d0(ctx, df: pd.DataFrame, outdir: str) -> str | None:
     d0["n_satellites"] = np.nan
     d0.loc[d0["lat"].notna(), "n_satellites"] = n_sat
 
-    # Bruit GPS position (jitter réaliste ±2m sur lat/lon)
+    # Bruit GPS (configurable)
+    gps_cfg = (ctx.cfg if isinstance(ctx.cfg, dict) else {}).get("gps_noise", {})
+    sigma_pos_m = float(gps_cfg.get("sigma_pos_m", 2.0))
+    sigma_speed = float(gps_cfg.get("sigma_speed_mps", 0.1))
+    jump_prob = float(gps_cfg.get("jump_probability", 0.001))  # 0.1% des ticks GPS = saut
+    jump_max_m = float(gps_cfg.get("jump_max_m", 50.0))
+
     gps_mask = d0["lat"].notna()
     if gps_mask.sum() > 0:
         rng_gps = np.random.default_rng(45)
         n_gps = gps_mask.sum()
-        # ±2m ≈ ±0.000018° en latitude
-        d0.loc[gps_mask, "lat"] += rng_gps.normal(0, 0.000018, n_gps)
-        d0.loc[gps_mask, "lon"] += rng_gps.normal(0, 0.000018 / np.cos(np.radians(49.0)), n_gps)
-        # Bruit vitesse GPS ±0.1 m/s
-        d0.loc[gps_mask, "speed_mps"] += rng_gps.normal(0, 0.1, n_gps).astype("float32")
+
+        # Jitter position ±sigma_pos_m
+        sigma_deg = sigma_pos_m / 111_000
+        d0.loc[gps_mask, "lat"] += rng_gps.normal(0, sigma_deg, n_gps)
+        d0.loc[gps_mask, "lon"] += rng_gps.normal(0, sigma_deg / np.cos(np.radians(49.0)), n_gps)
+
+        # Sauts GPS (multipath / coupure tunnel)
+        n_jumps = int(n_gps * jump_prob)
+        if n_jumps > 0:
+            jump_idx = rng_gps.choice(d0.index[gps_mask], size=n_jumps, replace=False)
+            jump_deg = jump_max_m / 111_000
+            d0.loc[jump_idx, "lat"] += rng_gps.uniform(-jump_deg, jump_deg, n_jumps)
+            d0.loc[jump_idx, "lon"] += rng_gps.uniform(-jump_deg, jump_deg, n_jumps)
+
+        # Bruit vitesse
+        d0.loc[gps_mask, "speed_mps"] += rng_gps.normal(0, sigma_speed, n_gps).astype("float32")
         d0.loc[gps_mask, "speed_mps"] = d0.loc[gps_mask, "speed_mps"].clip(0)
 
     # Accéléromètre (obligatoire)
@@ -817,37 +834,52 @@ def _export_d0(ctx, df: pd.DataFrame, outdir: str) -> str | None:
         else:
             d0[dst] = 0.0
 
-    # Gyroscope (optionnel — NaN si absent ou désactivé)
+    # Gyroscope (optionnel — absent si désactivé)
     for src, dst in [("gyro_x", "gx_rad_s"), ("gyro_y", "gy_rad_s"), ("gyro_z", "gz_rad_s")]:
         if src in df.columns and not df[src].isna().all():
             d0[dst] = pd.to_numeric(df[src], errors="coerce")
 
-    # GPS valid marker
-    if "gps_valid" in df.columns:
-        d0["gps_valid"] = df["gps_valid"]
-
-    # Device & trip
-    cfg = ctx.cfg if isinstance(ctx.cfg, dict) else {}
-    tele_cfg = cfg.get("telemachus", {}) or {}
-    d0["device_id"] = tele_cfg.get("vehicle_id", cfg.get("vehicle_id", "RS3-SIM"))
-    d0["trip_id"] = tele_cfg.get("trip_id", f"RS3_{os.path.basename(outdir)}")
-
-    # Écrire
+    # Écrire le D0 (signal pur — pas de device_id/trip_id dans le parquet)
     d0_parquet = os.path.join(outdir, "d0.parquet")
-    d0_csv = os.path.join(outdir, "d0.csv")
     d0.to_parquet(d0_parquet, index=False)
-    d0.to_csv(d0_csv, index=False)
 
-    logger.info("[D0 Export] %d lignes → %s (%d colonnes)", len(d0), d0_parquet, len(d0.columns))
+    logger.info("[D0 Export] %d lignes, %d colonnes → %s", len(d0), len(d0.columns), d0_parquet)
 
-    # Sauver aussi le ground truth (ce que RS3 a injecté) pour validation P014
+    # Manifest (métadonnées d'enveloppe — séparé du signal)
+    cfg_dict = ctx.cfg if isinstance(ctx.cfg, dict) else {}
+    tele_cfg = cfg_dict.get("telemachus", {}) or {}
+    sensors_cfg = cfg_dict.get("sensors", {}) or {}
+
+    manifest = {
+        "format": "telemachus-d0",
+        "version": "0.2",
+        "device_id": tele_cfg.get("vehicle_id", cfg_dict.get("vehicle_id", "RS3-SIM")),
+        "trip_id": tele_cfg.get("trip_id", f"RS3_{os.path.basename(outdir)}"),
+        "source": "RoadSimulator3",
+        "sensors": {
+            "gps_hz": sensors_cfg.get("gps_hz", 10),
+            "imu_hz": sensors_cfg.get("imu_hz", 10),
+            "gyro_enabled": sensors_cfg.get("gyro_enabled", True),
+        },
+        "gps_noise": {
+            "sigma_pos_m": sigma_pos_m,
+            "sigma_speed_mps": sigma_speed,
+            "jump_probability": jump_prob,
+        },
+        "n_points": len(d0),
+        "columns": list(d0.columns),
+    }
+    with open(os.path.join(outdir, "manifest.json"), "w") as f:
+        json.dump(manifest, f, indent=2, default=str)
+
+    # Ground truth (RS3 seulement — pour validation P014)
     gt = {}
     if ctx.meta.get("device_rotation_deg"):
         gt["device_rotation"] = ctx.meta["device_rotation_deg"]
-    if isinstance(cfg.get("inject_events"), dict):
-        gt["inject_events"] = cfg["inject_events"]
-    if isinstance(cfg.get("sensors"), dict):
-        gt["sensors"] = cfg["sensors"]
+    if isinstance(cfg_dict.get("inject_events"), dict):
+        gt["inject_events"] = cfg_dict["inject_events"]
+    if isinstance(cfg_dict.get("sensors"), dict):
+        gt["sensors"] = cfg_dict["sensors"]
     if gt:
         gt_path = os.path.join(outdir, "ground_truth.json")
         with open(gt_path, "w") as f:
