@@ -72,3 +72,4 @@ deploy/
 
 # === Site build ===
 site/
+*.sh
