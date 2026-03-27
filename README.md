@@ -1,185 +1,103 @@
-🚗 RoadSimulator3
+# RoadSimulator3
 
-[![LinkedIn](https://img.shields.io/badge/LinkedIn-Sebastien_Edet-blue)](https://www.linkedin.com/in/sebastienedet/)
 [![AGPL License](https://img.shields.io/badge/License-AGPL-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
-[![CC-BY-SA License](https://img.shields.io/badge/License-CC--BY--SA-green.svg)](https://creativecommons.org/licenses/by-sa/4.0/)
-[![CC-BY License](https://img.shields.io/badge/License-CC--BY-green.svg)](https://creativecommons.org/licenses/by/4.0/)
+[![Python 3.11+](https://img.shields.io/badge/Python-3.11%2B-blue.svg)](https://www.python.org/)
+[![LinkedIn](https://img.shields.io/badge/LinkedIn-Sebastien_Edet-blue)](https://www.linkedin.com/in/sebastienedet/)
 
-RoadSimulator3 (RS3) est un **simulateur inertiel haute fréquence (10 Hz)** qui génère des trajectoires réalistes à partir d’OpenStreetMap (OSRM/OSMnx) et produit des signaux **accéléromètre + gyroscope**, des **événements** (arrêts, virages, chocs…) et des **rapports** interactifs HTML.
+**High-frequency inertial simulator (10 Hz)** that generates realistic vehicle trajectories from OpenStreetMap, producing accelerometer, gyroscope, and GPS signals with configurable driving events.
 
----
+## What it does
 
-## 📦 Prérequis
+RS3 simulates a vehicle driving a route and outputs the sensor data a real onboard device would record:
 
-- Python **3.11+**
-- `make`
-- **Docker** + **Docker Compose**
-
-### Services utilisés
-- **OSRM** : routage à partir d’OSM
-- **OSMnx-service** : typologie de route (voie, type, classes…)
-- **SRTM** *(via plugin Altitude)* : altimétrie (élévation) — requis uniquement si le plugin **rs3-plugin-altitude** est activé
-
-> ⚠️ **Important** : Les images Docker **n’incluent pas** d’extraits OSM/SRTM. Il faut **télécharger et préparer** les données **avant** de lancer la stack.
-
----
-
-## 🗺️ Préparer les données (obligatoire)
-
-### 1) OSM / OSRM (extrait régional)
-
-1. **Télécharger** un extrait `.osm.pbf` couvrant votre zone (ex.: depuis Geofabrik ou un miroir régional) et placez-le dans `data/osm/`.
-2. **Construire** les fichiers OSRM (profil voiture, pipeline CH par défaut) avec l’image officielle `osrm/osrm-backend` :
-
-```bash
-# Créer l’arborescence locale
-mkdir -p data/osm
-
-# Exemple avec un extrait nommé france-normandie-latest.osm.pbf
-export OSM_PBF=data/osm/france-normandie-latest.osm.pbf
-
-# Extraction (profil voiture)
-docker run --rm -t -v "$PWD/data/osm:/data" osrm/osrm-backend \
-  osrm-extract -p /opt/car.lua /data/$(basename "$OSM_PBF")
-
-# Contraction (CH) — simple et rapide pour servir via osrm-routed
-docker run --rm -t -v "$PWD/data/osm:/data" osrm/osrm-backend \
-  osrm-contract /data/$(basename "$OSM_PBF" .osm.pbf).osrm
-
-# Vous devez obtenir des fichiers /data/osm/*.osrm*
-ls -lh data/osm | grep .osrm
+```
+Route (OpenStreetMap)
+    |
+    v
+RS3 Pipeline (26 modular stages)
+    |
+    +-- GPS trajectory (1 Hz, with realistic noise & blackouts)
+    +-- IMU signals (10 Hz accelerometer + gyroscope)
+    +-- Driving events (braking, bumps, turns, stops, door opening)
+    +-- HTML report with interactive charts
+    +-- D0 Parquet export (Telemachus format)
 ```
 
-> 💡 Alternative MLD (grands graphes, profils perso) : remplacer `osrm-contract` par `osrm-partition && osrm-customize` et configurez le service en conséquence.
+## Key features
 
-### 2) SRTM (élévation) — *uniquement si le plugin Altitude est utilisé*
+- **Modular pipeline** — 26 stages (contract-based architecture via rs3-contracts)
+- **Realistic driving dynamics** — Ornstein-Uhlenbeck acceleration model with driver profiles
+- **Multi-rate simulation** — GPS at 1 Hz, IMU at 10 Hz, with proper NaN handling
+- **Device orientation** — Configurable roll/pitch/yaw rotation
+- **GPS noise** — Jitter, HDOP correlation, tunnel blackouts, cold start drift
+- **7 event types** — Braking, acceleration, speed bumps, potholes, turns, stops, door opening
+- **Driving severity analysis** — Distance-weighted bi-histogram (Gx/Gy)
+- **Web UI** — Interactive Streamlit interface with map, config, and visualization
+- **D0 export** — RFC-0013 compliant Parquet + manifest for downstream analysis
 
-Cette étape est **optionnelle** et requise seulement si vous avez installé/activé le plugin **rs3-plugin-altitude** (AGPL). Si vous n'utilisez pas ce plugin, vous pouvez ignorer cette section.
-
-1. **Télécharger** les tuiles **SRTM 1 Arc-Second** (ou équivalent) couvrant votre zone (ex.: NASA, ViewfinderPanoramas) au format `.hgt` ou `.hgt.zip`.
-2. Placez-les dans `data/srtm/` puis **décompressez** si nécessaire :
-
-```bash
-mkdir -p data/srtm
-# Copiez/telechargez vos tuiles ici, puis :
-find data/srtm -name "*.zip" -exec unzip -o {} -d data/srtm \;
-```
-
-> ℹ️ Le service SRTM lira directement les fichiers `.hgt` présents dans `data/srtm`.
-
-### 3) OSMnx-service
-
-Ce service requiert des fichiers **GraphML** pré-générés pour les zones couvertes.  
-Téléchargez ou générez vos graphes routiers (via OSMnx) et placez-les dans `data/osmnx/`.  
-Exemple :
-```bash
-mkdir -p data/osmnx
-python tools/build_graphml.py --pbf data/osm/france-normandie-latest.osm.pbf --out data/osmnx/normandie.graphml
-```
-
----
-
-## ⚡ Démarrage rapide (Quickstart)
+## Quick start
 
 ```bash
 git clone https://github.com/SebE585/RoadSimulator3.git
 cd RoadSimulator3
+python -m venv .venv && source .venv/bin/activate
+pip install -r requirements.txt
 
-# 1) Préparer les données (obligatoire)
-#   - Téléchargez un .osm.pbf (voir ci-dessus) et construisez les fichiers .osrm
-#   - Téléchargez les tuiles SRTM dans data/srtm
+# Start cartographic services (OSRM, OSMnx)
+docker compose -f services/docker-compose.yml up -d
 
-# 2) Lancer la stack de services
-docker compose up -d
-
-# 3) Lancer une simulation
+# Run a simulation
 make simulate
 ```
 
----
+> Cartographic services require OSM data extracts. See `services/docker-compose.yml` for configuration.
 
-## 🚀 Lancer une simulation
-
-Simulation standard :
+## Web UI
 
 ```bash
-make simulate
+cd webui && streamlit run app.py
 ```
 
-Selon la configuration, le pipeline exécute :
-1. Itinéraire via OSRM
-2. Interpolation à **10 Hz**
-3. Injection d’événements (arrêts, virages, chocs…)
-4. Bruit réaliste (acc + gyro)
-5. Validation du dataset (schéma & cohérence spatio-temporelle)
-6. Exports dans `data/simulations/<horodatage>/` :
-   - `output_osrm_trajectory.csv`
-   - `report.html` (rapport interactif)
-   - `map.html` (carte du trajet)
+## Dataset schema (D0 output)
 
----
+| Column     | Type    | Unit    | Rate  |
+|------------|---------|---------|-------|
+| ts         | int64   | ns UTC  | 10 Hz |
+| lat        | float64 | deg     | 1 Hz  |
+| lon        | float64 | deg     | 1 Hz  |
+| speed_mps  | float32 | m/s     | 1 Hz  |
+| ax_mps2    | float32 | m/s2    | 10 Hz |
+| ay_mps2    | float32 | m/s2    | 10 Hz |
+| az_mps2    | float32 | m/s2    | 10 Hz |
+| gx_rad_s   | float32 | rad/s   | 10 Hz |
+| gy_rad_s   | float32 | rad/s   | 10 Hz |
+| gz_rad_s   | float32 | rad/s   | 10 Hz |
 
-## 🧪 Exemples supplémentaires
+## Architecture
 
-- **Validation dataset** :
-
-```bash
-python tools/validate_dataset.py --csv data/simulations/last_trace.csv --strict-order
+```
+core2/stages/          26 pipeline stages (simulation engine)
+runner/simulate.py     CLI entry point
+webui/app.py           Streamlit web interface
+config/                YAML simulation configs
+services/              Docker services (OSRM, OSMnx)
 ```
 
----
+## Related projects
 
-## 📑 Schéma du dataset (RS3 v1.0)
+| Project | Role |
+|---------|------|
+| [Telemachus](https://github.com/telemachus3) | Open data format for mobility telemetry |
+| [rs3-contracts](https://github.com/SebE585/rs3-contracts) | Shared Stage/Context interfaces |
+| [rs3-study-curvature](https://github.com/SebE585/rs3-study-curvature) | Road geometry analysis (OSM vs IGN) |
 
-| Colonne         | Type      | Détails                                 |
-|-----------------|-----------|-----------------------------------------|
-| timestamp       | datetime  | ISO 8601 (10 Hz)                        |
-| lat             | float     | Latitude (WGS84)                        |
-| lon             | float     | Longitude (WGS84)                       |
-| speed           | float     | Vitesse (m/s)                           |
-| acc_x           | float     | Accélération X (m/s²)                   |
-| acc_y           | float     | Accélération Y (m/s²)                   |
-| acc_z           | float     | Accélération Z (m/s²)                   |
-| gyro_x          | float     | Gyroscope X (rad/s)                     |
-| gyro_y          | float     | Gyroscope Y (rad/s)                     |
-| gyro_z          | float     | Gyroscope Z (rad/s)                     |
-| event           | category  | Type d’événement                        |
+## License
 
----
+| Component | License |
+|-----------|---------|
+| Core (simulation engine) | [AGPL-3.0](LICENSE) |
+| Documentation | [CC-BY-SA 4.0](LICENSE-DOCS) |
 
-## 🗺️ Architecture (résumé)
+## Author
 
-- **Core** : logique de simulation et pipeline
-- **Plugins** : enrichissements (capteurs, exporteurs, métriques…)
-- **Services** : OSRM / OSMnx-service / SRTM (via Docker)
-- **Outputs** : CSV, HTML, cartes; dossiers `data/simulations/...`
-
----
-
-## 🗓️ Feuille de route
-
-- Intégration de données temps réel
-- Indicateurs avancés (énergie, pente cumulée, style de conduite)
-- Export Parquet, cache Redis
-- Application Web (API + UI) 
-
----
-
-## 🔐 Licences
-
-| Composant              | Licence       |
-|------------------------|---------------|
-| Noyau RS3 (core)       | AGPL-3.0      |
-| Documentation          | CC-BY-SA 4.0  |
-| Exemples & tutoriels   | CC-BY 4.0     |
-| Plugins pro éventuels  | Propriétaire  |
-
----
-
-## 🤝 Contribution
-
-Les contributions sont bienvenues ! Voir `CONTRIBUTING.md`.
-
-## 📬 Contact
-
-**Sébastien EDET** — sebastien.edet@gmail.com
+**Sebastien Edet** — [research.roadsimulator3.fr](https://research.roadsimulator3.fr) — [LinkedIn](https://www.linkedin.com/in/sebastienedet/)
