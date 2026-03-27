@@ -76,7 +76,7 @@ cd webui && streamlit run app.py
 ## Architecture
 
 ```
-core2/stages/          26 pipeline stages (simulation engine)
+engine/stages/          26 pipeline stages (simulation engine)
 runner/simulate.py     CLI entry point
 webui/app.py           Streamlit web interface
 config/                YAML simulation configs

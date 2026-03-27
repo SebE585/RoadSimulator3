@@ -33,7 +33,7 @@ package-dir = {"" = "."}
 where = ["."]
 include = [
   "core", "core.*",
-  "core2", "core2.*",
+  "engine", "engine.*",
   "simulator", "simulator.*",
   "runner", "runner.*",
 ]

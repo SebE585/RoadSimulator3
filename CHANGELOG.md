@@ -3,7 +3,7 @@
 ## v1.1.0 (2026-03-27)
 
 ### Architecture
-- **Migration complete vers core2** : 26 stages modulaires, pipeline contract-based (rs3-contracts)
+- **Migration complete vers engine** : 26 stages modulaires, pipeline contract-based (rs3-contracts)
 - Renommage du runner : `runner/simulate.py` (ancien `run_simulation2.py`)
 - Suppression du runner legacy (`run_simulation.py`, `run_simulate.sh`)
 - Suppression de `core/reports.py` (deprecie)
@@ -18,7 +18,7 @@
 - **GPS Noise v2** : blackout tunnels, cold start drift, jitter correle HDOP
 
 ### Analyse
-- **Bi-histogramme** (`core2/accel_stats.py`) : severity analysis distance-ponderee (Gx/Gy)
+- **Bi-histogramme** (`engine/accel_stats.py`) : severity analysis distance-ponderee (Gx/Gy)
 - Criteres de severite : std_gx, std_gy, percentile 0.1%, profils conducteur
 
 ### Web UI

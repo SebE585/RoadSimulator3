@@ -8,14 +8,14 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import numpy as np
 import pandas as pd
 
-from core2.context import Context
-from core2.stages.imu_projector import IMUProjector
-from core2.stages.noise_injector import NoiseInjector
-from core2.stages.device_rotator import DeviceRotator
-from core2.stages.events_tagger import EventsTagger
-from core2.stages.event_injector import EventInjector
-from core2.stages.multi_rate_sampler import MultiRateSampler
-from core2.stages.exporter import _load_schema, _apply_schema
+from engine.context import Context
+from engine.stages.imu_projector import IMUProjector
+from engine.stages.noise_injector import NoiseInjector
+from engine.stages.device_rotator import DeviceRotator
+from engine.stages.events_tagger import EventsTagger
+from engine.stages.event_injector import EventInjector
+from engine.stages.multi_rate_sampler import MultiRateSampler
+from engine.stages.exporter import _load_schema, _apply_schema
 
 
 def _make_fake_ctx():

@@ -19,7 +19,7 @@ from fastapi.responses import FileResponse, JSONResponse
 
 logger = logging.getLogger(__name__)
 
-# Ajoute RS3 root au path pour import core2/runner
+# Ajoute RS3 root au path pour import engine/runner
 RS3_ROOT = str(Path(__file__).resolve().parent.parent)
 if RS3_ROOT not in sys.path:
     sys.path.insert(0, RS3_ROOT)
@@ -33,7 +33,7 @@ _jobs: dict[str, dict[str, Any]] = {}
 @app.post("/simulate")
 async def simulate(cfg: dict[str, Any]) -> JSONResponse:
     """Lance une simulation RS3 synchrone et retourne le résultat."""
-    from core2.context import Context
+    from engine.context import Context
     from runner.simulate import build_pipeline
 
     job_id = uuid.uuid4().hex[:12]

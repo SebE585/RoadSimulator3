@@ -201,14 +201,14 @@ if st.button("🚀 Lancer la simulation", disabled=not can_run, type="primary", 
             rs3_root = str(Path(__file__).resolve().parent.parent)
             if rs3_root not in sys.path:
                 sys.path.insert(0, rs3_root)
-            mods = [m for m in sys.modules if m.startswith(("core2.", "runner."))]
+            mods = [m for m in sys.modules if m.startswith(("engine.", "runner."))]
             for mod in mods:
                 try:
                     importlib.reload(sys.modules[mod])
                 except Exception:
                     pass
 
-            from core2.context import Context
+            from engine.context import Context
             from runner.simulate import build_pipeline
 
             cfg = _build_cfg()

@@ -8,32 +8,32 @@ import yaml
 import logging
 from typing import List, Any
 
-from core2.pipeline import PipelineSimulator
-from core2.context import Context
+from engine.pipeline import PipelineSimulator
+from engine.context import Context
 
-from core2.stages.legs_plan import LegsPlan
-from core2.stages.legs_route import LegsRoute
-from core2.stages.legs_stitch import LegsStitch
-from core2.stages.stopwait_injector import StopWaitInjector
-from core2.stages.stop_smoother import StopSmoother
-from core2.stages.imu_projector import IMUProjector
-from core2.stages.noise_injector import NoiseInjector
-from core2.stages.events_tagger import EventsTagger
-from core2.stages.validators import Validators
-from core2.stages.exporter import Exporter
-from core2.stages.road_enricher import RoadEnricher
-from core2.stages.speed_limiter import SpeedLimiter
-from core2.stages.speed_smoother import SpeedSmoother
-from core2.stages.speed_sync import SpeedSync
-from core2.stages.final_stop_locker import FinalStopLocker
-from core2.stages.geo_spike_filter import GeoSpikeFilter
-from core2.stages.legs_retimer import LegsRetimer
-from core2.plugin_loader import discover_external_stages
-from core2.stages.initial_stop_locker import InitialStopLocker
-from core2.stages.multi_rate_sampler import MultiRateSampler
-from core2.stages.device_rotator import DeviceRotator
-from core2.stages.event_injector import EventInjector
-from core2.stages.driving_dynamics import DrivingDynamics, get_profile, PROFILES
+from engine.stages.legs_plan import LegsPlan
+from engine.stages.legs_route import LegsRoute
+from engine.stages.legs_stitch import LegsStitch
+from engine.stages.stopwait_injector import StopWaitInjector
+from engine.stages.stop_smoother import StopSmoother
+from engine.stages.imu_projector import IMUProjector
+from engine.stages.noise_injector import NoiseInjector
+from engine.stages.events_tagger import EventsTagger
+from engine.stages.validators import Validators
+from engine.stages.exporter import Exporter
+from engine.stages.road_enricher import RoadEnricher
+from engine.stages.speed_limiter import SpeedLimiter
+from engine.stages.speed_smoother import SpeedSmoother
+from engine.stages.speed_sync import SpeedSync
+from engine.stages.final_stop_locker import FinalStopLocker
+from engine.stages.geo_spike_filter import GeoSpikeFilter
+from engine.stages.legs_retimer import LegsRetimer
+from engine.plugin_loader import discover_external_stages
+from engine.stages.initial_stop_locker import InitialStopLocker
+from engine.stages.multi_rate_sampler import MultiRateSampler
+from engine.stages.device_rotator import DeviceRotator
+from engine.stages.event_injector import EventInjector
+from engine.stages.driving_dynamics import DrivingDynamics, get_profile, PROFILES
 
 
 logger = logging.getLogger(__name__)
