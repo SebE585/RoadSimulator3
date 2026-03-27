@@ -85,7 +85,8 @@ def footer(product: str = "RoadSimulator3") -> None:
     st.divider()
     st.markdown(
         f"<div style='text-align:center; color:{COLORS['text_muted']}; font-size:0.8em; padding:8px 0'>"
-        f"{product} — Route Simulation Platform"
+        f"{product} — Research demo by "
+        f"<a href='https://research.roadsimulator3.fr' style='color:{COLORS['accent']}'>Sebastien Edet</a>"
         f"</div>",
         unsafe_allow_html=True,
     )
