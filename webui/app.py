@@ -56,25 +56,30 @@ st.markdown(
 col_map, col_cfg = st.columns([3, 2])
 
 with col_map:
-    m = folium.Map(location=DEFAULT_CENTER, zoom_start=DEFAULT_ZOOM, tiles="OpenStreetMap")
-    for i, s in enumerate(st.session_state.stops):
-        color = "red" if s["id"] == "DEPOT" else "blue"
-        folium.Marker([s["lat"], s["lon"]], popup=f"{s['id']} ({s['service_s']}s)",
-                      icon=folium.Icon(color=color, icon="home" if s["id"] == "DEPOT" else "info-sign")).add_to(m)
-    if len(st.session_state.stops) >= 2:
-        folium.PolyLine([[s["lat"], s["lon"]] for s in st.session_state.stops],
-                        color="green", weight=3, opacity=0.7).add_to(m)
 
-    map_data = st_folium(m, width=700, height=450, returned_objects=["last_clicked"])
+    @st.fragment
+    def _map_fragment():
+        m = folium.Map(location=DEFAULT_CENTER, zoom_start=DEFAULT_ZOOM, tiles="OpenStreetMap")
+        for i, s in enumerate(st.session_state.stops):
+            color = "red" if s["id"] == "DEPOT" else "blue"
+            folium.Marker([s["lat"], s["lon"]], popup=f"{s['id']} ({s['service_s']}s)",
+                          icon=folium.Icon(color=color, icon="home" if s["id"] == "DEPOT" else "info-sign")).add_to(m)
+        if len(st.session_state.stops) >= 2:
+            folium.PolyLine([[s["lat"], s["lon"]] for s in st.session_state.stops],
+                            color="green", weight=3, opacity=0.7).add_to(m)
 
-    if map_data and map_data.get("last_clicked"):
-        lat = round(map_data["last_clicked"]["lat"], 6)
-        lng = round(map_data["last_clicked"]["lng"], 6)
-        if not any(abs(s["lat"] - lat) < 1e-5 and abs(s["lon"] - lng) < 1e-5 for s in st.session_state.stops):
-            n = len(st.session_state.stops)
-            sid = "DEPOT" if n == 0 else f"C{n}"
-            st.session_state.stops.append({"id": sid, "lat": lat, "lon": lng, "service_s": 0 if sid == "DEPOT" else 30})
-            st.rerun()
+        map_data = st_folium(m, width=700, height=450, returned_objects=["last_clicked"])
+
+        if map_data and map_data.get("last_clicked"):
+            lat = round(map_data["last_clicked"]["lat"], 6)
+            lng = round(map_data["last_clicked"]["lng"], 6)
+            if not any(abs(s["lat"] - lat) < 1e-5 and abs(s["lon"] - lng) < 1e-5 for s in st.session_state.stops):
+                n = len(st.session_state.stops)
+                sid = "DEPOT" if n == 0 else f"C{n}"
+                st.session_state.stops.append({"id": sid, "lat": lat, "lon": lng, "service_s": 0 if sid == "DEPOT" else 30})
+                st.rerun(scope="fragment")
+
+    _map_fragment()
 
     bc = st.columns(3)
     if bc[0].button("↩ Retour DEPOT") and st.session_state.stops:
@@ -277,7 +282,7 @@ if rot_meta and any(v != 0 for v in rot_meta.values()):
 
 # Tabs résultats
 if sim_df is not None and not sim_df.empty:
-    tab_carte, tab_capteurs, tab_qa = st.tabs(["Carte", "Capteurs", "Qualité"])
+    tab_carte, tab_capteurs, tab_severity, tab_qa = st.tabs(["Carte", "Capteurs", "Severity", "Qualite"])
 
     with tab_carte:
         hz_obs = float(ctx.meta.get("hz", 10))
@@ -331,6 +336,11 @@ if sim_df is not None and not sim_df.empty:
             st.plotly_chart(fig_g, use_container_width=True)
         else:
             st.caption("Gyroscope désactivé")
+
+    with tab_severity:
+        from webui.shared.bihistogram import render_bihistogram
+        render_bihistogram(sim_df, speed_col="speed", ax_col="acc_x", ay_col="acc_y",
+                           hz=float(ctx.meta.get("hz", 10)))
 
     with tab_qa:
         qa = ctx.artifacts.get("qa_pretty", {})
