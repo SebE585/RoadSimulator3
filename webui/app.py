@@ -209,7 +209,7 @@ if st.button("🚀 Lancer la simulation", disabled=not can_run, type="primary", 
                     pass
 
             from core2.context import Context
-            from runner.run_simulation2 import build_pipeline
+            from runner.simulate import build_pipeline
 
             cfg = _build_cfg()
             now = datetime.now(timezone.utc)

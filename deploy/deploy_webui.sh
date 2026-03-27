@@ -1,18 +1,18 @@
 #!/usr/bin/env bash
 # deploy_webui.sh — Deploy RS3 Web UI to OVH server
 # Usage: bash deploy/deploy_webui.sh
-# Requires: ssh access to root@51.91.125.143
+# Requires: ssh access to ubuntu@51.91.125.143 (passwordless sudo)
 set -euo pipefail
 
 # ---------------------------------------------------------------------------
 # Configuration
 # ---------------------------------------------------------------------------
 SERVER="51.91.125.143"
-SSH_USER="root"
+SSH_USER="ubuntu"
 REMOTE_BASE="/opt/daxos/rs3"
 SERVICE_NAME="rs3-webui"
 STREAMLIT_PORT=8503
-PYTHON="python3.12"
+PYTHON="python3"
 
 LOCAL_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 
@@ -26,17 +26,12 @@ info()  { printf '\033[1;34m[INFO]\033[0m  %s\n' "$*"; }
 warn()  { printf '\033[1;33m[WARN]\033[0m  %s\n' "$*"; }
 error() { printf '\033[1;31m[ERROR]\033[0m %s\n' "$*"; exit 1; }
 
-confirm() {
-    read -rp "$1 [y/N] " ans
-    [[ "$ans" =~ ^[Yy]$ ]] || { info "Skipped."; return 1; }
-}
-
 # ---------------------------------------------------------------------------
 # 1. Sync project files (non-destructive: rsync, no --delete)
 #    We send only the directories needed by the web UI.
 # ---------------------------------------------------------------------------
 info "Syncing RS3 project to ${SERVER}:${REMOTE_BASE} ..."
-ssh_cmd "mkdir -p ${REMOTE_BASE}"
+ssh_cmd "sudo mkdir -p ${REMOTE_BASE} && sudo chown -R ${SSH_USER}:${SSH_USER} ${REMOTE_BASE}"
 
 RSYNC_OPTS=(-avz --exclude '__pycache__' --exclude '.git' --exclude '*.pyc' --exclude '.venv' --exclude 'node_modules')
 
@@ -86,10 +81,10 @@ set -euo pipefail
 
 if [ -f "${SERVICE_FILE}" ]; then
     echo "  -> Backing up existing service file to ${SERVICE_FILE}.bak"
-    cp "${SERVICE_FILE}" "${SERVICE_FILE}.bak"
+    sudo cp "${SERVICE_FILE}" "${SERVICE_FILE}.bak"
 fi
 
-cat > "${SERVICE_FILE}" <<'UNIT'
+sudo tee "${SERVICE_FILE}" > /dev/null <<'UNIT'
 [Unit]
 Description=RoadSimulator3 Web UI (Streamlit)
 After=network.target
@@ -98,11 +93,11 @@ After=network.target
 Type=simple
 User=daxos
 Group=daxos
-WorkingDirectory=${REMOTE_BASE}/webui
-Environment="PATH=${REMOTE_BASE}/.venv/bin:/usr/local/bin:/usr/bin"
-Environment="PYTHONPATH=${REMOTE_BASE}"
-ExecStart=${REMOTE_BASE}/.venv/bin/streamlit run app.py \
-    --server.port=${STREAMLIT_PORT} \
+WorkingDirectory=/opt/daxos/rs3/webui
+Environment="PATH=/opt/daxos/rs3/.venv/bin:/usr/local/bin:/usr/bin"
+Environment="PYTHONPATH=/opt/daxos/rs3"
+ExecStart=/opt/daxos/rs3/.venv/bin/streamlit run app.py \
+    --server.port=8503 \
     --server.address=127.0.0.1 \
     --server.headless=true \
     --browser.gatherUsageStats=false
@@ -114,12 +109,12 @@ WantedBy=multi-user.target
 UNIT
 
 # Ensure the daxos user exists
-id -u daxos &>/dev/null || useradd -r -m -d /opt/daxos -s /bin/bash daxos
-chown -R daxos:daxos "${REMOTE_BASE}"
+id -u daxos &>/dev/null || sudo useradd -r -m -d /opt/daxos -s /bin/bash daxos
+sudo chown -R daxos:daxos "${REMOTE_BASE}"
 
-systemctl daemon-reload
-systemctl enable "${SERVICE_NAME}"
-systemctl restart "${SERVICE_NAME}"
+sudo systemctl daemon-reload
+sudo systemctl enable "${SERVICE_NAME}"
+sudo systemctl restart "${SERVICE_NAME}"
 echo "  -> Service ${SERVICE_NAME} started on port ${STREAMLIT_PORT}"
 REMOTE
 
@@ -138,16 +133,15 @@ set -euo pipefail
 
 if [ -f "${NGINX_CONF}" ]; then
     echo "  -> Backing up existing nginx conf to ${NGINX_CONF}.bak"
-    cp "${NGINX_CONF}" "${NGINX_CONF}.bak"
+    sudo cp "${NGINX_CONF}" "${NGINX_CONF}.bak"
 fi
 
-mv /tmp/nginx-rs3.conf "${NGINX_CONF}"
-ln -sf "${NGINX_CONF}" "${NGINX_ENABLED}"
+sudo mv /tmp/nginx-rs3.conf "${NGINX_CONF}"
+sudo ln -sf "${NGINX_CONF}" "${NGINX_ENABLED}"
 
-nginx -t && systemctl reload nginx
+sudo nginx -t && sudo systemctl reload nginx
 echo "  -> nginx reloaded with RS3 vhost"
 REMOTE
 
 info "Deployment complete."
-info "RS3 UI should be live at http://simulate.roadsimulator3.fr"
-info "To enable SSL: sudo certbot --nginx -d simulate.roadsimulator3.fr"
+info "RS3 UI should be live at https://simulate.roadsimulator3.fr"

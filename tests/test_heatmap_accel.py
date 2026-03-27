@@ -23,7 +23,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from core2.context import Context
 from core2.accel_stats import compute_severity_criteria
-from runner.run_simulation2 import build_pipeline
+from runner.simulate import build_pipeline
 
 G = 9.80665
 

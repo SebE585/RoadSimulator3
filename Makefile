@@ -12,7 +12,7 @@ test:
 simulate:
 	. .venv/bin/activate && \
 		RS3_ALTITUDE_CFG="/Users/sebastien.edet/projects/rs3-plugin-altitude-agpl/service/config/altitude_ign.yaml" \
-		PYTHONPATH=. python -B -m runner.run_simulation2 \
+		PYTHONPATH=. python -B -m runner.simulate \
 		  --config config/simulator_haute_normandie.yaml
 
 clean:
@@ -60,10 +60,10 @@ tag:
 	@git push gitea  v$(VERSION)
 
 dataset-telemachus:
-	@echo "🚀 Simulation RS3 (base) via runner.run_simulation2 (export Telemachus inline)"
+	@echo "🚀 Simulation RS3 (base) via runner.simulate (export Telemachus inline)"
 	. .venv/bin/activate && \
 		RS3_ALTITUDE_CFG="/Users/sebastien.edet/projects/rs3-plugin-altitude-agpl/service/config/altitude_ign.yaml" \
-		PYTHONPATH=. python -B -m runner.run_simulation2 \
+		PYTHONPATH=. python -B -m runner.simulate \
 		  --config config/simulator_telemachus.yaml
 	@SIM_DIR=$$(ls -dt data/simulations/TELEMACHUS_* data/simulations/simulated_* 2>/dev/null | head -1); \
 	 if [ -z "$$SIM_DIR" ]; then echo "❌ Aucun dossier data/simulations/{TELEMACHUS_*, simulated_*} trouvé"; exit 2; fi; \

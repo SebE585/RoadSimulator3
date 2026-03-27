@@ -23,7 +23,7 @@ from core2.accel_stats import (
     _incremental_distance,
     filter_non_physical,
 )
-from runner.run_simulation2 import build_pipeline
+from runner.simulate import build_pipeline
 
 G = 9.80665
 

@@ -34,7 +34,7 @@ _jobs: dict[str, dict[str, Any]] = {}
 async def simulate(cfg: dict[str, Any]) -> JSONResponse:
     """Lance une simulation RS3 synchrone et retourne le résultat."""
     from core2.context import Context
-    from runner.run_simulation2 import build_pipeline
+    from runner.simulate import build_pipeline
 
     job_id = uuid.uuid4().hex[:12]
 

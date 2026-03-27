@@ -1,4 +1,4 @@
-# runner/run_simulation2.py
+# runner/simulate.py
 # -*- coding: utf-8 -*-
 from __future__ import annotations
 

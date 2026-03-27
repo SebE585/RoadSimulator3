@@ -1,5 +1,5 @@
 # config/simulator_telemachus.yaml
-outdir: "data/simulations/TELEMACHUS_%Y%m%d_%H%M%S"  # horodatage résolu par runner.run_simulation2
+outdir: "data/simulations/TELEMACHUS_%Y%m%d_%H%M%S"  # horodatage résolu par runner.simulate
 start_time_utc: "2025-09-03T12:00:00Z"
 
 osrm:

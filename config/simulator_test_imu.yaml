@@ -4,7 +4,7 @@
 # + événements variés pour valider la chaîne Telemachus
 #
 # Usage:
-#   python -m runner.run_simulation2 --config config/simulator_test_imu.yaml
+#   python -m runner.simulate --config config/simulator_test_imu.yaml
 #
 # Puis injecter la sortie dans Telemachus UI pour valider :
 #   - IMU Calibration (doit retrouver les biais)
