@@ -56,7 +56,6 @@ st.markdown(
 col_map, col_cfg = st.columns([3, 2])
 
 with col_map:
-
     m = folium.Map(location=DEFAULT_CENTER, zoom_start=DEFAULT_ZOOM, tiles="OpenStreetMap")
     for i, s in enumerate(st.session_state.stops):
         color = "red" if s["id"] == "DEPOT" else "blue"
@@ -66,30 +65,27 @@ with col_map:
         folium.PolyLine([[s["lat"], s["lon"]] for s in st.session_state.stops],
                         color="green", weight=3, opacity=0.7).add_to(m)
 
-    map_data = st_folium(m, width=700, height=450, returned_objects=["last_clicked"],
-                         key=f"map_{len(st.session_state.stops)}")
+    map_data = st_folium(m, width=700, height=450, returned_objects=["last_clicked"])
 
+    # Add stop on click — NO st.rerun() to avoid iframe destruction
     if map_data and map_data.get("last_clicked"):
-        click = (round(map_data["last_clicked"]["lat"], 6),
-                 round(map_data["last_clicked"]["lng"], 6))
-        if click != st.session_state.last_click:
-            st.session_state.last_click = click
-            lat, lng = click
-            if not any(abs(s["lat"] - lat) < 1e-5 and abs(s["lon"] - lng) < 1e-5 for s in st.session_state.stops):
-                n = len(st.session_state.stops)
-                sid = "DEPOT" if n == 0 else f"C{n}"
-                st.session_state.stops.append({"id": sid, "lat": lat, "lon": lng, "service_s": 0 if sid == "DEPOT" else 30})
-                st.rerun()
+        lat = round(map_data["last_clicked"]["lat"], 6)
+        lng = round(map_data["last_clicked"]["lng"], 6)
+        if not any(abs(s["lat"] - lat) < 1e-5 and abs(s["lon"] - lng) < 1e-5 for s in st.session_state.stops):
+            n = len(st.session_state.stops)
+            sid = "DEPOT" if n == 0 else f"C{n}"
+            st.session_state.stops.append({"id": sid, "lat": lat, "lon": lng, "service_s": 0 if sid == "DEPOT" else 30})
+            # No st.rerun() — markers appear on next natural interaction
 
     bc = st.columns(3)
-    if bc[0].button("↩ Retour DEPOT") and st.session_state.stops:
+    if bc[0].button("Retour DEPOT") and st.session_state.stops:
         d = st.session_state.stops[0]
         st.session_state.stops.append({"id": "DEPOT", "lat": d["lat"], "lon": d["lon"], "service_s": 0})
         st.rerun()
-    if bc[1].button("⌫ Supprimer") and st.session_state.stops:
+    if bc[1].button("Supprimer dernier") and st.session_state.stops:
         st.session_state.stops.pop()
         st.rerun()
-    if bc[2].button("🗑 Effacer tout"):
+    if bc[2].button("Effacer tout"):
         st.session_state.stops = []
         st.session_state.sim_ctx = st.session_state.sim_df = st.session_state.sim_outdir = None
         st.rerun()

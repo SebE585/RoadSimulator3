@@ -72,12 +72,13 @@ def render_bihistogram(
     ay_v = ay_mg[valid]
     dist_v = dist[valid]
 
-    # Build 2D histogram: X = acc_x (longitudinal), Y = acc_y (lateral)
+    # Build 2D histogram: X = acc_y (lateral), Y = acc_x (longitudinal)
+    # Convention from engine/accel_stats.py: X=lateral, Y=longitudinal
     n_bins = int(2 * range_mg / bin_size_mg) + 1
     edges = np.linspace(-range_mg, range_mg, n_bins + 1)
 
     hist, xedges, yedges = np.histogram2d(
-        ax_v, ay_v,
+        ay_v, ax_v,
         bins=[edges, edges],
         weights=dist_v,
     )
@@ -103,8 +104,8 @@ def render_bihistogram(
     ))
     fig.update_layout(
         title=dict(text=title, font=dict(size=14)),
-        xaxis_title="acc_x (mG)",
-        yaxis_title="acc_y (mG)",
+        xaxis_title="acc_y (mG)",
+        yaxis_title="acc_x (mG)",
         width=550, height=550,
         xaxis=dict(scaleanchor="y", constrain="domain", range=[-range_mg, range_mg]),
         yaxis=dict(range=[-range_mg, range_mg]),
