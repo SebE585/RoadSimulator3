@@ -32,7 +32,7 @@ def _run_simulation():
     """Génère une trace RS3 avec un parcours varié."""
     cfg = {
         "outdir": tempfile.mkdtemp(),
-        "osrm": {"base_url": "http://51.91.125.143:5000"},
+        "osrm": {"base_url": "http://localhost:5000"},
         "sim": {"hz": 10},
         "sensors": {"gps_hz": 10, "imu_hz": 10, "gyro_enabled": True},
         "stops": [

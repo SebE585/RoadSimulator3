@@ -15,7 +15,7 @@ outdir: "data/simulations/TEST-IMU_%Y%m%d_%H%M%S"
 start_time_utc: "2025-09-03T08:00:00Z"
 
 osrm:
-  base_url: "http://51.91.125.143:5000"
+  base_url: "http://localhost:5000"
   profile: "driving"
 
 sim:
