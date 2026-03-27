@@ -1,118 +1,36 @@
-# === Dossiers à ignorer ===
-data/
-logs/
-outputs/
-site/
-cache/
-
-# === Fichiers temporaires Python ===
-*.py[cod]
+# === Python ===
 __pycache__/
+*.py[cod]
 *.pyo
 *.pyd
+*.egg-info/
+build/
+dist/
+*.so
+*.dylib
 
-# === Environnements virtuels ===
-.env/
+# === Virtual environments ===
 .venv/
-env/
 venv/
-.git/
+.env/
 
-# === Archives et backups ===
-*.zip
-*.tar.gz
-*.rar
-*.7z
-
-# === Données brutes ===
-*.csv
-*.tsv
-*.xls
-*.xlsx
-*.json
-
-# === Systèmes d'exploitation ===
-.DS_Store         # macOS
-Thumbs.db         # Windows
-
-# === Fichiers temporaires éditeurs ===
-~$*               # Word
-*.swp             # Vim
-*.swo             # Vim
-*.bak             # Backups
-
-# === Jupyter / IPython ===
-.ipynb_checkpoints/
-
-# === Autres outils ===
-.mypy_cache/
-pytest_cache/
-*.log
-
-# Archives & payloads lourds
-*.zip
-*.tar
-*.tar.gz
-*.7z
-*.rar
-
-# --- RS3 hygiene ---
-# OS / Python
-.DS_Store
-__pycache__/
-*.pyc
-.venv/
-.pytest_cache/
-
-# Logs & sorties
-logs/
-outputs/
-out/
-*.log
-
-# Données générées
+# === Data (generated, downloaded, cached) ===
 data/
-*.csv
-*.json
-*.parquet
-
-# Archives & binaires
-*.zip
-*.tar
-*.tar.gz
-*.7z
-*.rar
-*.bundle
-
-# IDE
-.vscode/
-.idea/
-
-# Dev artifacts
-src/
-*.bak
-
-# OS / IDE / caches
-.DS_Store
-.vscode/
-.idea/
-.pytest_cache/
-__pycache__/
-.python-version
-.ruff_cache/
-
-# Outputs & data generated
 logs/
 outputs/
 out/
-*.log
+cache/
+tools/cache/
+
+# === Generated files ===
 *.csv
 *.json
 *.parquet
-*.png
 *.html
+*.png
+*.log
 
-# Archives/binaires
+# === Archives ===
 *.zip
 *.tar
 *.tar.gz
@@ -120,18 +38,37 @@ out/
 *.7z
 *.rar
 *.bundle
-*.so
-*.dylib
 *.bin
 
-# Python build
-build/
-dist/
-*.egg-info/
+# === OS ===
+.DS_Store
+Thumbs.db
 
-# Envs & backups
-.venv/
-venv/
+# === IDE ===
+.vscode/
+.idea/
+*.swp
+*.swo
 *.bak
 *.tmp
 *~
+~$*
+
+# === Test / lint caches ===
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.ipynb_checkpoints/
+.python-version
+
+# === Git artifacts ===
+RS3-clean.git/
+
+# === Claude Code ===
+.claude/
+
+# === Deploy (private, not for public repo) ===
+deploy/
+
+# === Site build ===
+site/

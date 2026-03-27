@@ -1,2 +1,0 @@
-[console_scripts]
-rs3-simulate = runner.run_simulation:main
