@@ -25,7 +25,7 @@
 - **Streamlit Web UI** : simulation interactive avec carte Folium
 - Sections GPS / IMU / Rotation / Events configurables
 - Onglets Carte / Acceleration / Gyroscope / QA
-- Bouton "Analyser dans Nostos" (integration D0 partagee)
+- Export D0 partagé pour intégration avec pipeline de reconstruction
 - Refonte complete v2.0 (312 lignes, etait 697)
 
 ### Export

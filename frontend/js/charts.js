@@ -208,7 +208,7 @@ export function renderQA(containerId, qaData, metaData) {
 
     const checksHtml = checks.length > 0 ? `
         <h4>Controles</h4>
-        ${hasRotation ? '<p style="color:#856404;font-size:0.85em;margin-bottom:8px">\u2139\uFE0F Rotation appliqu\u00E9e (' + rot.roll + '\u00B0/' + rot.pitch + '\u00B0/' + rot.yaw + '\u00B0) \u2014 certains \u00E9checs sont attendus (le signal est volontairement d\u00E9form\u00E9 pour tester Nostos).</p>' : ''}
+        ${hasRotation ? '<p style="color:#856404;font-size:0.85em;margin-bottom:8px">\u2139\uFE0F Rotation appliqu\u00E9e (' + rot.roll + '\u00B0/' + rot.pitch + '\u00B0/' + rot.yaw + '\u00B0) \u2014 certains \u00E9checs sont attendus (le signal est volontairement d\u00E9form\u00E9 pour tester la reconstruction).</p>' : ''}
         <div class="checks-list">
             ${(Array.isArray(checks) ? checks : Object.entries(checks).map(([k, v]) => ({name: k, ...v}))).map((c) => {
                 const ok = c.ok !== false && c.passed !== false;
@@ -263,7 +263,7 @@ export function renderQA(containerId, qaData, metaData) {
 
     let statusText = pretty.status || (isOk ? "Simulation coherente" : "Anomalies detectees");
     if (isExpectedKO) {
-        statusText = `Ecarts detect\u00E9s (attendus \u2014 rotation ${rot.roll}\u00B0/${rot.pitch}\u00B0/${rot.yaw}\u00B0 appliqu\u00E9e). Le signal simule un bo\u00EEtier mal orient\u00E9, Nostos doit le corriger.`;
+        statusText = `Ecarts detect\u00E9s (attendus \u2014 rotation ${rot.roll}\u00B0/${rot.pitch}\u00B0/${rot.yaw}\u00B0 appliqu\u00E9e). Le signal simule un bo\u00EEtier mal orient\u00E9, le pipeline de reconstruction doit le corriger.`;
     }
 
     el.innerHTML = `

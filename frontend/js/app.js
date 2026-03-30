@@ -283,7 +283,7 @@ async function loadResults(jobId) {
     // QA (avec meta pour contextualiser la rotation)
     renderQA("qa-content", qaData, metaData);
 
-    // Download + Nostos link
+    // Download
     const dlBtn = document.getElementById("btn-download");
     if (dlBtn) {
         dlBtn.href = downloadUrl(jobId, "parquet");

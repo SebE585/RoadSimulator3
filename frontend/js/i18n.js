@@ -62,7 +62,7 @@ const TRANSLATIONS = {
         // QA
         "qa.ok": "Simulation cohérente",
         "qa.ko": "Anomalies détectées",
-        "qa.rotation.expected": "Écarts détectés (attendus — rotation {rot} appliquée). Le signal simule un boîtier mal orienté, Nostos doit le corriger.",
+        "qa.rotation.expected": "Écarts détectés (attendus — rotation {rot} appliquée). Le signal simule un boîtier mal orienté, le pipeline de reconstruction doit le corriger.",
         "qa.rotation.note": "ℹ️ Rotation appliquée ({rot}) — certains échecs sont attendus (le signal est volontairement déformé pour tester la reconstruction).",
         "qa.rotation.suffix": "(attendu avec rotation)",
         "qa.metrics": "Métriques clés",
