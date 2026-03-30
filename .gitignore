@@ -27,6 +27,7 @@ tools/cache/
 *.json
 *.parquet
 *.html
+!frontend/**/*.html
 *.png
 *.log
 

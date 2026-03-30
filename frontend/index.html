@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>RS3 Simulator</title>
+
+    <!-- Leaflet -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <!-- Plotly -->
+    <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+
+    <!-- App -->
+    <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+<!-- ── Header ──────────────────────────────────────────── -->
+<div class="header">
+    <span style="font-size:2em">&#x1F69B;</span>
+    <div style="flex:1">
+        <h1 data-i18n="app.title">RoadSimulator3</h1>
+        <p data-i18n="app.subtitle">Simulateur télématique — Placez des arrêts, configurez, lancez</p>
+    </div>
+    <select id="lang-selector" style="background:#2a2a4e;color:white;border:1px solid #555;border-radius:4px;padding:4px 8px;font-size:0.85em">
+        <option value="fr">&#x1F1EB;&#x1F1F7; Français</option>
+        <option value="en">&#x1F1EC;&#x1F1E7; English</option>
+    </select>
+</div>
+
+<!-- ── Main layout ─────────────────────────────────────── -->
+<div class="main">
+
+    <!-- Carte de saisie -->
+    <div class="panel">
+        <h2 data-i18n="map.title">Carte</h2>
+        <div id="map"></div>
+        <div class="map-hint" data-i18n="map.hint">Cliquez sur la carte pour placer le DÉPÔT puis les clients</div>
+        <div class="btn-group">
+            <button class="btn btn-outline btn-small" id="btn-return-depot" data-i18n="map.btn.return">&#8617; Retour DÉPÔT</button>
+            <button class="btn btn-outline btn-small" id="btn-remove-last" data-i18n="map.btn.remove">&#10006; Supprimer dernier</button>
+            <button class="btn btn-danger btn-small" id="btn-clear" data-i18n="map.btn.clear">Effacer tout</button>
+        </div>
+    </div>
+
+    <!-- Configuration -->
+    <div class="panel" style="overflow-y:auto; max-height:620px">
+        <h2 data-i18n="config.title">Configuration</h2>
+
+        <!-- Stops -->
+        <div id="stops-list" class="stops-list"></div>
+
+        <!-- GPS -->
+        <div class="config-section">
+            <h3 data-i18n="config.gps">&#x1F4E1; GPS</h3>
+            <div class="config-grid">
+                <div class="field">
+                    <label data-i18n="config.gps.freq">Fréquence (Hz)</label>
+                    <select id="cfg-gps-hz">
+                        <option value="1" selected>1</option>
+                        <option value="2">2</option>
+                        <option value="5">5</option>
+                        <option value="10">10</option>
+                    </select>
+                </div>
+                <div class="field">
+                    <label data-i18n="config.gps.noise">Bruit GPS réaliste</label>
+                    <input type="checkbox" id="cfg-gps-noise" checked />
+                </div>
+            </div>
+            <div class="config-grid three" id="gps-noise-cfg">
+                <div class="field">
+                    <label data-i18n="config.gps.jitter">Jitter (m)</label>
+                    <input type="number" id="cfg-sigma-pos" value="2.0" min="0" max="10" step="0.5" />
+                </div>
+                <div class="field">
+                    <label data-i18n="config.gps.blackouts">Blackouts tunnel</label>
+                    <input type="number" id="cfg-blackouts" value="0" min="0" max="10" />
+                </div>
+                <div class="field">
+                    <label data-i18n="config.gps.drift">Drift démarrage (m)</label>
+                    <input type="number" id="cfg-cold-drift" value="0" min="0" max="30" step="5" />
+                </div>
+            </div>
+        </div>
+
+        <!-- IMU -->
+        <div class="config-section">
+            <h3 data-i18n="config.imu">&#x1F527; IMU</h3>
+            <div class="config-grid three">
+                <div class="field">
+                    <label data-i18n="config.imu.freq">Fréquence (Hz)</label>
+                    <select id="cfg-imu-hz">
+                        <option value="5">5</option>
+                        <option value="10" selected>10</option>
+                    </select>
+                </div>
+                <div class="field">
+                    <label data-i18n="config.imu.noise">Bruit acc (m/s²)</label>
+                    <input type="number" id="cfg-sigma-acc" value="0.02" min="0" max="0.1" step="0.005" />
+                </div>
+                <div class="field">
+                    <label data-i18n="config.imu.gyro">Gyroscope</label>
+                    <input type="checkbox" id="cfg-gyro" checked />
+                </div>
+            </div>
+        </div>
+
+        <!-- Rotation -->
+        <div class="config-section">
+            <h3 data-i18n="config.rotation">&#x1F504; Orientation du boîtier</h3>
+            <div class="config-grid three">
+                <div class="field">
+                    <label>Roll (°)</label>
+                    <input type="number" id="cfg-roll" value="0" min="-45" max="45" step="1" />
+                </div>
+                <div class="field">
+                    <label>Pitch (°)</label>
+                    <input type="number" id="cfg-pitch" value="0" min="-45" max="45" step="1" />
+                </div>
+                <div class="field">
+                    <label>Yaw (°)</label>
+                    <input type="number" id="cfg-yaw" value="0" min="-180" max="180" step="1" />
+                </div>
+            </div>
+        </div>
+
+        <!-- Profil conduite -->
+        <div class="config-section">
+            <h3 data-i18n="config.profile">&#x1F3CE; Profil de conduite</h3>
+            <div class="field">
+                <select id="cfg-drive-profile" onchange="window._applyProfile(this.value)">
+                    <option value="custom" data-i18n="config.profile.custom">Personnalisé</option>
+                    <option value="smooth" data-i18n="config.profile.smooth">Doux (éco-conduite)</option>
+                    <option value="normal" selected data-i18n="config.profile.normal">Normal</option>
+                    <option value="aggressive" data-i18n="config.profile.aggressive">Agressif (sportif)</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Evenements -->
+        <div class="config-section">
+            <h3 data-i18n="config.events">&#x26A1; Événements à injecter</h3>
+            <div class="config-grid three">
+                <div class="field">
+                    <label data-i18n="config.events.brake">Freinages</label>
+                    <input type="number" id="cfg-n-brake" value="0" min="0" max="20" />
+                </div>
+                <div class="field">
+                    <label data-i18n="config.events.accel">Accélérations</label>
+                    <input type="number" id="cfg-n-accel" value="0" min="0" max="20" />
+                </div>
+                <div class="field">
+                    <label data-i18n="config.events.bump">Dos d'âne</label>
+                    <input type="number" id="cfg-n-bump" value="0" min="0" max="20" />
+                </div>
+                <div class="field">
+                    <label data-i18n="config.events.pothole">Nids de poule</label>
+                    <input type="number" id="cfg-n-pothole" value="0" min="0" max="20" />
+                </div>
+                <div class="field">
+                    <label data-i18n="config.events.turn">Virages</label>
+                    <input type="number" id="cfg-n-turn" value="0" min="0" max="20" />
+                </div>
+                <div class="field">
+                    <label data-i18n="config.events.door">Ouv. porte</label>
+                    <input type="number" id="cfg-n-door" value="0" min="0" max="20" />
+                </div>
+            </div>
+        </div>
+
+        <!-- OSRM -->
+        <div class="config-section">
+            <h3 data-i18n="config.carto">&#x1F5FA; Services carto</h3>
+            <div class="field">
+                <label>OSRM URL</label>
+                <input type="text" id="cfg-osrm" value="http://localhost:5003" />
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ── Simulate button ─────────────────────────────────── -->
+<div style="max-width:1400px; margin:0 auto; padding:0 16px">
+    <button class="btn btn-primary" id="btn-simulate" disabled data-i18n="sim.launch">
+        &#x1F680; Lancer la simulation
+    </button>
+</div>
+
+<!-- ── Status ──────────────────────────────────────────── -->
+<div style="max-width:1400px; margin:0 auto; padding:0 16px">
+    <div id="status" class="status" style="display:none"></div>
+</div>
+
+<!-- ── Results ─────────────────────────────────────────── -->
+<div id="results" class="main results" style="display:none">
+    <div class="panel" style="grid-column:1/-1">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px">
+            <h2 style="border:none; margin:0; padding:0" data-i18n="results.title">Résultats</h2>
+            <a id="btn-download" class="btn btn-outline btn-small" href="#" download style="display:none; text-decoration:none" data-i18n="results.download">
+                &#x1F4E5; D0 Parquet
+            </a>
+        </div>
+
+        <div id="result-summary" style="display:none; margin-bottom:16px"></div>
+
+        <div class="tabs">
+            <div class="tab active" data-tab="tab-carte" data-i18n="results.tab.map">Carte</div>
+            <div class="tab" data-tab="tab-sensors" data-i18n="results.tab.sensors">Capteurs</div>
+            <div class="tab" data-tab="tab-severity" data-i18n="results.tab.severity">Sévérité</div>
+            <div class="tab" data-tab="tab-qa" data-i18n="results.tab.qa">Qualité</div>
+        </div>
+
+        <div id="tab-carte" class="tab-content active">
+            <div id="result-map"></div>
+        </div>
+
+        <div id="tab-sensors" class="tab-content">
+            <div id="chart-speed" class="chart-container"></div>
+            <div id="chart-acc" class="chart-container"></div>
+            <div id="chart-gyro" class="chart-container"></div>
+        </div>
+
+        <div id="tab-severity" class="tab-content">
+            <div id="chart-severity" style="display:flex; justify-content:center"></div>
+        </div>
+
+        <div id="tab-qa" class="tab-content">
+            <div id="qa-content"></div>
+        </div>
+    </div>
+</div>
+
+<!-- ── Footer ──────────────────────────────────────────── -->
+<div class="footer">
+    <a href="https://telemachus.roadsimulator3.fr">Telemachus</a> &middot;
+    <a href="https://research.roadsimulator3.fr">Recherche</a>
+    <br />RoadSimulator3 &mdash; Telemachus certified output
+</div>
+
+<!-- App JS (module) -->
+<script type="module" src="js/app.js"></script>
+
+</body>
+</html>
