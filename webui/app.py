@@ -33,7 +33,7 @@ div[data-testid="stMetricValue"]{color:#0066CC;font-weight:700}
 
 DEFAULT_CENTER = [49.38, 1.25]
 DEFAULT_ZOOM = 11
-OSRM_URL = "http://localhost:5000"
+OSRM_URL = "http://localhost:5003"
 
 for k, v in [("stops", []), ("sim_ctx", None), ("sim_outdir", None), ("sim_df", None), ("last_click", None)]:
     if k not in st.session_state:

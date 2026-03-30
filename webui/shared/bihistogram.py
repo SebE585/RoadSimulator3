@@ -6,6 +6,7 @@ Matches the reference profile visualization.
 from __future__ import annotations
 
 import numpy as np
+import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
 
@@ -51,12 +52,19 @@ def render_bihistogram(
         st.warning("Bi-histogram: missing columns (speed, acc_x/ax_mps2, acc_y/ay_mps2)")
         return
 
-    dt = 1.0 / hz
+    # Compute dt from timestamps if available (handles multi-rate datasets)
+    if "ts" in df.columns:
+        ts = pd.to_datetime(df["ts"], utc=True, errors="coerce")
+        dt_array = ts.diff().dt.total_seconds().fillna(1.0 / hz).values
+        dt_array = np.clip(dt_array, 0, 2.0)  # cap at 2s to avoid gaps
+        dist = np.abs(speed) * dt_array
+    else:
+        dt = 1.0 / hz
+        dist = _incremental_distance(speed, dt)
 
     # Convert to mG
     ax_mg = (ax_raw / G) * 1000.0
     ay_mg = (ay_raw / G) * 1000.0
-    dist = _incremental_distance(speed, dt)
 
     # Filter: moving + finite + within range
     moving = speed > 0.5
