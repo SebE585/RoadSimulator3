@@ -67,7 +67,7 @@ class StopSmoother:
             n_in = max(1, int(round(self.t_in * hz)))
             n_out = max(1, int(round(self.t_out * hz)))
 
-            v = pd.to_numeric(out["speed"], errors="coerce").fillna(0.0).to_numpy(dtype=float)
+            v = pd.to_numeric(out["speed"], errors="coerce").fillna(0.0).to_numpy(dtype=float).copy()
 
             for s, e in intervals:
                 # 1) Rampe avant (i0..s) : amener progressivement v -> ~0

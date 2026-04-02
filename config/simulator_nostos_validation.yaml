@@ -1,0 +1,72 @@
+# simulator_nostos_validation.yaml
+# Validation Nostos v0.5.0 : IMU calibrator fix roll
+# GT: roll=10°, pitch=20°, yaw=30°
+#
+# Usage:
+#   PYTHONPATH=. python -m runner.simulate --config config/simulator_nostos_validation.yaml
+
+outdir: "data/simulations/NOSTOS-VAL_%Y%m%d_%H%M%S"
+start_time_utc: "2025-09-03T08:00:00Z"
+
+osrm:
+  base_url: "http://localhost:5003"
+  profile: "driving"
+
+sim:
+  hz: 10
+
+sensors:
+  gps_hz: 1
+  imu_hz: 10
+  gyro_enabled: true
+
+# GT: rotation connue pour valider le calibrateur Nostos
+device_rotation:
+  roll_deg: 10.0
+  pitch_deg: 20.0
+  yaw_deg: 30.0
+
+noise_injector:
+  sigma_acc: 0.03
+  sigma_gyro: 0.002
+
+inject_events:
+  n_harsh_brake: 2
+  n_harsh_accel: 2
+  n_speed_bump: 2
+
+stop_smoother:
+  v_in: 0.25
+  t_in: 2.0
+  v_out: 0.6
+  t_out: 2.5
+  lock_pos: true
+
+stops:
+  - id: DEPOT
+    lat: 49.3347
+    lon: 1.3830
+    service_s: 0
+  - id: C1_FLEURY
+    lat: 49.3540
+    lon: 1.3400
+    service_s: 45
+    tw_start: "2025-09-03T08:10:00Z"
+    tw_end:   "2025-09-03T08:25:00Z"
+  - id: C2_RADEPONT
+    lat: 49.3600
+    lon: 1.3100
+    service_s: 60
+    tw_start: "2025-09-03T08:30:00Z"
+    tw_end:   "2025-09-03T08:50:00Z"
+  - id: DEPOT
+    lat: 49.3347
+    lon: 1.3830
+    service_s: 0
+
+telemachus:
+  enabled: true
+  version: "0.1"
+  vehicle_id: "NOSTOS-VAL-IMU"
+  write_parquet: true
+  write_csv: true

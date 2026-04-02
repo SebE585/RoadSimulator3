@@ -136,7 +136,7 @@ def _inject_signal(
     else:
         profile = np.sin(t)  # cloche standard
 
-    vals = df[col].to_numpy(dtype=float)
+    vals = df[col].to_numpy(dtype=float).copy()
     vals[idx:end] += profile * amplitude
     df[col] = vals
 
