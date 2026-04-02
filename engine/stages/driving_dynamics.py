@@ -38,6 +38,9 @@ PROFILES = {
         "smooth_speed_sigma": 18.0,
         "imu_smooth_window_s": 1.3,
         "imu_min_turn_radius_m": 22.0,
+        # Multi-OU calibré sur AEGIS (conduite réelle, 24Hz)
+        "multi_ou_ax": [(0.3, 0.50), (2.0, 0.02), (10.0, 1.50)],
+        "multi_ou_ay": [(0.3, 0.45), (2.0, 0.02), (10.0, 1.50)],
     },
     "moyen": {
         "sigma_ax": 0.6,
@@ -49,6 +52,8 @@ PROFILES = {
         "smooth_speed_sigma": 18.0,
         "imu_smooth_window_s": 1.3,
         "imu_min_turn_radius_m": 30.0,
+        "multi_ou_ax": [(0.3, 0.46), (2.0, 0.01), (10.0, 1.11)],
+        "multi_ou_ay": [(0.3, 0.42), (2.0, 0.01), (10.0, 1.38)],
     },
     "doux": {
         "sigma_ax": 0.5,
@@ -60,6 +65,8 @@ PROFILES = {
         "smooth_speed_sigma": 25.0,
         "imu_smooth_window_s": 2.0,
         "imu_min_turn_radius_m": 90.0,
+        "multi_ou_ax": [(0.3, 0.30), (2.0, 0.01), (10.0, 0.70)],
+        "multi_ou_ay": [(0.3, 0.25), (2.0, 0.01), (10.0, 0.80)],
     },
 }
 
@@ -92,6 +99,24 @@ def _ornstein_uhlenbeck(n: int, dt: float, theta: float, sigma: float, rng) -> n
     return x
 
 
+def _multi_ornstein_uhlenbeck(n: int, dt: float, components: list, rng) -> np.ndarray:
+    """
+    Superposition de processus OU à différentes échelles temporelles.
+
+    Reproduit la structure spectrale des données réelles (AEGIS) :
+      - Basse freq (θ~0.3) : dévers route, vent latéral
+      - Moyenne freq (θ~2) : virages, manoeuvres
+      - Haute freq (θ~10) : corrections volant, vibrations route
+
+    components : liste de (theta, sigma) pour chaque composante.
+    Calibré sur AEGIS trip 25 (24Hz, Graz Autriche).
+    """
+    total = np.zeros(n)
+    for theta, sigma in components:
+        total += _ornstein_uhlenbeck(n, dt, theta, sigma, rng)
+    return total
+
+
 @dataclass
 class DrivingDynamics:
     """Variabilité de conduite réaliste via processus stochastiques."""
@@ -110,6 +135,12 @@ class DrivingDynamics:
     sigma_speed: float = 0.6
     smooth_speed_sigma: float = 15.0
 
+    # Multi-OU (superposition de composantes à différentes fréquences)
+    # Calibré sur AEGIS 24Hz — reproduit le spectre des données réelles
+    multi_ou_ax: list = field(default_factory=lambda: [(0.3, 0.46), (2.0, 0.01), (10.0, 1.11)])
+    multi_ou_ay: list = field(default_factory=lambda: [(0.3, 0.42), (2.0, 0.01), (10.0, 1.38)])
+    use_multi_ou: bool = True  # False = ancien OU simple (compatibilité)
+
     seed: int = 99
 
     def __post_init__(self):
@@ -122,6 +153,10 @@ class DrivingDynamics:
             self.theta_speed = p["theta_speed"]
             self.sigma_speed = p["sigma_speed"]
             self.smooth_speed_sigma = p["smooth_speed_sigma"]
+            if "multi_ou_ax" in p:
+                self.multi_ou_ax = p["multi_ou_ax"]
+            if "multi_ou_ay" in p:
+                self.multi_ou_ay = p["multi_ou_ay"]
 
     def run(self, ctx) -> Result:
         df = ctx.df
@@ -159,12 +194,18 @@ class DrivingDynamics:
         v[~moving] = v_orig[~moving]
         df[speed_col] = v.astype("float32") if df[speed_col].dtype == np.float32 else v
 
-        # ── Jitter acc longitudinal (Ornstein-Uhlenbeck) ─────────────
-        ax_jitter = _ornstein_uhlenbeck(n, dt, self.theta_ax, self.sigma_ax, rng)
+        # ── Jitter acc longitudinal ───────────────────────────────────
+        if self.use_multi_ou and self.multi_ou_ax:
+            ax_jitter = _multi_ornstein_uhlenbeck(n, dt, self.multi_ou_ax, rng)
+        else:
+            ax_jitter = _ornstein_uhlenbeck(n, dt, self.theta_ax, self.sigma_ax, rng)
         ax_jitter[~moving] = 0
 
-        # ── Jitter acc latéral (Ornstein-Uhlenbeck) ──────────────────
-        ay_jitter = _ornstein_uhlenbeck(n, dt, self.theta_ay, self.sigma_ay, rng)
+        # ── Jitter acc latéral ────────────────────────────────────────
+        if self.use_multi_ou and self.multi_ou_ay:
+            ay_jitter = _multi_ornstein_uhlenbeck(n, dt, self.multi_ou_ay, rng)
+        else:
+            ay_jitter = _ornstein_uhlenbeck(n, dt, self.theta_ay, self.sigma_ay, rng)
         ay_jitter[~moving] = 0
 
         df["_driving_jitter_ax"] = ax_jitter.astype("float32")
