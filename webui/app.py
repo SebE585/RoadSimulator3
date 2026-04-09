@@ -22,6 +22,101 @@ import streamlit as st
 import yaml
 from streamlit_folium import st_folium
 
+# ── i18n (self-contained) ────────────────────────────────────────────────────
+
+_RS3_TR: dict[str, dict[str, str]] = {
+    "fr": {
+        "rs3.subtitle":       "Simulateur télématique — Placez des arrêts, configurez, lancez",
+        "rs3.stops":          "Arrêts",
+        "rs3.click_hint":     "Cliquez sur la carte pour ajouter le DEPOT puis les clients.",
+        "rs3.freq":           "Fréquence",
+        "rs3.gps_noise":      "Bruit GPS réaliste",
+        "rs3.blackouts":      "Blackouts tunnel",
+        "rs3.cold_drift":     "Drift démarrage (m)",
+        "rs3.imu_title":      "IMU (Accéléromètre + Gyroscope)",
+        "rs3.acc_noise":      "Bruit acc (m/s²)",
+        "rs3.gyro_on":        "Gyroscope activé",
+        "rs3.orientation":    "Orientation du boîtier",
+        "rs3.events_title":   "Événements à injecter",
+        "rs3.brakes":         "Freinages",
+        "rs3.accels":         "Accélérations",
+        "rs3.bumps":          "Dos d'âne",
+        "rs3.potholes":       "Nids de poule",
+        "rs3.turns":          "Virages",
+        "rs3.door":           "Ouv. porte",
+        "rs3.carto":          "Services carto",
+        "rs3.launch":         "🚀 Lancer la simulation",
+        "rs3.running":        "Simulation RS3 en cours...",
+        "rs3.success":        "Simulation terminée —",
+        "rs3.fail":           "Échec —",
+        "rs3.error":          "Erreur:",
+        "rs3.btn_depot":      "Retour DEPOT",
+        "rs3.btn_del_last":   "Supprimer dernier",
+        "rs3.btn_clear":      "Effacer tout",
+        "rs3.tab_map":        "Carte",
+        "rs3.tab_sensors":    "Capteurs",
+        "rs3.tab_severity":   "Severity",
+        "rs3.tab_quality":    "Qualité",
+        "rs3.chart_accel":    "Accéléromètre",
+        "rs3.chart_gyro":     "Gyroscope",
+        "rs3.gyro_off":       "Gyroscope désactivé",
+        "rs3.lang":           "Langue",
+        "rs3.v_median":       "V médiane",
+        "rs3.acc_std":        "σ acc_x",
+        "rs3.gyro_std":       "σ gyro_z",
+        "rs3.hz_obs":         "Hz obs",
+    },
+    "en": {
+        "rs3.subtitle":       "Telematic simulator — Place stops, configure, launch",
+        "rs3.stops":          "Stops",
+        "rs3.click_hint":     "Click on the map to add the DEPOT then customers.",
+        "rs3.freq":           "Frequency",
+        "rs3.gps_noise":      "Realistic GPS noise",
+        "rs3.blackouts":      "Tunnel blackouts",
+        "rs3.cold_drift":     "Cold start drift (m)",
+        "rs3.imu_title":      "IMU (Accelerometer + Gyroscope)",
+        "rs3.acc_noise":      "Acc noise (m/s²)",
+        "rs3.gyro_on":        "Gyroscope enabled",
+        "rs3.orientation":    "Device orientation",
+        "rs3.events_title":   "Events to inject",
+        "rs3.brakes":         "Hard brakes",
+        "rs3.accels":         "Hard accels",
+        "rs3.bumps":          "Speed bumps",
+        "rs3.potholes":       "Potholes",
+        "rs3.turns":          "Sharp turns",
+        "rs3.door":           "Door open",
+        "rs3.carto":          "Map services",
+        "rs3.launch":         "🚀 Launch simulation",
+        "rs3.running":        "RS3 simulation running...",
+        "rs3.success":        "Simulation complete —",
+        "rs3.fail":           "Failed —",
+        "rs3.error":          "Error:",
+        "rs3.btn_depot":      "Return to DEPOT",
+        "rs3.btn_del_last":   "Delete last",
+        "rs3.btn_clear":      "Clear all",
+        "rs3.tab_map":        "Map",
+        "rs3.tab_sensors":    "Sensors",
+        "rs3.tab_severity":   "Severity",
+        "rs3.tab_quality":    "Quality",
+        "rs3.chart_accel":    "Accelerometer",
+        "rs3.chart_gyro":     "Gyroscope",
+        "rs3.gyro_off":       "Gyroscope disabled",
+        "rs3.lang":           "Language",
+        "rs3.v_median":       "V median",
+        "rs3.acc_std":        "σ acc_x",
+        "rs3.gyro_std":       "σ gyro_z",
+        "rs3.hz_obs":         "Hz obs",
+    },
+}
+
+def _rs3_lang() -> str:
+    return st.session_state.get("rs3_lang", "fr")
+
+def L(key: str) -> str:
+    """Translate key using current RS3 language."""
+    lang = _rs3_lang()
+    return _RS3_TR.get(lang, _RS3_TR["fr"]).get(key, _RS3_TR["fr"].get(key, key))
+
 # ── Setup ────────────────────────────────────────────────────────────────────
 
 st.set_page_config(page_title="RS3 Simulator", page_icon="🚛", layout="wide", menu_items={})
@@ -35,9 +130,17 @@ DEFAULT_CENTER = [49.38, 1.25]
 DEFAULT_ZOOM = 11
 OSRM_URL = "http://localhost:5003"
 
-for k, v in [("stops", []), ("sim_ctx", None), ("sim_outdir", None), ("sim_df", None), ("last_click", None)]:
+for k, v in [("stops", []), ("sim_ctx", None), ("sim_outdir", None), ("sim_df", None), ("last_click", None), ("rs3_lang", "fr")]:
     if k not in st.session_state:
         st.session_state[k] = v
+
+with st.sidebar:
+    st.session_state["rs3_lang"] = st.radio(
+        L("rs3.lang"), ["fr", "en"],
+        index=0 if st.session_state.get("rs3_lang", "fr") == "fr" else 1,
+        format_func=lambda x: "🇫🇷 Français" if x == "fr" else "🇬🇧 English",
+        key="_rs3_lang_radio", horizontal=True,
+    )
 
 # ── Header ───────────────────────────────────────────────────────────────────
 
@@ -45,7 +148,7 @@ st.markdown(
     "<div style='display:flex;align-items:center;gap:12px;margin-bottom:16px'>"
     "<span style='font-size:2.5em'>🚛</span>"
     "<div><h1 style='margin:0;font-size:1.8em'>RoadSimulator3</h1>"
-    "<p style='margin:0;color:#888'>Simulateur télématique — Placez des arrêts, configurez, lancez</p>"
+    f"<p style='margin:0;color:#888'>{L('rs3.subtitle')}</p>"
     "</div></div>", unsafe_allow_html=True,
 )
 
@@ -78,22 +181,22 @@ with col_map:
             # No st.rerun() — markers appear on next natural interaction
 
     bc = st.columns(3)
-    if bc[0].button("Retour DEPOT") and st.session_state.stops:
+    if bc[0].button(L("rs3.btn_depot")) and st.session_state.stops:
         d = st.session_state.stops[0]
         st.session_state.stops.append({"id": "DEPOT", "lat": d["lat"], "lon": d["lon"], "service_s": 0})
         st.rerun()
-    if bc[1].button("Supprimer dernier") and st.session_state.stops:
+    if bc[1].button(L("rs3.btn_del_last")) and st.session_state.stops:
         st.session_state.stops.pop()
         st.rerun()
-    if bc[2].button("Effacer tout"):
+    if bc[2].button(L("rs3.btn_clear")):
         st.session_state.stops = []
         st.session_state.sim_ctx = st.session_state.sim_df = st.session_state.sim_outdir = None
         st.rerun()
 
 with col_cfg:
-    st.markdown("**Arrêts**")
+    st.markdown(f"**{L('rs3.stops')}**")
     if not st.session_state.stops:
-        st.caption("Cliquez sur la carte pour ajouter le DEPOT puis les clients.")
+        st.caption(L("rs3.click_hint"))
     for i, s in enumerate(st.session_state.stops):
         c1, c2 = st.columns([3, 1])
         c1.text(f"{s['id']} ({s['lat']:.4f}, {s['lon']:.4f})")
@@ -102,52 +205,90 @@ with col_cfg:
 
     st.divider()
 
+    # ── Device Profile ──────────────────────────
+    _PROFILES = {
+        "Custom": {},
+        "Low-cost OBD tracker (no gyro)": {
+            "gps_hz": 1, "imu_hz": 10, "sig_acc": 0.06, "gyro": False,
+            "sig_pos": 2.0, "roll": 175.0, "pitch": 1.4, "yaw": 0.0,
+            "desc": "Typical €15 fleet tracker. 50 Hz burst IMU, 1 Hz GPS, no gyro, gravity-compensated. Calibrated from field data (14 trips, France).",
+        },
+        "AEGIS SensorTile.Box": {
+            "gps_hz": 1, "imu_hz": 10, "sig_acc": 0.02, "gyro": True,
+            "sig_pos": 1.5, "roll": 0.0, "pitch": 0.0, "yaw": 0.0,
+            "desc": "ST SensorTile.Box (€50). 24 Hz IMU+gyro, raw gravity. Calibrated from AEGIS (33 trips, Austria).",
+        },
+        "iPhone (UAH-DriveSet)": {
+            "gps_hz": 1, "imu_hz": 10, "sig_acc": 0.03, "gyro": True,
+            "sig_pos": 3.0, "roll": 0.0, "pitch": 0.0, "yaw": 0.0,
+            "desc": "iPhone 6S (MPU-6500). 10 Hz IMU+gyro, gravity-compensated. Calibrated from UAH-DriveSet (40 trips, Spain).",
+        },
+        "Android Smartphone": {
+            "gps_hz": 1, "imu_hz": 10, "sig_acc": 0.04, "gyro": True,
+            "sig_pos": 4.0, "roll": 0.0, "pitch": 0.0, "yaw": 0.0,
+            "desc": "Typical Android phone. 10 Hz IMU+gyro, gravity-compensated, noisier GPS.",
+        },
+    }
+    _pname = st.selectbox("📦 Device profile", list(_PROFILES.keys()), key="dev_profile")
+    _prof = _PROFILES[_pname]
+    if _prof.get("desc"):
+        st.caption(_prof["desc"])
+
+    st.divider()
+
     # ── GPS ──────────────────────────────────────
     st.markdown("**📡 GPS**")
     gc = st.columns(2)
-    gps_hz = gc[0].select_slider("Fréquence", [1, 2, 5, 10], value=1, key="gps_hz")
-    gps_noise_on = gc[1].checkbox("Bruit GPS réaliste", value=True)
+    gps_hz = gc[0].select_slider(L("rs3.freq"), [1, 2, 5, 10],
+                                  value=_prof.get("gps_hz", 1), key="gps_hz")
+    gps_noise_on = gc[1].checkbox(L("rs3.gps_noise"), value=True)
 
     if gps_noise_on:
         gn = st.columns(3)
-        sigma_pos = gn[0].slider("Jitter (m)", 0.0, 10.0, 2.0, 0.5, key="sig_pos")
-        n_blackouts = gn[1].number_input("Blackouts tunnel", 0, 10, 0, key="n_bo")
-        cold_drift = gn[2].slider("Drift démarrage (m)", 0.0, 30.0, 0.0, 5.0, key="cold")
+        sigma_pos = gn[0].slider("Jitter (m)", 0.0, 10.0,
+                                  _prof.get("sig_pos", 2.0), 0.5, key="sig_pos")
+        n_blackouts = gn[1].number_input(L("rs3.blackouts"), 0, 10, 0, key="n_bo")
+        cold_drift = gn[2].slider(L("rs3.cold_drift"), 0.0, 30.0, 0.0, 5.0, key="cold")
     else:
         sigma_pos, n_blackouts, cold_drift = 0.0, 0, 0.0
 
     st.divider()
 
     # ── IMU ──────────────────────────────────────
-    st.markdown("**🔧 IMU (Accéléromètre + Gyroscope)**")
+    st.markdown(f"**🔧 {L('rs3.imu_title')}**")
     ic = st.columns(3)
-    imu_hz = ic[0].select_slider("Fréquence", [5, 10], value=10, key="imu_hz")
-    sigma_acc = ic[1].slider("Bruit acc (m/s²)", 0.0, 0.1, 0.02, 0.005, key="sig_acc")
-    gyro_on = ic[2].checkbox("Gyroscope activé", value=True)
+    imu_hz = ic[0].select_slider(L("rs3.freq"), [5, 10],
+                                  value=_prof.get("imu_hz", 10), key="imu_hz")
+    sigma_acc = ic[1].slider(L("rs3.acc_noise"), 0.0, 0.25,
+                              _prof.get("sig_acc", 0.02), 0.005, key="sig_acc")
+    gyro_on = ic[2].checkbox(L("rs3.gyro_on"), value=_prof.get("gyro", True))
     sigma_gyro = 0.001 if gyro_on else 0.0
 
     st.divider()
 
     # ── Rotation device ──────────────────────────
-    st.markdown("**🔄 Orientation du boîtier**")
+    st.markdown(f"**🔄 {L('rs3.orientation')}**")
     rc = st.columns(3)
-    rot_roll = rc[0].number_input("Roll°", -45., 45., 0., 1., key="rot_r")
-    rot_pitch = rc[1].number_input("Pitch°", -45., 45., 0., 1., key="rot_p")
-    rot_yaw = rc[2].number_input("Yaw°", -180., 180., 0., 1., key="rot_y")
+    rot_roll = rc[0].number_input("Roll°", -180., 180.,
+                                   _prof.get("roll", 0.0), 1., key="rot_r")
+    rot_pitch = rc[1].number_input("Pitch°", -45., 45.,
+                                    _prof.get("pitch", 0.0), 1., key="rot_p")
+    rot_yaw = rc[2].number_input("Yaw°", -180., 180.,
+                                  _prof.get("yaw", 0.0), 1., key="rot_y")
 
     st.divider()
 
     # ── Événements ───────────────────────────────
-    st.markdown("**⚡ Événements à injecter**")
+    st.markdown(f"**⚡ {L('rs3.events_title')}**")
     ev1, ev2, ev3 = st.columns(3)
-    n_brake = ev1.number_input("Freinages", 0, 20, 0, key="nb")
-    n_accel = ev1.number_input("Accélérations", 0, 20, 0, key="na")
-    n_bump = ev2.number_input("Dos d'âne", 0, 20, 0, key="nbu")
-    n_pothole = ev2.number_input("Nids de poule", 0, 20, 0, key="np")
-    n_turn = ev3.number_input("Virages", 0, 20, 0, key="nt")
-    n_door = ev3.number_input("Ouv. porte", 0, 20, 0, key="nd")
+    n_brake = ev1.number_input(L("rs3.brakes"), 0, 20, 0, key="nb")
+    n_accel = ev1.number_input(L("rs3.accels"), 0, 20, 0, key="na")
+    n_bump = ev2.number_input(L("rs3.bumps"), 0, 20, 0, key="nbu")
+    n_pothole = ev2.number_input(L("rs3.potholes"), 0, 20, 0, key="np")
+    n_turn = ev3.number_input(L("rs3.turns"), 0, 20, 0, key="nt")
+    n_door = ev3.number_input(L("rs3.door"), 0, 20, 0, key="nd")
 
-    with st.expander("Services carto"):
+    with st.expander(L("rs3.carto")):
         osrm_url = st.text_input("OSRM", value=OSRM_URL)
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -195,8 +336,8 @@ def _build_cfg():
 
 can_run = len(st.session_state.stops) >= 2
 
-if st.button("🚀 Lancer la simulation", disabled=not can_run, type="primary", use_container_width=True):
-    with st.spinner("Simulation RS3 en cours..."):
+if st.button(L("rs3.launch"), disabled=not can_run, type="primary", use_container_width=True):
+    with st.spinner(L("rs3.running")):
         try:
             import importlib
             rs3_root = str(Path(__file__).resolve().parent.parent)
@@ -228,11 +369,11 @@ if st.button("🚀 Lancer la simulation", disabled=not can_run, type="primary", 
             st.session_state.sim_df = ctx.df.copy() if ctx.df is not None else None
 
             if result.ok:
-                st.success(f"Simulation terminée — {result.msg}")
+                st.success(f"{L('rs3.success')} {result.msg}")
             else:
-                st.error(f"Échec — {result.msg}")
+                st.error(f"{L('rs3.fail')} {result.msg}")
         except Exception as exc:
-            st.error(f"Erreur: {exc}")
+            st.error(f"{L('rs3.error')} {exc}")
 
 # ══════════════════════════════════════════════════════════════════════════════
 # RÉSULTATS
@@ -278,7 +419,7 @@ if rot_meta and any(v != 0 for v in rot_meta.values()):
 
 # Tabs résultats
 if sim_df is not None and not sim_df.empty:
-    tab_carte, tab_capteurs, tab_severity, tab_qa = st.tabs(["Carte", "Capteurs", "Severity", "Qualit\u00e9"])
+    tab_carte, tab_capteurs, tab_severity, tab_qa = st.tabs([L("rs3.tab_map"), L("rs3.tab_sensors"), L("rs3.tab_severity"), L("rs3.tab_quality")])
 
     with tab_carte:
         hz_obs = float(ctx.meta.get("hz", 10))
@@ -314,7 +455,7 @@ if sim_df is not None and not sim_df.empty:
                 if col in ds.columns:
                     fig_a.add_trace(go.Scatter(x=ds[xc], y=ds[col], mode="lines", name=label,
                                                line=dict(color=color, width=1)))
-            fig_a.update_layout(title="Accéléromètre", xaxis_title=xl, yaxis_title="m/s²", height=280,
+            fig_a.update_layout(title=L("rs3.chart_accel"), xaxis_title=xl, yaxis_title="m/s²", height=280,
                                 margin=dict(l=50, r=20, t=40, b=30), legend=dict(orientation="h", y=-0.2))
             st.plotly_chart(fig_a, use_container_width=True)
 
@@ -327,11 +468,11 @@ if sim_df is not None and not sim_df.empty:
                 if col in ds.columns and not ds[col].isna().all():
                     fig_g.add_trace(go.Scatter(x=ds[xc], y=ds[col], mode="lines", name=label,
                                                line=dict(color=color, width=1)))
-            fig_g.update_layout(title="Gyroscope", xaxis_title=xl, yaxis_title="rad/s", height=250,
+            fig_g.update_layout(title=L("rs3.chart_gyro"), xaxis_title=xl, yaxis_title="rad/s", height=250,
                                 margin=dict(l=50, r=20, t=40, b=30), legend=dict(orientation="h", y=-0.2))
             st.plotly_chart(fig_g, use_container_width=True)
         else:
-            st.caption("Gyroscope désactivé")
+            st.caption(L("rs3.gyro_off"))
 
     with tab_severity:
         from webui.shared.bihistogram import render_bihistogram
@@ -350,8 +491,8 @@ if sim_df is not None and not sim_df.empty:
         metrics = ctx.artifacts.get("qa_checklist", {}).get("metrics", {})
         if metrics:
             qm = st.columns(4)
-            for i, (k, (l, u)) in enumerate({"v_median_mps": ("V médiane", "m/s"), "ax_std_mps2": ("σ acc_x", "m/s²"),
-                                              "gz_std_rad_s": ("σ gyro_z", "rad/s"), "hz_observed": ("Hz obs", "Hz")}.items()):
+            for i, (k, (l, u)) in enumerate({"v_median_mps": (L("rs3.v_median"), "m/s"), "ax_std_mps2": (L("rs3.acc_std"), "m/s²"),
+                                              "gz_std_rad_s": (L("rs3.gyro_std"), "rad/s"), "hz_observed": (L("rs3.hz_obs"), "Hz")}.items()):
                 if k in metrics:
                     qm[i].metric(l, f"{metrics[k]:.3f} {u}")
 
