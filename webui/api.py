@@ -71,16 +71,35 @@ _jobs: dict[str, dict[str, Any]] = {}
 
 def _resolve_outdir(job_id: str) -> Path:
     """Résout le dossier de sortie depuis job_id."""
+    # 1. Depuis le store en mémoire (même worker)
     if job_id in _jobs:
-        return Path(_jobs[job_id].get("outdir", ""))
-    # Fallback : chercher dans data/simulations/
+        p = Path(_jobs[job_id].get("outdir", ""))
+        if p.exists():
+            return p
+
+    # 2. Dossier direct
     candidate = Path(f"data/simulations/{job_id}")
     if candidate.exists():
         return candidate
-    # Chercher par prefix WEB-
-    for d in Path("data/simulations").glob("WEB-*"):
-        if job_id in d.name:
-            return d
+
+    # 3. Chercher par substring dans WEB-*
+    sim_dir = Path("data/simulations")
+    if sim_dir.exists():
+        for d in sorted(sim_dir.glob("WEB-*"), key=lambda x: x.stat().st_mtime, reverse=True):
+            if job_id in d.name:
+                return d
+
+    # 4. Fallback : le dossier le plus récent (multi-worker : le job_id n'est pas dans le nom)
+    if sim_dir.exists():
+        dirs = sorted(sim_dir.glob("WEB-*"), key=lambda x: x.stat().st_mtime, reverse=True)
+        if dirs:
+            latest = dirs[0]
+            # Vérifier que c'est récent (< 5 min)
+            import time
+            age = time.time() - latest.stat().st_mtime
+            if age < 300:
+                return latest
+
     raise HTTPException(status_code=404, detail=f"Job {job_id} not found")
 
 

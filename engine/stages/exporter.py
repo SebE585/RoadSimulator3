@@ -762,6 +762,36 @@ def _export_d0(ctx, df: pd.DataFrame, outdir: str) -> str | None:
     if "speed_mps" not in d0.columns:
         d0["speed_mps"] = np.nan
 
+    # ── Enforce NaN for GPS-only columns on intermediate IMU ticks ──
+    # MultiRateSampler should have done this, but the D0 contract requires
+    # it unconditionally: lat/lon/speed_mps are NaN except at real GPS ticks.
+    # This is critical for downstream consumers (P013 yaw estimation) that
+    # need to detect actual GPS position changes vs. forward-filled repeats.
+    _gps_only_cols = ["lat", "lon", "speed_mps"]
+    if "gps_valid" in df.columns:
+        # Preferred: use the explicit mask set by MultiRateSampler
+        gps_tick_mask = df["gps_valid"].astype(bool).values
+    else:
+        # Fallback: reconstruct from gps_hz / pipeline_hz
+        cfg_dict = ctx.cfg if isinstance(ctx.cfg, dict) else {}
+        sensors_cfg = cfg_dict.get("sensors", {}) or {}
+        pipeline_hz = float(ctx.meta.get("hz", 10) or 10)
+        gps_hz = float(sensors_cfg.get("gps_hz", ctx.meta.get("gps_hz", pipeline_hz)))
+        gps_stride = max(1, int(round(pipeline_hz / gps_hz)))
+        if gps_stride > 1:
+            gps_tick_mask = np.zeros(len(d0), dtype=bool)
+            gps_tick_mask[::gps_stride] = True
+            gps_tick_mask[-1] = True  # always keep last point
+        else:
+            gps_tick_mask = np.ones(len(d0), dtype=bool)
+
+    if not gps_tick_mask.all():
+        for col in _gps_only_cols:
+            if col in d0.columns:
+                d0.loc[~gps_tick_mask, col] = np.nan
+        logger.info("[D0 Export] GPS NaN mask applied: %d/%d ticks are GPS",
+                    int(gps_tick_mask.sum()), len(d0))
+
     # Heading (recommandé) — calculer sur les ticks GPS valides uniquement
     if "heading" in df.columns:
         d0["heading_deg"] = pd.to_numeric(df["heading"], errors="coerce")
@@ -781,6 +811,10 @@ def _export_d0(ctx, df: pd.DataFrame, outdir: str) -> str | None:
             if "speed_mps" in d0.columns:
                 stopped = gps_valid & (d0["speed_mps"].fillna(0) < 0.5)
                 d0.loc[stopped, "heading_deg"] = np.nan
+
+    # Heading is also a GPS-derived column: NaN on intermediate ticks
+    if "heading_deg" in d0.columns and not gps_tick_mask.all():
+        d0.loc[~gps_tick_mask, "heading_deg"] = np.nan
 
     # Altitude GPS : PAS dans D0 — c'est la promesse du D1 (DEM enrichment)
     # Même si le FMC880 remonte une altitude NMEA, elle est trop imprécise (±30m)
