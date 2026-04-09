@@ -208,10 +208,10 @@ with col_cfg:
     # ── Device Profile ──────────────────────────
     _PROFILES = {
         "Custom": {},
-        "Low-cost OBD tracker (no gyro)": {
+        "Low-cost datalogger (no gyro)": {
             "gps_hz": 1, "imu_hz": 10, "sig_acc": 0.06, "gyro": False,
             "sig_pos": 2.0, "roll": 175.0, "pitch": 1.4, "yaw": 0.0,
-            "desc": "Typical €15 fleet tracker. 50 Hz burst IMU, 1 Hz GPS, no gyro, gravity-compensated. Calibrated from field data (14 trips, France).",
+            "desc": "Typical fleet datalogger (~€15), wired to vehicle battery. 50 Hz burst IMU, 1 Hz GPS, no gyro, gravity-compensated. Calibrated from field data (14 trips, France).",
         },
         "AEGIS SensorTile.Box": {
             "gps_hz": 1, "imu_hz": 10, "sig_acc": 0.02, "gyro": True,
