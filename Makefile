@@ -11,7 +11,7 @@ test:
 
 simulate:
 	. .venv/bin/activate && \
-		RS3_ALTITUDE_CFG="/Users/sebastien.edet/projects/rs3-plugin-altitude-agpl/service/config/altitude_ign.yaml" \
+		RS3_ALTITUDE_CFG="/Users/sebastien.edet/projects/pro/deeptech/rs3-plugin-altitude-agpl/service/config/altitude_ign.yaml" \
 		PYTHONPATH=. python -B -m runner.simulate \
 		  --config config/simulator_haute_normandie.yaml
 
@@ -62,7 +62,7 @@ tag:
 dataset-telemachus:
 	@echo "🚀 Simulation RS3 (base) via runner.simulate (export Telemachus inline)"
 	. .venv/bin/activate && \
-		RS3_ALTITUDE_CFG="/Users/sebastien.edet/projects/rs3-plugin-altitude-agpl/service/config/altitude_ign.yaml" \
+		RS3_ALTITUDE_CFG="/Users/sebastien.edet/projects/pro/deeptech/rs3-plugin-altitude-agpl/service/config/altitude_ign.yaml" \
 		PYTHONPATH=. python -B -m runner.simulate \
 		  --config config/simulator_telemachus.yaml
 	@SIM_DIR=$$(ls -dt data/simulations/TELEMACHUS_* data/simulations/simulated_* 2>/dev/null | head -1); \

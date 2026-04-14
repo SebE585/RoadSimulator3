@@ -86,13 +86,13 @@ legs_retimer:
 
 plugins:
   paths:
-    - "/Users/sebastien.edet/projects/rs3-plugin-altitude-agpl/src"  # src layout → expose le paquet plugin
+    - "/Users/sebastien.edet/projects/pro/deeptech/rs3-plugin-altitude-agpl/src"  # src layout → expose le paquet plugin
   insert:
     - after: "MidStopsLocker"
       before: "ImuProjector"
       stage: AltitudeStage
       kwargs:
-        config: "/Users/sebastien.edet/projects/rs3-plugin-altitude-agpl/service/config/altitude_ign.yaml"
+        config: "/Users/sebastien.edet/projects/pro/deeptech/rs3-plugin-altitude-agpl/service/config/altitude_ign.yaml"
 
 imu_projector:
   smooth_window_s: 1.5

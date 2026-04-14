@@ -101,7 +101,7 @@ plugins:
       before: "ImuProjector"      # ou "exporter" si tu veux l’IMU basé sur la pente lissée
       stage: altitude             # nom de l’entry-point (pyproject)
       kwargs:
-        config: "/Users/sebastien.edet/projects/rs3-plugin-altitude-agpl/service/config/altitude_ign.yaml"
+        config: "/Users/sebastien.edet/projects/pro/deeptech/rs3-plugin-altitude-agpl/service/config/altitude_ign.yaml"
 
 imu_projector:
   smooth_window_s: 1.5
