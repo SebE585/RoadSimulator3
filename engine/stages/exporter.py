@@ -925,35 +925,91 @@ def _export_d0(ctx, df: pd.DataFrame, outdir: str) -> str | None:
 
     logger.info("[D0 Export] %d lignes, %d colonnes → %s", len(d0), len(d0.columns), d0_parquet)
 
-    # Manifest (métadonnées d'enveloppe — séparé du signal)
+    # Manifest telemachus-0.8 (RFC-0014) — sidecar normatif.
+    # Le parquet reste "signal pur" ; toute métadonnée device/trip/acc_periods/
+    # sensors vit ici et peut être héritée par les consumers (cf. RFC-0014 §4).
     cfg_dict = ctx.cfg if isinstance(ctx.cfg, dict) else {}
     tele_cfg = cfg_dict.get("telemachus", {}) or {}
     sensors_cfg = cfg_dict.get("sensors", {}) or {}
 
+    device_id = tele_cfg.get("vehicle_id", cfg_dict.get("vehicle_id", "RS3-SIM"))
+    trip_id = tele_cfg.get("trip_id", f"RS3_{os.path.basename(outdir)}")
+    # Frame : RS3 simule la physique pure → accel avec gravité sur az → "raw"
+    acc_frame = tele_cfg.get("acc_frame", "raw")
+
     manifest = {
-        "format": "telemachus-d0",
-        "version": "0.2",
-        "device_id": tele_cfg.get("vehicle_id", cfg_dict.get("vehicle_id", "RS3-SIM")),
-        "trip_id": tele_cfg.get("trip_id", f"RS3_{os.path.basename(outdir)}"),
-        "source": "RoadSimulator3",
+        "dataset_id": f"rs3_{os.path.basename(outdir).lower()}",
+        "schema_version": "telemachus-0.8",
+        "title": tele_cfg.get("title", f"RS3 synthetic — {os.path.basename(outdir)}"),
+        "hardware": {
+            "vendor": "RoadSimulator3",
+            "model": "synthetic",
+            "class": "research",
+            "devices": [{"name": str(device_id)}],
+        },
         "sensors": {
-            "gps_hz": sensors_cfg.get("gps_hz", 10),
-            "imu_hz": sensors_cfg.get("imu_hz", 10),
-            "gyro_enabled": sensors_cfg.get("gyro_enabled", True),
+            "gps": {"rate_hz": float(sensors_cfg.get("gps_hz", 10))},
+            "accelerometer": {
+                "rate_hz": float(sensors_cfg.get("imu_hz", 10)),
+                "has_gyroscope": bool(sensors_cfg.get("gyro_enabled", True)),
+                "unit": "m/s^2",
+            },
         },
-        "gps_noise": {
-            "sigma_pos_m": sigma_pos_m,
-            "sigma_speed_mps": sigma_speed,
-            "jump_probability": jump_prob,
-            "cold_start_drift_m": cold_start_drift_m,
-            "cold_start_decay_s": cold_start_decay_s,
-            "blackout_count": blackout_count,
-            "blackout_min_s": blackout_min_s,
-            "blackout_max_s": blackout_max_s,
+        "acc_periods": [
+            {
+                "start": str(d0["ts"].min()) if len(d0) else None,
+                "end": str(d0["ts"].max()) if len(d0) else None,
+                "frame": acc_frame,
+                "detection_method": "user",
+                "notes": "RS3 simule la physique pure, gravité présente sur az",
+            }
+        ],
+        "trip_carrier_states": [
+            {
+                "trip_id": str(trip_id),
+                "carrier_state": "mounted_driving",
+                "confidence": "high",
+                "detection_method": "synthetic",
+            }
+        ],
+        "volume": {
+            "n_devices": 1,
+            "n_trips": 1,
+            "total_samples": int(len(d0)),
         },
-        "n_points": len(d0),
-        "columns": list(d0.columns),
+        "data_files": [
+            {
+                "path": "d0.parquet",
+                "format": "parquet",
+                "description": "D0 signal pur (RFC-0013)",
+            }
+        ],
+        "source": {
+            "type": "synthetic",
+            "citation": "RoadSimulator3 — synthetic D0 export (RFC-0009)",
+        },
+        "tags": ["synthetic", "rs3", "ground-truth"],
+        # Bloc legacy conservé pour backward compat + reproductibilité physique
+        "rs3_config": {
+            "gps_noise": {
+                "sigma_pos_m": sigma_pos_m,
+                "sigma_speed_mps": sigma_speed,
+                "jump_probability": jump_prob,
+                "cold_start_drift_m": cold_start_drift_m,
+                "cold_start_decay_s": cold_start_decay_s,
+                "blackout_count": blackout_count,
+                "blackout_min_s": blackout_min_s,
+                "blackout_max_s": blackout_max_s,
+            },
+            "columns": list(d0.columns),
+            "trip_id": str(trip_id),
+        },
     }
+    if gyro_enabled := sensors_cfg.get("gyro_enabled", True):
+        manifest["sensors"]["gyroscope"] = {
+            "rate_hz": float(sensors_cfg.get("imu_hz", 10)),
+            "unit": "rad/s",
+        }
     with open(os.path.join(outdir, "manifest.json"), "w") as f:
         json.dump(manifest, f, indent=2, default=str)
 

@@ -1,5 +1,22 @@
 # RoadSimulator3 -- CHANGELOG
 
+## v1.1.1 (2026-04-15)
+
+### Exporter D0 — alignement Telemachus-0.8 (RFC-0014)
+
+- `engine/stages/exporter.py` : le `manifest.json` sidecar émis à côté
+  du `d0.parquet` adopte le schéma normatif `telemachus-0.8` (RFC-0014).
+  Nouveaux champs : `dataset_id`, `schema_version`, `hardware.devices[]`,
+  `sensors.{gps,accelerometer,gyroscope}`, `acc_periods[]` (frame="raw"
+  par défaut — RS3 simule la physique pure avec gravité sur az),
+  `trip_carrier_states[]` (confidence="high", detection_method="synthetic"),
+  `volume`, `data_files`, `source.type="synthetic"`, `tags`.
+- Les champs legacy (GPS noise, colonnes, trip_id) sont conservés sous
+  `rs3_config` pour reproductibilité + backward compat tooling.
+- Aucune modification du signal `d0.parquet` — "signal pur" comme avant.
+
+---
+
 ## v1.1.0 (2026-03-27)
 
 ### Architecture
